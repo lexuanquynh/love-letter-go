@@ -52,7 +52,7 @@ func NewSGMailService(logger hclog.Logger, configs *utils.Configurations) *SGMai
 func (ms *SGMailService) CreateMail(mailReq *Mail) []byte {
 	m := mail.NewV3Mail()
 
-	from := mail.NewEmail("Trường xưa", mailReq.from)
+	from := mail.NewEmail("Admin", mailReq.from)
 	m.SetFrom(from)
 
 	if mailReq.mtype == MailConfirmation {

@@ -24,7 +24,8 @@ const userSchema = `
 			username   Varchar(225),
 			password   Varchar(225) not null,
 			tokenhash  Varchar(15) not null,
-			isverified Boolean default false,
+			verified   Boolean default false,
+		    banner     Boolean default false,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
 			Primary Key (id)
@@ -114,5 +115,4 @@ func main() {
 		})
 	}
 	logger.Info("exit", g.Run())
-	fmt.Print("Hello, world")
 }

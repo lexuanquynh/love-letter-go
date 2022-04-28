@@ -34,7 +34,20 @@ func (repo *PostgresRepository) CreateUser(ctx context.Context, user *User) erro
 
 // StoreVerificationData adds a mail verification data to db
 func (repo *PostgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData) error {
-	query := "insert into verifications(email, code, expiresat, type) values($1, $2, $3, $4)"
-	_, err := repo.db.ExecContext(ctx, query, verificationData.Email, verificationData.Code, verificationData.ExpiresAt, verificationData.Type)
+	query := "insert into verifications(email, code, expiresat, type, numofresets) values($1, $2, $3, $4, $5)"
+	_, err := repo.db.ExecContext(ctx, query,
+		verificationData.Email,
+		verificationData.Code,
+		verificationData.ExpiresAt,
+		verificationData.Type,
+		verificationData.Numofresets)
 	return err
+}
+
+// GetUserByEmail returns the user with the given email.
+func (repo *PostgresRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	query := "select id, email, username, password, tokenhash, createdat, updatedat from users where email = $1"
+	user := &User{}
+	err := repo.db.GetContext(ctx, user, query, email)
+	return user, err
 }

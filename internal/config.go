@@ -28,6 +28,7 @@ type Configurations struct {
 	MailSender                 string `mapstructure:"MAIL_SENDER"`
 	Issuer                     string `mapstructure:"ISSUER"`
 	HttpPort                   string `mapstructure:"HTTP_PORT"`
+	MailTitle                  string `mapstructure:"MAIL_TITLE"`
 }
 
 // NewConfigurations returns a new Configuration object

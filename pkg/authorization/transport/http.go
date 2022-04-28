@@ -23,12 +23,42 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/login", httptransport.NewServer(
+		ep.LoginEndpoint,
+		decodeHTTPLoginRequest,
+		encodeResponse,
+		options...,
+	))
 	return m
 }
 
 func decodeHTTPRegisterRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.RegisterRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.Email == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+		}
+		if req.Password == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("password is required"), "password is required")
+		}
+		if req.Password != req.RePassword {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("passwords is not same"), "passwords is not same")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPLoginRequest
+func decodeHTTPLoginRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.LoginRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
