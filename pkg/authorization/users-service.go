@@ -126,8 +126,47 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 	}
 	s.logger.Debug("successfully generated token", "accesstoken", accessToken, "refreshtoken", refreshToken)
 	loginResponse := LoginResponse{
+		Email:        user.Email,
+		Username:     user.Username,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		Verified:     user.Verified,
 	}
 	return loginResponse, nil
+}
+
+// Logout user. Make refreshToken invalid.
+func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error {
+	// Get user from database
+	user, err := s.repo.GetUserByEmail(ctx, request.Email)
+	if err != nil {
+		s.logger.Error("Error getting user", "error", err)
+		return err
+	}
+
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		return err
+	}
+
+	// Set new random text for token hash. It will make invalid the previous refreshToken.
+	user.TokenHash = utils.GenerateRandomString(15)
+	// Generate refreshToken
+	refreshToken, err := s.auth.GenerateRefreshToken(user)
+	if err != nil {
+		s.logger.Error("Error generating refreshToken", "error", err)
+		return err
+	}
+	s.logger.Debug("successfully generated token", "refreshtoken", refreshToken)
+	// Update user to database
+	err = s.repo.UpdateUser(ctx, user)
+	if err != nil {
+		s.logger.Error("Error updating user", "error", err)
+		return err
+	}
+
+	s.logger.Debug("Logout success", "email", request.Email)
+
+	return nil
 }

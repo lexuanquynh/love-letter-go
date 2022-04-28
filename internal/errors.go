@@ -10,7 +10,7 @@ type CustomErrorWrapper struct {
 	Err     error  `json:"-"`       // The original error. Same reason as above.
 }
 
-func NewErrorWrapper(code int, err error, message string) error {
+func NewErrorWrapper(code int, err error, message string) CustomErrorWrapper {
 	return CustomErrorWrapper{
 		Message: message,
 		Code:    code,

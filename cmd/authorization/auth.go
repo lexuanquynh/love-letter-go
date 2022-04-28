@@ -76,7 +76,7 @@ func main() {
 	var (
 		httpAddr    = net.JoinHostPort("localhost", configs.HttpPort)
 		service     = authorization.NewUserService(logger, configs, repository, mailService, validator, auth)
-		eps         = endpoints.NewEndpointSet(service)
+		eps         = endpoints.NewEndpointSet(service, auth, repository, logger)
 		httpHandler = transport.NewHTTPHandler(eps)
 	)
 

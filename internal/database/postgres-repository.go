@@ -51,3 +51,18 @@ func (repo *PostgresRepository) GetUserByEmail(ctx context.Context, email string
 	err := repo.db.GetContext(ctx, user, query, email)
 	return user, err
 }
+
+// GetUserByID returns the user with the given id.
+func (repo *PostgresRepository) GetUserByID(ctx context.Context, id string) (*User, error) {
+	query := "select id, email, username, password, tokenhash, createdat, updatedat from users where id = $1"
+	user := &User{}
+	err := repo.db.GetContext(ctx, user, query, id)
+	return user, err
+}
+
+// UpdateUser updates the user with the given id.
+func (repo *PostgresRepository) UpdateUser(ctx context.Context, user *User) error {
+	query := "update users set email = $1, username = $2, password = $3, tokenhash = $4, updatedat = $5 where id = $6"
+	_, err := repo.db.ExecContext(ctx, query, user.Email, user.Username, user.Password, user.TokenHash, user.UpdatedAt, user.ID)
+	return err
+}

@@ -12,9 +12,16 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
+	Email        string `json:"email"`
 	RefreshToken string `json:"refresh_token,omitempty"`
 	AccessToken  string `json:"access_token,omitempty"`
-	Username     string `json:"username,omitempty"`
+	Username     string `json:"username"`
+	Verified     bool   `json:"verified"`
+}
+
+type LogoutRequest struct {
+	Email        string `json:"email" validate:"required,email"`
+	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
 // GenericResponse is the format of our response
