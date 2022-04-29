@@ -38,6 +38,20 @@ type GetProfileRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
 
+// UpdateProfileRequest is used to update user profile
+type UpdateProfileRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	FirstName   string `json:"first_name"`
+	LastName    string `json:"last_name"`
+	AvatarURL   string `json:"avatar_url"`
+	Phone       string `json:"phone"`
+	Street      string `json:"street"`
+	City        string `json:"city"`
+	State       string `json:"state"`
+	ZipCode     string `json:"zip_code"`
+	Country     string `json:"country"`
+}
+
 // GetUserResponse is the response for get user info
 type GetUserResponse struct {
 	Email    string `json:"email"`

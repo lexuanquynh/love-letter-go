@@ -47,6 +47,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/update-profile", httptransport.NewServer(
+		ep.UpdateProfileEndpoint,
+		decodeHTTPUpdateProfileRequest,
+		encodeResponse,
+		options...,
+	))
 	return m
 }
 
@@ -134,6 +140,24 @@ func decodeHTTPGetUserRequest(_ context.Context, r *http.Request) (interface{}, 
 func decodeHTTPGetProfileRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.GetProfileRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPUpdateProfileRequest decode request
+func decodeHTTPUpdateProfileRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.UpdateProfileRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")

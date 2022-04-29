@@ -14,11 +14,12 @@ import (
 )
 
 type Set struct {
-	RegisterEndpoint   endpoint.Endpoint
-	LoginEndpoint      endpoint.Endpoint
-	LogoutEndpoint     endpoint.Endpoint
-	GetUserEndpoint    endpoint.Endpoint
-	GetProfileEndpoint endpoint.Endpoint
+	RegisterEndpoint      endpoint.Endpoint
+	LoginEndpoint         endpoint.Endpoint
+	LogoutEndpoint        endpoint.Endpoint
+	GetUserEndpoint       endpoint.Endpoint
+	GetProfileEndpoint    endpoint.Endpoint
+	UpdateProfileEndpoint endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r database.UserRepository, logger hclog.Logger) Set {
@@ -27,17 +28,23 @@ func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r
 
 	logoutEndpoint := MakeLogoutEndpoint(svc)
 	logoutEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(logoutEndpoint)
+
 	getUserEndpoint := MakeGetUserEndpoint(svc)
 	getUserEndpoint = middleware.ValidateAccessToken(auth, logger)(getUserEndpoint)
+
 	getProfileEndpoint := MakeGetProfileEndpoint(svc)
 	getProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(getProfileEndpoint)
 
+	updateProfileEndpoint := MakeUpdateProfileEndpoint(svc)
+	updateProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(updateProfileEndpoint)
+
 	return Set{
-		RegisterEndpoint:   registerEndpoint,
-		LoginEndpoint:      loginEndpoint,
-		LogoutEndpoint:     logoutEndpoint,
-		GetUserEndpoint:    getUserEndpoint,
-		GetProfileEndpoint: getProfileEndpoint,
+		RegisterEndpoint:      registerEndpoint,
+		LoginEndpoint:         loginEndpoint,
+		LogoutEndpoint:        logoutEndpoint,
+		GetUserEndpoint:       getUserEndpoint,
+		GetProfileEndpoint:    getProfileEndpoint,
+		UpdateProfileEndpoint: updateProfileEndpoint,
 	}
 }
 
@@ -142,5 +149,23 @@ func MakeGetProfileEndpoint(svc authorization.Service) endpoint.Endpoint {
 		}
 
 		return profile, err
+	}
+}
+
+// MakeUpdateProfileEndpoint returns an endpoint that invokes UpdateProfile on the service.
+func MakeUpdateProfileEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.UpdateProfileRequest)
+		if !ok {
+			err := errors.New("invalid request")
+			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			return nil, cusErr
+		}
+		profile, err := svc.UpdateProfile(ctx, &req)
+		if err != nil {
+			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "Can't update profile. Please try again later.")
+			return nil, cusErr
+		}
+		return profile, nil
 	}
 }

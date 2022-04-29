@@ -213,23 +213,97 @@ func (s *userService) GetProfile(ctx context.Context) (interface{}, error) {
 	if !ok {
 		return nil, errors.New("userID not found")
 	}
-	user, err := s.repo.GetProfileByID(ctx, userID)
+	profile, err := s.repo.GetProfileByID(ctx, userID)
 	if err != nil {
 		s.logger.Error("Cannot get profile", "error", err)
 		return nil, errors.New("cannot get profile")
 	}
 	// Make response data
 	profileResponse := GetProfileResponse{
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		AvatarURL: user.AvatarURL,
-		Phone:     user.Phone,
-		Street:    user.Street,
-		City:      user.City,
-		State:     user.State,
-		ZipCode:   user.ZipCode,
-		Country:   user.Country,
+		Email:     profile.Email,
+		FirstName: profile.FirstName,
+		LastName:  profile.LastName,
+		AvatarURL: profile.AvatarURL,
+		Phone:     profile.Phone,
+		Street:    profile.Street,
+		City:      profile.City,
+		State:     profile.State,
+		ZipCode:   profile.ZipCode,
+		Country:   profile.Country,
 	}
+	return profileResponse, nil
+}
+
+// UpdateProfile updates user profile.
+func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		return nil, errors.New("userID not found")
+	}
+	// Get user by id
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		return nil, errors.New("cannot get user")
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		return "User is banned", errors.New("user is banned")
+	}
+	// Get profile by id
+	profile, err := s.repo.GetProfileByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get profile", "error", err)
+		return nil, errors.New("cannot get profile")
+	}
+	// Update profile profile
+	if request.FirstName != "" {
+		profile.FirstName = request.FirstName
+	}
+	if request.LastName != "" {
+		profile.LastName = request.LastName
+	}
+	if request.AvatarURL != "" {
+		profile.AvatarURL = request.AvatarURL
+	}
+	if request.Phone != "" {
+		profile.Phone = request.Phone
+	}
+	if request.Street != "" {
+		profile.Street = request.Street
+	}
+	if request.City != "" {
+		profile.City = request.City
+	}
+	if request.State != "" {
+		profile.State = request.State
+	}
+	if request.ZipCode != "" {
+		profile.ZipCode = request.ZipCode
+	}
+	if request.Country != "" {
+		profile.Country = request.Country
+	}
+	// Update profile
+	err = s.repo.UpdateProfile(ctx, profile)
+	if err != nil {
+		s.logger.Error("Cannot update profile", "error", err)
+		return nil, errors.New("cannot update profile")
+	}
+	// Make response data
+	profileResponse := GetProfileResponse{
+		Email:     profile.Email,
+		FirstName: profile.FirstName,
+		LastName:  profile.LastName,
+		AvatarURL: profile.AvatarURL,
+		Phone:     profile.Phone,
+		Street:    profile.Street,
+		City:      profile.City,
+		State:     profile.State,
+		ZipCode:   profile.ZipCode,
+		Country:   profile.Country,
+	}
+	s.logger.Info("Profile updated", "userID", userID)
 	return profileResponse, nil
 }

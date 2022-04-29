@@ -9,4 +9,5 @@ type Service interface {
 	Logout(ctx context.Context, request *LogoutRequest) error
 	GetUser(ctx context.Context) (interface{}, error)
 	GetProfile(ctx context.Context) (interface{}, error)
+	UpdateProfile(ctx context.Context, request *UpdateProfileRequest) (interface{}, error)
 }

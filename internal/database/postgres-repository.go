@@ -109,3 +109,22 @@ func (repo *PostgresRepository) GetProfileByID(ctx context.Context, userId strin
 	err := repo.db.GetContext(ctx, profile, query, userId)
 	return profile, err
 }
+
+// UpdateProfile updates the profile data.
+func (repo *PostgresRepository) UpdateProfile(ctx context.Context, profile *ProfileData) error {
+	profile.UpdatedAt = time.Now()
+	query := "update profiles set firstname = $1, lastname = $2, avatarurl = $3, phone = $4, street = $5, city = $6, state = $7, zipcode = $8, country = $9, updatedat = $10 where userid = $11"
+	_, err := repo.db.ExecContext(ctx, query,
+		profile.FirstName,
+		profile.LastName,
+		profile.AvatarURL,
+		profile.Phone,
+		profile.Street,
+		profile.City,
+		profile.State,
+		profile.ZipCode,
+		profile.Country,
+		profile.UpdatedAt,
+		profile.UserID)
+	return err
+}

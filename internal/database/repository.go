@@ -19,4 +19,6 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *User) error
 	// GetProfileByID Get profile by user id
 	GetProfileByID(ctx context.Context, userId string) (*ProfileData, error)
+	// UpdateProfile Update profile
+	UpdateProfile(ctx context.Context, profile *ProfileData) error
 }
