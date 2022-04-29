@@ -172,3 +172,40 @@ func (repo *PostgresRepository) InsertListOfPasswords(ctx context.Context, passw
 
 	return err
 }
+
+// GetLimitData returns the limit data
+func (repo *PostgresRepository) GetLimitData(ctx context.Context, userID string) (*LimitData, error) {
+	query := "select id, userid, numofsendmail, numofchangepassword, createdat, updatedat from limits where userid = $1"
+	limitData := &LimitData{}
+	err := repo.db.GetContext(ctx, limitData, query, userID)
+	return limitData, err
+}
+
+// InsertOrUpdateLimitData updates the limit data
+func (repo *PostgresRepository) InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, isInsert bool) error {
+	limitData.ID = uuid.NewV4().String()
+	limitData.CreatedAt = time.Now()
+	limitData.UpdatedAt = time.Now()
+	// Insert or update
+	if isInsert {
+		// Insert the limit data
+		query := "insert into limits(id, userid, numofsendmail, numofchangepassword, createdat, updatedat) values($1, $2, $3, $4, $5, $6)"
+		_, err := repo.db.ExecContext(ctx, query,
+			limitData.ID,
+			limitData.UserID,
+			limitData.NumOfSendMail,
+			limitData.NumOfChangePassword,
+			limitData.CreatedAt,
+			limitData.UpdatedAt)
+		return err
+	} else {
+		// Update the limit data
+		query := "update limits set numofsendmail = $1, numofchangepassword = $2, updatedat = $3 where userid = $4"
+		_, err := repo.db.ExecContext(ctx, query,
+			limitData.NumOfSendMail,
+			limitData.NumOfChangePassword,
+			limitData.UpdatedAt,
+			limitData.UserID)
+		return err
+	}
+}

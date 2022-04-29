@@ -27,4 +27,8 @@ type UserRepository interface {
 	GetListOfPasswords(ctx context.Context, userID string) ([]string, error)
 	// InsertListOfPasswords Update password into list of passwords
 	InsertListOfPasswords(ctx context.Context, passwordUsers *PassworUsers) error
+	// GetLimitData Get limit table data
+	GetLimitData(ctx context.Context, userID string) (*LimitData, error)
+	// InsertOrUpdateLimitData Insert or update limit data
+	InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, isInsert bool) error
 }

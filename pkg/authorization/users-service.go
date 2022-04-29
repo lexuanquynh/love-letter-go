@@ -326,6 +326,29 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 		s.logger.Error("User is banned", "error", err)
 		return "User is banned", errors.New("user is banned")
 	}
+	// Get limit data
+	isInsert := false
+	limitData, err := s.repo.GetLimitData(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get limit data", "error", err)
+		// No row, need insert
+		isInsert = true
+		limitData.UserID = userID
+		limitData.NumOfChangePassword = 1
+	} else {
+		limitData.NumOfChangePassword += 1
+	}
+	// Check if limit is reached
+	if limitData.NumOfChangePassword > s.configs.ChangePasswordLimit {
+		s.logger.Error("Change password limit reached", "error", err)
+		return "Change password limit reached", errors.New("change password limit reached")
+	}
+	// Update limit data
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	if err != nil {
+		s.logger.Error("Cannot insert or update limit data", "error", err)
+		return "cannot insert or update limit data", errors.New("cannot insert or update limit data")
+	}
 	// Compare new password and confirm password
 	if request.NewPassword != request.ConfirmPassword {
 		s.logger.Error("New password and confirm password are not the same", "error", err)
@@ -371,6 +394,13 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	if err != nil {
 		s.logger.Error("Cannot update password into list of passwords", "error", err)
 		return "cannot update password into list of passwords", errors.New("cannot update password into list of passwords")
+	}
+	// Reset limit data
+	limitData.NumOfChangePassword = 0
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, false)
+	if err != nil {
+		s.logger.Error("Cannot delete limit data", "error", err)
+		return "cannot delete limit data", errors.New("cannot delete limit data")
 	}
 	s.logger.Info("Password changed", "userID", userID)
 	return "Password changed", nil
