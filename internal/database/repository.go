@@ -21,4 +21,10 @@ type UserRepository interface {
 	GetProfileByID(ctx context.Context, userId string) (*ProfileData, error)
 	// UpdateProfile Update profile
 	UpdateProfile(ctx context.Context, profile *ProfileData) error
+	// UpdatePassword Update password
+	UpdatePassword(ctx context.Context, userID string, password string, tokenHash string) error
+	// GetListOfPasswords Get list of passwords
+	GetListOfPasswords(ctx context.Context, userID string) ([]string, error)
+	// InsertListOfPasswords Update password into list of passwords
+	InsertListOfPasswords(ctx context.Context, passwordUsers *PassworUsers) error
 }

@@ -14,12 +14,13 @@ import (
 )
 
 type Set struct {
-	RegisterEndpoint      endpoint.Endpoint
-	LoginEndpoint         endpoint.Endpoint
-	LogoutEndpoint        endpoint.Endpoint
-	GetUserEndpoint       endpoint.Endpoint
-	GetProfileEndpoint    endpoint.Endpoint
-	UpdateProfileEndpoint endpoint.Endpoint
+	RegisterEndpoint       endpoint.Endpoint
+	LoginEndpoint          endpoint.Endpoint
+	LogoutEndpoint         endpoint.Endpoint
+	GetUserEndpoint        endpoint.Endpoint
+	GetProfileEndpoint     endpoint.Endpoint
+	UpdateProfileEndpoint  endpoint.Endpoint
+	UpdatePasswordEndpoint endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r database.UserRepository, logger hclog.Logger) Set {
@@ -38,13 +39,17 @@ func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r
 	updateProfileEndpoint := MakeUpdateProfileEndpoint(svc)
 	updateProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(updateProfileEndpoint)
 
+	updatePasswordEndpoint := MakeUpdatePasswordEndpoint(svc)
+	updatePasswordEndpoint = middleware.ValidateAccessToken(auth, logger)(updatePasswordEndpoint)
+
 	return Set{
-		RegisterEndpoint:      registerEndpoint,
-		LoginEndpoint:         loginEndpoint,
-		LogoutEndpoint:        logoutEndpoint,
-		GetUserEndpoint:       getUserEndpoint,
-		GetProfileEndpoint:    getProfileEndpoint,
-		UpdateProfileEndpoint: updateProfileEndpoint,
+		RegisterEndpoint:       registerEndpoint,
+		LoginEndpoint:          loginEndpoint,
+		LogoutEndpoint:         logoutEndpoint,
+		GetUserEndpoint:        getUserEndpoint,
+		GetProfileEndpoint:     getProfileEndpoint,
+		UpdateProfileEndpoint:  updateProfileEndpoint,
+		UpdatePasswordEndpoint: updatePasswordEndpoint,
 	}
 }
 
@@ -167,5 +172,23 @@ func MakeUpdateProfileEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		return profile, nil
+	}
+}
+
+// MakeUpdatePasswordEndpoint returns an endpoint that invokes UpdatePassword on the service.
+func MakeUpdatePasswordEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.UpdatePasswordRequest)
+		if !ok {
+			err := errors.New("invalid request")
+			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			return nil, cusErr
+		}
+		message, err := svc.UpdatePassword(ctx, &req)
+		if err != nil {
+			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, message)
+			return nil, cusErr
+		}
+		return message, nil
 	}
 }

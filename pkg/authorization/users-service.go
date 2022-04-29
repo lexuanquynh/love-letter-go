@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"github.com/hashicorp/go-hclog"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -119,7 +120,7 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 		return "User is banned", err
 	}
 	// Check if password is correct
-	if err := s.auth.ComparePassword(user.Password, request.Password); err != nil {
+	if isSame := s.auth.ComparePassword(user.Password, request.Password); !isSame {
 		s.logger.Error("Password is incorrect", "error", err)
 		return "Password is incorrect", err
 	}
@@ -306,4 +307,81 @@ func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileR
 	}
 	s.logger.Info("Profile updated", "userID", userID)
 	return profileResponse, nil
+}
+
+// UpdatePassword changes user password.
+func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswordRequest) (string, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		return "userID not found", errors.New("userID not found")
+	}
+	// Get user by id
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		return "cannot get user", errors.New("cannot get user")
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		return "User is banned", errors.New("user is banned")
+	}
+	// Compare new password and confirm password
+	if request.NewPassword != request.ConfirmPassword {
+		s.logger.Error("New password and confirm password are not the same", "error", err)
+		return "New password and confirm password are not the same", errors.New("new password and confirm password are not the same")
+	}
+	// Check if password is correct
+	if isSame := s.auth.ComparePassword(user.Password, request.OldPassword); isSame == false {
+		s.logger.Error("Password is incorrect", "error", err)
+		return "Password is incorrect", errors.New("password is incorrect")
+	}
+	// Hash new password
+	hashedPassword, err := s.hashPassword(request.NewPassword)
+	if err != nil {
+		s.logger.Error("Cannot hash password", "error", err)
+		return "cannot change password", errors.New("cannot hash password")
+	}
+	// Check hashed password is not contains in list of passwords
+	listOfPasswords, err := s.repo.GetListOfPasswords(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get list of passwords", "error", err)
+		return "cannot change passwords", errors.New("cannot get list of passwords")
+	}
+	for _, password := range listOfPasswords {
+		if isSame := s.auth.ComparePassword(password, request.NewPassword); isSame == true {
+			s.logger.Error("New password is the same as old password", "error", err)
+			return "Password has been used. Please choose another password.", errors.New("password has been used. please choose another password")
+		}
+	}
+	// Update token hash. It makes refresh token tobe invalid.
+	tokenHash := utils.GenerateRandomString(15)
+	// Update user password
+	err = s.repo.UpdatePassword(ctx, userID, hashedPassword, tokenHash)
+	if err != nil {
+		s.logger.Error("Cannot update password", "error", err)
+		return "cannot update password", errors.New("cannot update password")
+	}
+	// Insert password into list of passwords user
+	passwordUsers := &database.PassworUsers{
+		UserID:   userID,
+		Password: hashedPassword,
+	}
+	err = s.repo.InsertListOfPasswords(ctx, passwordUsers)
+	if err != nil {
+		s.logger.Error("Cannot update password into list of passwords", "error", err)
+		return "cannot update password into list of passwords", errors.New("cannot update password into list of passwords")
+	}
+	s.logger.Info("Password changed", "userID", userID)
+	return "Password changed", nil
+}
+
+// hashPassword hashes password.
+func (s *userService) hashPassword(password string) (string, error) {
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		s.logger.Error("unable to hash password", "error", err)
+		return "", err
+	}
+	return string(hashedPass), nil
 }

@@ -73,6 +73,14 @@ type GetProfileResponse struct {
 	Country   string `json:"country,omitempty"`
 }
 
+// UpdatePasswordRequest is used to change password
+type UpdatePasswordRequest struct {
+	AccessToken     string `json:"access_token" validate:"required"`
+	OldPassword     string `json:"old_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required"`
+	ConfirmPassword string `json:"confirm_password" validate:"required"`
+}
+
 // GenericResponse is the format of our response
 type GenericResponse struct {
 	Status  bool        `json:"status"`

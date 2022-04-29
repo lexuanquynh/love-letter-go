@@ -128,3 +128,47 @@ func (repo *PostgresRepository) UpdateProfile(ctx context.Context, profile *Prof
 		profile.UserID)
 	return err
 }
+
+// UpdatePassword updates the user password
+func (repo *PostgresRepository) UpdatePassword(ctx context.Context, userID string, password string, tokenHash string) error {
+	query := "update users set password = $1, tokenhash = $2 where id = $3"
+	_, err := repo.db.ExecContext(ctx, query, password, tokenHash, userID)
+	return err
+}
+
+// GetListOfPasswords returns the list of passwords
+func (repo *PostgresRepository) GetListOfPasswords(ctx context.Context, userID string) ([]string, error) {
+	query := "select password from passworusers where userid = $1"
+	rows, err := repo.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var passwords []string
+	for rows.Next() {
+		var password string
+		err := rows.Scan(&password)
+		if err != nil {
+			return nil, err
+		}
+		passwords = append(passwords, password)
+	}
+	return passwords, nil
+}
+
+// InsertListOfPasswords updates the list of passwords
+func (repo *PostgresRepository) InsertListOfPasswords(ctx context.Context, passwordUsers *PassworUsers) error {
+	passwordUsers.ID = uuid.NewV4().String()
+	passwordUsers.CreatedAt = time.Now()
+	passwordUsers.UpdatedAt = time.Now()
+
+	query := "insert into passworusers(id, userid, password, createdat, updatedat) values($1, $2, $3, $4, $5)"
+	_, err := repo.db.ExecContext(ctx, query,
+		passwordUsers.ID,
+		passwordUsers.UserID,
+		passwordUsers.Password,
+		passwordUsers.CreatedAt,
+		passwordUsers.UpdatedAt)
+
+	return err
+}

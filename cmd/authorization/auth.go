@@ -69,6 +69,35 @@ const profileSchema = `
 		)
 `
 
+// schema for securityuser table
+const securityUserSchema = `
+		create table if not exists passworusers (
+			id 		   Varchar(36) not null,
+			userid 	Varchar(36) not null,
+			password   Varchar(225) not null,	
+			createdat  Timestamp not null,
+			updatedat  Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
+// schema for limit table
+const limitSchema = `
+		create table if not exists limits (
+			id 		   Varchar(36) not null,
+			userid 	Varchar(36) not null,
+			numofsendmail 	   Int default 0,
+			numofchangepassword Int default 0,
+			createdat  Timestamp not null,
+			updatedat  Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
 //const (
 //defaultHTTPPort = "8081"
 //defaultGRPCPort = "8082"
@@ -91,7 +120,8 @@ func main() {
 	db.MustExec(userSchema)
 	db.MustExec(verificationSchema)
 	db.MustExec(profileSchema)
-
+	db.MustExec(securityUserSchema)
+	db.MustExec(limitSchema)
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
 	repository := database.NewPostgresRepository(db, logger)
 	// mailService contains the utility methods to send an email

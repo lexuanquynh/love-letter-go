@@ -53,6 +53,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/update-password", httptransport.NewServer(
+		ep.UpdatePasswordEndpoint,
+		decodeHTTPUpdatePasswordRequest,
+		encodeResponse,
+		options...,
+	))
 	return m
 }
 
@@ -164,6 +170,33 @@ func decodeHTTPUpdateProfileRequest(_ context.Context, r *http.Request) (interfa
 		}
 		if req.AccessToken == "" {
 			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPUpdatePasswordRequest decode request
+func decodeHTTPUpdatePasswordRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.UpdatePasswordRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+		}
+		if req.OldPassword == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("old password is required"), "old password is required")
+		}
+		if req.NewPassword == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("new password is required"), "new password is required")
+		}
+		if req.ConfirmPassword == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("confirm password is required"), "confirm password is required")
 		}
 		return req, nil
 	} else {

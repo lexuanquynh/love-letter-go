@@ -17,7 +17,7 @@ import (
 
 // Authentication interface lists the methods that our authentication service should implement
 type Authentication interface {
-	ComparePassword(userPassword string, requestPassword string) error
+	ComparePassword(userPassword string, requestPassword string) bool
 	GenerateAccessToken(user *database.User) (string, error)
 	GenerateRefreshToken(user *database.User) (string, error)
 	GenerateCustomKey(userID string, password string) string
@@ -51,13 +51,13 @@ func NewAuthService(logger hclog.Logger, configs *utils.Configurations) *AuthSer
 	return &AuthService{logger, configs}
 }
 
-// ComparePassword checks the user credentials in request against the db and authenticates the request
-func (auth *AuthService) ComparePassword(userPassword string, requestPassword string) error {
+// ComparePassword check password same or not
+func (auth *AuthService) ComparePassword(userPassword string, requestPassword string) bool {
 	if err := bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(requestPassword)); err != nil {
 		auth.logger.Debug("password hashes are not same")
-		return err
+		return false
 	}
-	return nil
+	return true
 }
 
 // GenerateRefreshToken generate a new refresh token for the given user
