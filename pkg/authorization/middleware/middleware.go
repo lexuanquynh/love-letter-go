@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+// UserIDKey is used as a key for storing the UserID in context at middleware
+type UserIDKey struct{}
+
 // ValidateRefreshToken is a middleware that validates the refresh token
 func ValidateRefreshToken(auth Authentication, r database.UserRepository, logger hclog.Logger) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
@@ -67,4 +70,34 @@ func extractValue(request interface{}, key string) (string, error) {
 		return "", errors.New("key not found")
 	}
 	return strings.ReplaceAll(keyValMatch[1], "\"", ""), nil
+}
+
+// ValidateAccessToken is a middleware that validates the access token
+func ValidateAccessToken(auth Authentication, logger hclog.Logger) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			userID, valid := authorizedAccessToken(auth, logger, request)
+			if !valid {
+				return nil, errors.New("invalid token: authentication failed")
+			}
+			ctx = context.WithValue(ctx, UserIDKey{}, userID)
+			return next(ctx, request)
+		}
+	}
+}
+
+func authorizedAccessToken(auth Authentication, logger hclog.Logger, request interface{}) (string, bool) {
+	token, err := extractValue(request, "access_token")
+	if err != nil {
+		logger.Error("token validation failed", "err", err)
+		return "", false
+	}
+
+	userID, err := auth.ValidateAccessToken(token)
+	if err != nil {
+		logger.Error("token validation failed", "error", err)
+		return "", false
+	}
+	logger.Debug("access token validated", userID)
+	return userID, true
 }

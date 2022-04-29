@@ -23,8 +23,8 @@ func NewConnection(config *utils.Configurations, logger hclog.Logger) (*sqlx.DB,
 		password := config.DBPass
 		conn = fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", host, port, user, dbName, password)
 	}
-	logger.Debug("connection string", conn)
 
+	logger.Debug("Connected!")
 	db, err := sqlx.Connect("postgres", conn)
 	if err != nil {
 		return nil, err

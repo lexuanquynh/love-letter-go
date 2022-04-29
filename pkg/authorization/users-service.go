@@ -5,6 +5,7 @@ import (
 	"LoveLetterProject/internal/database"
 	"LoveLetterProject/pkg/authorization/middleware"
 	"context"
+	"errors"
 	"github.com/hashicorp/go-hclog"
 	"time"
 )
@@ -70,7 +71,7 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 	err = s.mailService.SendMail(mailReq)
 	if err != nil {
 		s.logger.Error("unable to send mail", "error", err)
-		return "Cannot send mail", err
+		return "Cannot send mail", errors.New("unable to send mail")
 	}
 	// Saving the code authentication into database
 	verificationData := database.VerificationData{
@@ -83,9 +84,19 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 	err = s.repo.StoreVerificationData(ctx, &verificationData)
 	if err != nil {
 		s.logger.Error("Error storing verification data", "error", err)
-		return "Cannot create verification data", err
+		return "Cannot create verification data", errors.New("cannot create verification data")
 	}
 
+	// Store user info into Profile database
+	profile := database.ProfileData{
+		UserID: user.ID,
+		Email:  user.Email,
+	}
+	err = s.repo.StoreProfileData(ctx, &profile)
+	if err != nil {
+		s.logger.Error("Error storing profile data", "error", err)
+		return "Cannot create profile data", errors.New("cannot create profile data")
+	}
 	return "success created user. Please confirm your email to active your account.", nil
 }
 
@@ -124,7 +135,7 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 		s.logger.Error("Error generating refreshToken", "error", err)
 		return "Cannot generate refreshToken", err
 	}
-	s.logger.Debug("successfully generated token", "accesstoken", accessToken, "refreshtoken", refreshToken)
+	s.logger.Debug("successfully generated token")
 	loginResponse := LoginResponse{
 		Email:        user.Email,
 		Username:     user.Username,
@@ -159,7 +170,7 @@ func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error 
 		return err
 	}
 	s.logger.Debug("successfully generated token", "refreshtoken", refreshToken)
-	// Update user to database
+	// Update user token hash to database
 	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Error updating user", "error", err)
@@ -169,4 +180,56 @@ func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error 
 	s.logger.Debug("Logout success", "email", request.Email)
 
 	return nil
+}
+
+// GetUser returns user.
+func (s *userService) GetUser(ctx context.Context) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		return nil, errors.New("userID not found")
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		return nil, errors.New("cannot get user")
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		return "User is banned", errors.New("user is banned")
+	}
+	// Make response data
+	userResponse := GetUserResponse{
+		Email:    user.Email,
+		Username: user.Username,
+		Verified: user.Verified,
+	}
+	return userResponse, nil
+}
+
+// GetProfile returns user profile.
+func (s *userService) GetProfile(ctx context.Context) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		return nil, errors.New("userID not found")
+	}
+	user, err := s.repo.GetProfileByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get profile", "error", err)
+		return nil, errors.New("cannot get profile")
+	}
+	// Make response data
+	profileResponse := GetProfileResponse{
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		AvatarURL: user.AvatarURL,
+		Phone:     user.Phone,
+		Street:    user.Street,
+		City:      user.City,
+		State:     user.State,
+		ZipCode:   user.ZipCode,
+		Country:   user.Country,
+	}
+	return profileResponse, nil
 }

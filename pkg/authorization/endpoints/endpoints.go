@@ -14,9 +14,11 @@ import (
 )
 
 type Set struct {
-	RegisterEndpoint endpoint.Endpoint
-	LoginEndpoint    endpoint.Endpoint
-	LogoutEndpoint   endpoint.Endpoint
+	RegisterEndpoint   endpoint.Endpoint
+	LoginEndpoint      endpoint.Endpoint
+	LogoutEndpoint     endpoint.Endpoint
+	GetUserEndpoint    endpoint.Endpoint
+	GetProfileEndpoint endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r database.UserRepository, logger hclog.Logger) Set {
@@ -25,11 +27,17 @@ func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r
 
 	logoutEndpoint := MakeLogoutEndpoint(svc)
 	logoutEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(logoutEndpoint)
+	getUserEndpoint := MakeGetUserEndpoint(svc)
+	getUserEndpoint = middleware.ValidateAccessToken(auth, logger)(getUserEndpoint)
+	getProfileEndpoint := MakeGetProfileEndpoint(svc)
+	getProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(getProfileEndpoint)
 
 	return Set{
-		RegisterEndpoint: registerEndpoint,
-		LoginEndpoint:    loginEndpoint,
-		LogoutEndpoint:   logoutEndpoint,
+		RegisterEndpoint:   registerEndpoint,
+		LoginEndpoint:      loginEndpoint,
+		LogoutEndpoint:     logoutEndpoint,
+		GetUserEndpoint:    getUserEndpoint,
+		GetProfileEndpoint: getProfileEndpoint,
 	}
 }
 
@@ -57,7 +65,6 @@ func MakeRegisterEndpoint(svc authorization.Service) endpoint.Endpoint {
 }
 
 // MakeLoginEndpoint returns an endpoint that invokes Login on the service.
-// Primarily useful in a server.
 func MakeLoginEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.LoginRequest)
@@ -66,7 +73,7 @@ func MakeLoginEndpoint(svc authorization.Service) endpoint.Endpoint {
 			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
 			return nil, cusErr
 		}
-		message, err := svc.Login(ctx, &req)
+		user, err := svc.Login(ctx, &req)
 
 		if err != nil {
 			if strings.Contains(err.Error(), utils.PgDuplicateKeyMsg) {
@@ -76,12 +83,11 @@ func MakeLoginEndpoint(svc authorization.Service) endpoint.Endpoint {
 			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "Không thể đăng nhập. Vui lòng thử lại.")
 			return nil, cusErr
 		}
-		return message, err
+		return user, err
 	}
 }
 
 // MakeLogoutEndpoint returns an endpoint that invokes Logout on the service.
-// Primarily useful in a server.
 func MakeLogoutEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.LogoutRequest)
@@ -98,5 +104,43 @@ func MakeLogoutEndpoint(svc authorization.Service) endpoint.Endpoint {
 		}
 		message := "Logout successfully"
 		return message, nil
+	}
+}
+
+// MakeGetUserEndpoint returns an endpoint that invokes GetUser on the service.
+func MakeGetUserEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_, ok := request.(authorization.GetUserRequest)
+		if !ok {
+			err := errors.New("invalid request")
+			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			return nil, cusErr
+		}
+		user, err := svc.GetUser(ctx)
+		if err != nil {
+			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "Can't get user. Please try again later.")
+			return nil, cusErr
+		}
+
+		return user, err
+	}
+}
+
+// MakeGetProfileEndpoint returns an endpoint that invokes GetProfile on the service.
+func MakeGetProfileEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_, ok := request.(authorization.GetProfileRequest)
+		if !ok {
+			err := errors.New("invalid request")
+			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			return nil, cusErr
+		}
+		profile, err := svc.GetProfile(ctx)
+		if err != nil {
+			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "Can't get profile. Please try again later.")
+			return nil, cusErr
+		}
+
+		return profile, err
 	}
 }

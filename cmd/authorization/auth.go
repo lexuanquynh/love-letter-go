@@ -32,6 +32,7 @@ const userSchema = `
 		);
 `
 
+// schema for verification table
 const verificationSchema = `
 		create table if not exists verifications (
 			email 		Varchar(100) not null,
@@ -45,10 +46,33 @@ const verificationSchema = `
 		)
 `
 
-const (
+// schema for profile table
+const profileSchema = `
+		create table if not exists profiles (
+			id 		   Varchar(36) not null,
+			userid 	Varchar(36) not null,
+		    email 	   Varchar(100) not null,
+			firstname   Varchar(225) default '',
+			lastname    Varchar(225) default '',
+			avatarurl  Varchar(255) default '',
+			phone      Varchar(25) default '',
+			street     Varchar(255) default '',
+			city       Varchar(255) default '',
+			state      Varchar(10) default '',
+			zipcode   Varchar(5) default '',
+			country    Varchar(255) default '',
+			createdat  Timestamp not null,
+			updatedat  Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
+//const (
 //defaultHTTPPort = "8081"
 //defaultGRPCPort = "8082"
-)
+//)
 
 func main() {
 	logger := utils.NewLogger()
@@ -66,6 +90,8 @@ func main() {
 	// creation of user table.
 	db.MustExec(userSchema)
 	db.MustExec(verificationSchema)
+	db.MustExec(profileSchema)
+
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
 	repository := database.NewPostgresRepository(db, logger)
 	// mailService contains the utility methods to send an email

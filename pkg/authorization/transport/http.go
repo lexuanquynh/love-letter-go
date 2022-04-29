@@ -35,6 +35,18 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/get-user", httptransport.NewServer(
+		ep.GetUserEndpoint,
+		decodeHTTPGetUserRequest,
+		encodeResponse,
+		options...,
+	))
+	m.Handle("/get-profile", httptransport.NewServer(
+		ep.GetProfileEndpoint,
+		decodeHTTPGetProfileRequest,
+		encodeResponse,
+		options...,
+	))
 	return m
 }
 
@@ -100,6 +112,42 @@ func decodeHTTPLogoutRequest(_ context.Context, r *http.Request) (interface{}, e
 	}
 }
 
+// decodeHTTPGetUserRequest decode request
+func decodeHTTPGetUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetUserRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetProfileRequest decode request
+func decodeHTTPGetProfileRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetProfileRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -128,6 +176,7 @@ func errEncoder(ctx context.Context, err error, w http.ResponseWriter) {
 			ErrorCode: catchErr.Code,
 			Message:   catchErr.Error(),
 		}
+		w.WriteHeader(catchErr.Code)
 		json.NewEncoder(w).Encode(res)
 		return
 	}
