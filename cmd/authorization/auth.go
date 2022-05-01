@@ -7,13 +7,16 @@ import (
 	"LoveLetterProject/pkg/authorization/endpoints"
 	"LoveLetterProject/pkg/authorization/middleware"
 	"LoveLetterProject/pkg/authorization/transport"
+	"context"
 	"fmt"
+	"github.com/go-co-op/gocron"
 	"github.com/oklog/oklog/pkg/group"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 // schema for user table
@@ -38,8 +41,7 @@ const verificationSchema = `
 			email 		Varchar(100) not null,
 			code  		Varchar(10) not null,
 			expiresat 	Timestamp not null,
-			type        Varchar(10) not null,
-		    numofresets Int not null,
+			type        Varchar(10) not null,		
 			Primary Key (email),
 			Constraint fk_user_email Foreign Key(email) References users(email)
 				On Delete Cascade On Update Cascade
@@ -90,6 +92,7 @@ const limitSchema = `
 			userid 	Varchar(36) not null,
 			numofsendmail 	   Int default 0,
 			numofchangepassword Int default 0,
+		    numoflogin 	   Int default 0,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
 			Primary Key (id),
@@ -129,10 +132,22 @@ func main() {
 	// authService contains all methods that help in authorizing a user request
 	auth := middleware.NewAuthService(logger, configs)
 
+	// Reset limit data for users.
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(1).Day().At("00:01").Do(func() {
+		logger.Info("Clear limit data for users after 1 day at 00:01.")
+		ctx := context.Background()
+		err := repository.ClearAllLimitData(ctx)
+		if err != nil {
+			logger.Error("Error clearing limit data", "error", err)
+		}
+	})
+	s.StartAsync()
+
 	var (
 		httpAddr    = net.JoinHostPort("localhost", configs.HttpPort)
-		service     = authorization.NewUserService(logger, configs, repository, mailService, validator, auth)
-		eps         = endpoints.NewEndpointSet(service, auth, repository, logger)
+		service     = authorization.NewUserService(logger, configs, repository, mailService, auth)
+		eps         = endpoints.NewEndpointSet(service, auth, repository, logger, validator)
 		httpHandler = transport.NewHTTPHandler(eps)
 	)
 

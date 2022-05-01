@@ -39,14 +39,14 @@ func authorizedRefreshToken(ctx context.Context, auth Authentication, r database
 	userID, customKey, err := auth.ValidateRefreshToken(token)
 	if err != nil {
 		logger.Error("token validation failed", "error", err)
-		return err
+		return errors.New("token validation failed")
 	}
 	logger.Debug("refresh token validated")
 
 	user, err := r.GetUserByID(ctx, userID)
 	if err != nil {
-		logger.Error("invalid token: wrong userID while parsing", err)
-		return err
+		logger.Error("You're not authorized. Please try again latter.", err)
+		return errors.New("you're not authorized. Please try again latter")
 	}
 
 	actualCustomKey := auth.GenerateCustomKey(user.ID, user.TokenHash)
@@ -100,4 +100,19 @@ func authorizedAccessToken(auth Authentication, logger hclog.Logger, request int
 	}
 	logger.Debug("access token validated", userID)
 	return userID, true
+}
+
+// ValidateParamRequest validates the user in the request
+func ValidateParamRequest(validator *database.Validation, logger hclog.Logger) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (resp interface{}, err error) {
+			errs := validator.Validate(request)
+			if len(errs) != 0 {
+				logger.Error("validation of verification data json failed", "error", errs)
+				return nil, errors.New("please check your param request")
+			}
+			resp, err = next(ctx, request)
+			return
+		}
+	}
 }

@@ -8,22 +8,22 @@ import (
 	"time"
 )
 
-// PostgresRepository has the implementation of the db methods.
-type PostgresRepository struct {
+// postgresRepository has the implementation of the db methods.
+type postgresRepository struct {
 	db     *sqlx.DB
 	logger hclog.Logger
 }
 
 // NewPostgresRepository creates a new PostgresRepository.
-func NewPostgresRepository(db *sqlx.DB, logger hclog.Logger) *PostgresRepository {
-	return &PostgresRepository{
+func NewPostgresRepository(db *sqlx.DB, logger hclog.Logger) *postgresRepository {
+	return &postgresRepository{
 		db:     db,
 		logger: logger,
 	}
 }
 
 // CreateUser inserts the given user into the database.
-func (repo *PostgresRepository) CreateUser(ctx context.Context, user *User) error {
+func (repo *postgresRepository) CreateUser(ctx context.Context, user *User) error {
 	user.ID = uuid.NewV4().String()
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
@@ -33,19 +33,28 @@ func (repo *PostgresRepository) CreateUser(ctx context.Context, user *User) erro
 }
 
 // StoreVerificationData adds a mail verification data to db
-func (repo *PostgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData) error {
-	query := "insert into verifications(email, code, expiresat, type, numofresets) values($1, $2, $3, $4, $5)"
-	_, err := repo.db.ExecContext(ctx, query,
-		verificationData.Email,
-		verificationData.Code,
-		verificationData.ExpiresAt,
-		verificationData.Type,
-		verificationData.Numofresets)
-	return err
+func (repo *postgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error {
+	if isInsert {
+		query := "insert into verifications(email, code, expiresat, type) values($1, $2, $3, $4)"
+		_, err := repo.db.ExecContext(ctx, query,
+			verificationData.Email,
+			verificationData.Code,
+			verificationData.ExpiresAt,
+			verificationData.Type)
+		return err
+	} else {
+		query := "update verifications set code=$1, expiresat=$2, type=$3 where email=$5"
+		_, err := repo.db.ExecContext(ctx, query,
+			verificationData.Code,
+			verificationData.ExpiresAt,
+			verificationData.Type,
+			verificationData.Email)
+		return err
+	}
 }
 
 // GetUserByEmail returns the user with the given email.
-func (repo *PostgresRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+func (repo *postgresRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := "select id, email, username, password, tokenhash, createdat, updatedat from users where email = $1"
 	user := &User{}
 	err := repo.db.GetContext(ctx, user, query, email)
@@ -53,7 +62,7 @@ func (repo *PostgresRepository) GetUserByEmail(ctx context.Context, email string
 }
 
 // GetUserByID returns the user with the given id.
-func (repo *PostgresRepository) GetUserByID(ctx context.Context, id string) (*User, error) {
+func (repo *postgresRepository) GetUserByID(ctx context.Context, id string) (*User, error) {
 	query := "select id, email, username, password, tokenhash, createdat, updatedat from users where id = $1"
 	user := &User{}
 	err := repo.db.GetContext(ctx, user, query, id)
@@ -61,7 +70,7 @@ func (repo *PostgresRepository) GetUserByID(ctx context.Context, id string) (*Us
 }
 
 // UpdateUser updates the user with the given id.
-func (repo *PostgresRepository) UpdateUser(ctx context.Context, user *User) error {
+func (repo *postgresRepository) UpdateUser(ctx context.Context, user *User) error {
 	user.UpdatedAt = time.Now()
 	query := "update users set email = $1, username = $2, password = $3, tokenhash = $4, updatedat = $5 where id = $6"
 	_, err := repo.db.ExecContext(ctx, query, user.Email, user.Username, user.Password, user.TokenHash, user.UpdatedAt, user.ID)
@@ -69,7 +78,7 @@ func (repo *PostgresRepository) UpdateUser(ctx context.Context, user *User) erro
 }
 
 // StoreProfileData stores the profile data in the database
-func (repo *PostgresRepository) StoreProfileData(ctx context.Context, profileData *ProfileData) error {
+func (repo *postgresRepository) StoreProfileData(ctx context.Context, profileData *ProfileData) error {
 	profileData.ID = uuid.NewV4().String()
 	profileData.CreatedAt = time.Now()
 	profileData.UpdatedAt = time.Now()
@@ -84,7 +93,7 @@ func (repo *PostgresRepository) StoreProfileData(ctx context.Context, profileDat
 }
 
 // UpdateProfileData updates the profile data in the database
-func (repo *PostgresRepository) UpdateProfileData(ctx context.Context, profileData *ProfileData) error {
+func (repo *postgresRepository) UpdateProfileData(ctx context.Context, profileData *ProfileData) error {
 	profileData.UpdatedAt = time.Now()
 	query := "update profiles set  firstname = $1, lastname = $2, avatar_url = $3, phone = $4, street = $5, city = $6, state = $7, zip_code = $8, country = $9, updatedat = $10 where id = $11"
 	_, err := repo.db.ExecContext(ctx, query,
@@ -103,7 +112,7 @@ func (repo *PostgresRepository) UpdateProfileData(ctx context.Context, profileDa
 }
 
 // GetProfileByID returns the profile with the given user id.
-func (repo *PostgresRepository) GetProfileByID(ctx context.Context, userId string) (*ProfileData, error) {
+func (repo *postgresRepository) GetProfileByID(ctx context.Context, userId string) (*ProfileData, error) {
 	query := "select id, userid, email, firstname, lastname, avatarurl, phone, street, city, state, zipcode, country, createdat, updatedat from profiles where userid = $1"
 	profile := &ProfileData{}
 	err := repo.db.GetContext(ctx, profile, query, userId)
@@ -111,7 +120,7 @@ func (repo *PostgresRepository) GetProfileByID(ctx context.Context, userId strin
 }
 
 // UpdateProfile updates the profile data.
-func (repo *PostgresRepository) UpdateProfile(ctx context.Context, profile *ProfileData) error {
+func (repo *postgresRepository) UpdateProfile(ctx context.Context, profile *ProfileData) error {
 	profile.UpdatedAt = time.Now()
 	query := "update profiles set firstname = $1, lastname = $2, avatarurl = $3, phone = $4, street = $5, city = $6, state = $7, zipcode = $8, country = $9, updatedat = $10 where userid = $11"
 	_, err := repo.db.ExecContext(ctx, query,
@@ -130,14 +139,14 @@ func (repo *PostgresRepository) UpdateProfile(ctx context.Context, profile *Prof
 }
 
 // UpdatePassword updates the user password
-func (repo *PostgresRepository) UpdatePassword(ctx context.Context, userID string, password string, tokenHash string) error {
+func (repo *postgresRepository) UpdatePassword(ctx context.Context, userID string, password string, tokenHash string) error {
 	query := "update users set password = $1, tokenhash = $2 where id = $3"
 	_, err := repo.db.ExecContext(ctx, query, password, tokenHash, userID)
 	return err
 }
 
 // GetListOfPasswords returns the list of passwords
-func (repo *PostgresRepository) GetListOfPasswords(ctx context.Context, userID string) ([]string, error) {
+func (repo *postgresRepository) GetListOfPasswords(ctx context.Context, userID string) ([]string, error) {
 	query := "select password from passworusers where userid = $1"
 	rows, err := repo.db.QueryContext(ctx, query, userID)
 	if err != nil {
@@ -157,7 +166,7 @@ func (repo *PostgresRepository) GetListOfPasswords(ctx context.Context, userID s
 }
 
 // InsertListOfPasswords updates the list of passwords
-func (repo *PostgresRepository) InsertListOfPasswords(ctx context.Context, passwordUsers *PassworUsers) error {
+func (repo *postgresRepository) InsertListOfPasswords(ctx context.Context, passwordUsers *PassworUsers) error {
 	passwordUsers.ID = uuid.NewV4().String()
 	passwordUsers.CreatedAt = time.Now()
 	passwordUsers.UpdatedAt = time.Now()
@@ -174,38 +183,47 @@ func (repo *PostgresRepository) InsertListOfPasswords(ctx context.Context, passw
 }
 
 // GetLimitData returns the limit data
-func (repo *PostgresRepository) GetLimitData(ctx context.Context, userID string) (*LimitData, error) {
-	query := "select id, userid, numofsendmail, numofchangepassword, createdat, updatedat from limits where userid = $1"
+func (repo *postgresRepository) GetLimitData(ctx context.Context, userID string) (*LimitData, error) {
+	query := "select id, userid, numofsendmail, numofchangepassword, numoflogin, createdat, updatedat from limits where userid = $1"
 	limitData := &LimitData{}
 	err := repo.db.GetContext(ctx, limitData, query, userID)
 	return limitData, err
 }
 
 // InsertOrUpdateLimitData updates the limit data
-func (repo *PostgresRepository) InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, isInsert bool) error {
+func (repo *postgresRepository) InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, isInsert bool) error {
 	limitData.ID = uuid.NewV4().String()
 	limitData.CreatedAt = time.Now()
 	limitData.UpdatedAt = time.Now()
 	// Insert or update
 	if isInsert {
 		// Insert the limit data
-		query := "insert into limits(id, userid, numofsendmail, numofchangepassword, createdat, updatedat) values($1, $2, $3, $4, $5, $6)"
+		query := "insert into limits(id, userid, numofsendmail, numofchangepassword, numoflogin, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7)"
 		_, err := repo.db.ExecContext(ctx, query,
 			limitData.ID,
 			limitData.UserID,
 			limitData.NumOfSendMail,
 			limitData.NumOfChangePassword,
+			limitData.NumOfLogin,
 			limitData.CreatedAt,
 			limitData.UpdatedAt)
 		return err
 	} else {
 		// Update the limit data
-		query := "update limits set numofsendmail = $1, numofchangepassword = $2, updatedat = $3 where userid = $4"
+		query := "update limits set numofsendmail = $1, numofchangepassword = $2, numoflogin = $3, updatedat = $4 where userid = $5"
 		_, err := repo.db.ExecContext(ctx, query,
 			limitData.NumOfSendMail,
 			limitData.NumOfChangePassword,
+			limitData.NumOfLogin,
 			limitData.UpdatedAt,
 			limitData.UserID)
 		return err
 	}
+}
+
+// ClearAllLimitData clears all limit data
+func (repo *postgresRepository) ClearAllLimitData(ctx context.Context) error {
+	query := "delete from limits"
+	_, err := repo.db.ExecContext(ctx, query)
+	return err
 }

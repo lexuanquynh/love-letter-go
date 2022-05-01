@@ -30,6 +30,8 @@ type Configurations struct {
 	HttpPort                   string `mapstructure:"HTTP_PORT"`
 	MailTitle                  string `mapstructure:"MAIL_TITLE"`
 	ChangePasswordLimit        int    `mapstructure:"CHANGE_PASSWORD_LIMIT"`
+	SendMailLimit              int    `mapstructure:"SEND_MAIL_LIMIT"`
+	LoginLimit                 int    `mapstructure:"LOGIN_LIMIT"`
 }
 
 // NewConfigurations returns a new Configuration object

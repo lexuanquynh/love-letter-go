@@ -16,7 +16,6 @@ type userService struct {
 	configs     *utils.Configurations
 	repo        database.UserRepository
 	mailService MailService
-	validator   *database.Validation
 	auth        middleware.Authentication
 }
 
@@ -25,16 +24,20 @@ func NewUserService(logger hclog.Logger,
 	configs *utils.Configurations,
 	repo database.UserRepository,
 	mailService MailService,
-	validator *database.Validation,
 	auth middleware.Authentication) *userService {
 	return &userService{
 		logger:      logger,
 		configs:     configs,
 		repo:        repo,
 		mailService: mailService,
-		validator:   validator,
 		auth:        auth,
 	}
+}
+
+// HealthCheck checks the health of the service.
+func (s *userService) HealthCheck(ctx context.Context) error {
+	s.logger.Info("Health check successful")
+	return nil
 }
 
 // SignUp creates a new user.
@@ -76,13 +79,12 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 	}
 	// Saving the code authentication into database
 	verificationData := database.VerificationData{
-		Email:       request.Email,
-		Code:        authedCode,
-		Type:        database.MailConfirmation,
-		ExpiresAt:   time.Now().Add(time.Hour * time.Duration(s.configs.MailVerifCodeExpiration)),
-		Numofresets: 1,
+		Email:     request.Email,
+		Code:      authedCode,
+		Type:      database.MailConfirmation,
+		ExpiresAt: time.Now().Add(time.Hour * time.Duration(s.configs.MailVerifCodeExpiration)),
 	}
-	err = s.repo.StoreVerificationData(ctx, &verificationData)
+	err = s.repo.StoreVerificationData(ctx, &verificationData, true)
 	if err != nil {
 		s.logger.Error("Error storing verification data", "error", err)
 		return "Cannot create verification data", errors.New("cannot create verification data")
@@ -119,22 +121,46 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 		s.logger.Error("User is banned", "error", err)
 		return "User is banned", err
 	}
+	// Get limit data
+	isInsert := false
+	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Empty row get limit data", "error", err)
+		// No row, need insert
+		isInsert = true
+		limitData.UserID = user.ID
+		limitData.NumOfLogin = 1
+	} else {
+		limitData.NumOfLogin += 1
+	}
+	// Check if limit is reached
+	if limitData.NumOfLogin > s.configs.LoginLimit {
+		s.logger.Error("Login limit reached", "error", err)
+		return "You've tried to Sign-in too many times. try again tomorrow", errors.New("you've tried to sign in too many times. try again tomorrow")
+	}
+	// Update limit data
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	if err != nil {
+		s.logger.Error("Cannot insert or update limit data", "error", err)
+		return "Internal Error, Please Try Again Later.", errors.New("cannot insert or update limit data")
+	}
+
 	// Check if password is correct
 	if isSame := s.auth.ComparePassword(user.Password, request.Password); !isSame {
 		s.logger.Error("Password is incorrect", "error", err)
-		return "Password is incorrect", err
+		return "Password is incorrect. Please try again.", err
 	}
 	// Generate accessToken
 	accessToken, err := s.auth.GenerateAccessToken(user)
 	if err != nil {
 		s.logger.Error("Error generating accessToken", "error", err)
-		return "Cannot generate accessToken", err
+		return "Internal Error, Please Try Again Later.", err
 	}
 	// Generate refreshToken
 	refreshToken, err := s.auth.GenerateRefreshToken(user)
 	if err != nil {
 		s.logger.Error("Error generating refreshToken", "error", err)
-		return "Cannot generate refreshToken", err
+		return "Internal Error, Please Try Again Later.", err
 	}
 	s.logger.Debug("successfully generated token")
 	loginResponse := LoginResponse{
@@ -330,7 +356,7 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	isInsert := false
 	limitData, err := s.repo.GetLimitData(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get limit data", "error", err)
+		s.logger.Error("Empty row get limit data", "error", err)
 		// No row, need insert
 		isInsert = true
 		limitData.UserID = userID
@@ -414,4 +440,75 @@ func (s *userService) hashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(hashedPass), nil
+}
+
+// GetForgetPasswordCode gets forget password code.
+func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) (string, error) {
+	// Check if email is valid
+	//if isValid := s.auth.IsValidEmail(request.Email); isValid == false {
+	//	s.logger.Error("Email is not valid", "error", err)
+	//	return "Email is not valid", errors.New("email is not valid")
+	//}
+	// Check if email is registered
+	user, err := s.repo.GetUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Error("Email is not registered", "error", err)
+		return "Email is not registered", errors.New("email is not registered")
+	}
+	// Get limit data
+	isInsert := false
+	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Empty row get limit data", "error", err)
+		// No row, need insert
+		isInsert = true
+		limitData.UserID = user.ID
+		limitData.NumOfSendMail = 1
+	} else {
+		limitData.NumOfSendMail += 1
+	}
+	// Check if user has reached limit send mail
+	if limitData.NumOfSendMail >= s.configs.SendMailLimit {
+		s.logger.Error("User has reached limit send mail.", "error", err)
+		return "User has reached limit send mail.", errors.New("user has reached limit send mail")
+	}
+	// Insert or update limit data
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	if err != nil {
+		s.logger.Error("Cannot update limit data", "error", err)
+		return "cannot update limit data", errors.New("cannot update limit data")
+	}
+	// Generate forget password code
+	forgetPasswordCode := utils.GenerateRandomString(8)
+
+	// store the password reset code to db
+	verificationData := &database.VerificationData{
+		Email:     user.Email,
+		Code:      forgetPasswordCode,
+		Type:      database.PassReset,
+		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.PassResetCodeExpiration)),
+	}
+
+	err = s.repo.StoreVerificationData(ctx, verificationData, false)
+	if err != nil {
+		s.logger.Error("unable to store password reset verification data", "error", err)
+		return "unable to store password reset verification data", errors.New("unable to store password reset verification data")
+	}
+	// Send verification mail
+	from := s.configs.MailSender
+	to := []string{user.Email}
+	subject := s.configs.MailTitle
+	mailType := PassReset
+	mailData := &MailData{
+		Username: user.Username,
+		Code:     forgetPasswordCode,
+	}
+	mailReq := s.mailService.NewMail(from, to, subject, mailType, mailData)
+	err = s.mailService.SendMail(mailReq)
+	if err != nil {
+		s.logger.Error("unable to send mail", "error", err)
+		return "unable to send mail", errors.New("unable to send mail")
+	}
+	s.logger.Debug("successfully mailed password reset code")
+	return "successfully mailed password reset code. Please check your email.", nil
 }

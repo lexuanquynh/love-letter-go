@@ -6,7 +6,7 @@ type UserRepository interface {
 	// CreateUser Create  new user
 	CreateUser(ctx context.Context, user *User) error
 	// StoreVerificationData Save verification data into database
-	StoreVerificationData(ctx context.Context, verificationData *VerificationData) error
+	StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error
 	// StoreProfileData Save profile data into database
 	StoreProfileData(ctx context.Context, profileData *ProfileData) error
 	// UpdateProfileData Update profile data into database
@@ -31,4 +31,6 @@ type UserRepository interface {
 	GetLimitData(ctx context.Context, userID string) (*LimitData, error)
 	// InsertOrUpdateLimitData Insert or update limit data
 	InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, isInsert bool) error
+	// ClearAllLimitData Clear all limit data
+	ClearAllLimitData(ctx context.Context) error
 }

@@ -14,42 +14,58 @@ import (
 )
 
 type Set struct {
-	RegisterEndpoint       endpoint.Endpoint
-	LoginEndpoint          endpoint.Endpoint
-	LogoutEndpoint         endpoint.Endpoint
-	GetUserEndpoint        endpoint.Endpoint
-	GetProfileEndpoint     endpoint.Endpoint
-	UpdateProfileEndpoint  endpoint.Endpoint
-	UpdatePasswordEndpoint endpoint.Endpoint
+	HealthCheckEndpoint           endpoint.Endpoint
+	RegisterEndpoint              endpoint.Endpoint
+	LoginEndpoint                 endpoint.Endpoint
+	LogoutEndpoint                endpoint.Endpoint
+	GetUserEndpoint               endpoint.Endpoint
+	GetProfileEndpoint            endpoint.Endpoint
+	UpdateProfileEndpoint         endpoint.Endpoint
+	UpdatePasswordEndpoint        endpoint.Endpoint
+	GetForgetPasswordCodeEndpoint endpoint.Endpoint
 }
 
-func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r database.UserRepository, logger hclog.Logger) Set {
+func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r database.UserRepository, logger hclog.Logger, validator *database.Validation) Set {
+	healthCheckEndpoint := MakeHealthCheckEndpoint(svc)
+
 	registerEndpoint := MakeRegisterEndpoint(svc)
+	registerEndpoint = middleware.ValidateParamRequest(validator, logger)(registerEndpoint)
+
 	loginEndpoint := MakeLoginEndpoint(svc)
+	loginEndpoint = middleware.ValidateParamRequest(validator, logger)(loginEndpoint)
 
 	logoutEndpoint := MakeLogoutEndpoint(svc)
+	logoutEndpoint = middleware.ValidateParamRequest(validator, logger)(logoutEndpoint)
 	logoutEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(logoutEndpoint)
 
 	getUserEndpoint := MakeGetUserEndpoint(svc)
+	getUserEndpoint = middleware.ValidateParamRequest(validator, logger)(getUserEndpoint)
 	getUserEndpoint = middleware.ValidateAccessToken(auth, logger)(getUserEndpoint)
 
 	getProfileEndpoint := MakeGetProfileEndpoint(svc)
+	getProfileEndpoint = middleware.ValidateParamRequest(validator, logger)(getProfileEndpoint)
 	getProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(getProfileEndpoint)
 
 	updateProfileEndpoint := MakeUpdateProfileEndpoint(svc)
+	updateProfileEndpoint = middleware.ValidateParamRequest(validator, logger)(updateProfileEndpoint)
 	updateProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(updateProfileEndpoint)
 
 	updatePasswordEndpoint := MakeUpdatePasswordEndpoint(svc)
+	updatePasswordEndpoint = middleware.ValidateParamRequest(validator, logger)(updatePasswordEndpoint)
 	updatePasswordEndpoint = middleware.ValidateAccessToken(auth, logger)(updatePasswordEndpoint)
 
+	getForgetPasswordCodeEndpoint := MakeGetForgetPasswordCodeEndpoint(svc)
+	getForgetPasswordCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(getForgetPasswordCodeEndpoint)
 	return Set{
-		RegisterEndpoint:       registerEndpoint,
-		LoginEndpoint:          loginEndpoint,
-		LogoutEndpoint:         logoutEndpoint,
-		GetUserEndpoint:        getUserEndpoint,
-		GetProfileEndpoint:     getProfileEndpoint,
-		UpdateProfileEndpoint:  updateProfileEndpoint,
-		UpdatePasswordEndpoint: updatePasswordEndpoint,
+		HealthCheckEndpoint:           healthCheckEndpoint,
+		RegisterEndpoint:              registerEndpoint,
+		LoginEndpoint:                 loginEndpoint,
+		LogoutEndpoint:                logoutEndpoint,
+		GetUserEndpoint:               getUserEndpoint,
+		GetProfileEndpoint:            getProfileEndpoint,
+		UpdateProfileEndpoint:         updateProfileEndpoint,
+		UpdatePasswordEndpoint:        updatePasswordEndpoint,
+		GetForgetPasswordCodeEndpoint: getForgetPasswordCodeEndpoint,
 	}
 }
 
@@ -89,13 +105,20 @@ func MakeLoginEndpoint(svc authorization.Service) endpoint.Endpoint {
 
 		if err != nil {
 			if strings.Contains(err.Error(), utils.PgDuplicateKeyMsg) {
-				cusErr := utils.NewErrorWrapper(http.StatusConflict, err, "Tài khoản đã tồn tại. Vui lòng thử lại.")
+				cusErr := utils.NewErrorWrapper(http.StatusConflict, err, "Account already exists. Please try again.")
 				return nil, cusErr
 			}
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "Không thể đăng nhập. Vui lòng thử lại.")
-			return nil, cusErr
+			return nil, err
 		}
 		return user, err
+	}
+}
+
+// MakeHealthCheckEndpoint returns an endpoint that invokes HealthCheck on the service.
+func MakeHealthCheckEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		err := svc.HealthCheck(ctx)
+		return nil, err
 	}
 }
 
@@ -185,6 +208,24 @@ func MakeUpdatePasswordEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		message, err := svc.UpdatePassword(ctx, &req)
+		if err != nil {
+			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, message)
+			return nil, cusErr
+		}
+		return message, nil
+	}
+}
+
+// MakeGetForgetPasswordCodeEndpoint returns an endpoint that invokes GetForgetPasswordCode on the service.
+func MakeGetForgetPasswordCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetForgetPasswordCodeRequest)
+		if !ok {
+			err := errors.New("invalid request")
+			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			return nil, cusErr
+		}
+		message, err := svc.GetForgetPasswordCode(ctx, req.Email)
 		if err != nil {
 			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, message)
 			return nil, cusErr

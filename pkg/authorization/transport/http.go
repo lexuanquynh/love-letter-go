@@ -17,6 +17,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 	}
 
 	m := http.NewServeMux()
+	m.Handle("/health", httptransport.NewServer(
+		ep.HealthCheckEndpoint,
+		decodeHealthCheckRequest,
+		encodeResponse,
+		options...,
+	))
 	m.Handle("/signup", httptransport.NewServer(
 		ep.RegisterEndpoint,
 		decodeHTTPRegisterRequest,
@@ -59,7 +65,20 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
-	return m
+	m.Handle("/get-forget-password-code", httptransport.NewServer(
+		ep.GetForgetPasswordCodeEndpoint,
+		decodeHTTPGetForgetPasswordCodeRequest,
+		encodeResponse,
+		options...,
+	))
+	mux := http.NewServeMux()
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
+	return mux
+}
+
+// decodeHealthCheckRequest check server health
+func decodeHealthCheckRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	return nil, nil
 }
 
 func decodeHTTPRegisterRequest(_ context.Context, r *http.Request) (interface{}, error) {
@@ -197,6 +216,24 @@ func decodeHTTPUpdatePasswordRequest(_ context.Context, r *http.Request) (interf
 		}
 		if req.ConfirmPassword == "" {
 			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("confirm password is required"), "confirm password is required")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetForgetPasswordCodeRequest decode request
+func decodeHTTPGetForgetPasswordCodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetForgetPasswordCodeRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.Email == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
 		}
 		return req, nil
 	} else {
