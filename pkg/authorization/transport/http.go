@@ -29,6 +29,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/verify-mail", httptransport.NewServer(
+		ep.VerifyMailEndpoint,
+		decodeHTTPVerifyMailRequest,
+		encodeResponse,
+		options...,
+	))
 	m.Handle("/login", httptransport.NewServer(
 		ep.LoginEndpoint,
 		decodeHTTPLoginRequest,
@@ -102,6 +108,27 @@ func decodeHTTPRegisterRequest(_ context.Context, r *http.Request) (interface{},
 		}
 		if req.Password != req.RePassword {
 			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("passwords is not same"), "passwords is not same")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPVerifyMailRequest decode verify mail request
+func decodeHTTPVerifyMailRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.VerifyMailRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.Email == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+		}
+		if req.Code == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("code is required"), "code is required")
 		}
 		return req, nil
 	} else {

@@ -29,7 +29,7 @@ const userSchema = `
 			password   Varchar(225) not null,
 			tokenhash  Varchar(15) not null,
 			verified   Boolean default false,
-		    banner     Boolean default false,
+		    banned     Boolean default false,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
 			Primary Key (id)
@@ -101,11 +101,6 @@ const limitSchema = `
 				On Delete Cascade On Update Cascade
 		)
 `
-
-//const (
-//defaultHTTPPort = "8081"
-//defaultGRPCPort = "8082"
-//)
 
 func main() {
 	logger := utils.NewLogger()

@@ -17,6 +17,7 @@ import (
 type Set struct {
 	HealthCheckEndpoint           endpoint.Endpoint
 	RegisterEndpoint              endpoint.Endpoint
+	VerifyMailEndpoint            endpoint.Endpoint
 	LoginEndpoint                 endpoint.Endpoint
 	LogoutEndpoint                endpoint.Endpoint
 	GetUserEndpoint               endpoint.Endpoint
@@ -39,6 +40,10 @@ func NewEndpointSet(svc authorization.Service,
 	registerEndpoint := MakeRegisterEndpoint(svc)
 	registerEndpoint = middleware.ValidateParamRequest(validator, logger)(registerEndpoint)
 	registerEndpoint = middleware.RateLimitRequest(tb, logger)(registerEndpoint)
+
+	verifyMailEndpoint := MakeVerifyMailEndpoint(svc)
+	verifyMailEndpoint = middleware.ValidateParamRequest(validator, logger)(verifyMailEndpoint)
+	verifyMailEndpoint = middleware.RateLimitRequest(tb, logger)(verifyMailEndpoint)
 
 	loginEndpoint := MakeLoginEndpoint(svc)
 	loginEndpoint = middleware.RateLimitRequest(tb, logger)(loginEndpoint)
@@ -80,6 +85,7 @@ func NewEndpointSet(svc authorization.Service,
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
+		VerifyMailEndpoint:            verifyMailEndpoint,
 		LoginEndpoint:                 loginEndpoint,
 		LogoutEndpoint:                logoutEndpoint,
 		GetUserEndpoint:               getUserEndpoint,
@@ -109,6 +115,24 @@ func MakeRegisterEndpoint(svc authorization.Service) endpoint.Endpoint {
 			}
 			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "Không thể tạo tài khoản. Vui lòng thử lại.")
 			return nil, cusErr
+		}
+		return message, err
+	}
+}
+
+// MakeVerifyMailEndpoint returns an endpoint that invokes VerifyMail on the service.
+func MakeVerifyMailEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.VerifyMailRequest)
+		if !ok {
+			err := errors.New("invalid request")
+			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			return nil, cusErr
+		}
+		message, err := svc.VerifyMail(ctx, &req)
+
+		if err != nil {
+			return nil, err
 		}
 		return message, err
 	}

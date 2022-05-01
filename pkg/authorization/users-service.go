@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/hashicorp/go-hclog"
 	"golang.org/x/crypto/bcrypt"
+	"strings"
 	"time"
 )
 
@@ -101,6 +102,105 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 		return "Cannot create profile data", errors.New("cannot create profile data")
 	}
 	return "success created user. Please confirm your email to active your account.", nil
+}
+
+// VerifyMail verifies the user's email.
+func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest) (string, error) {
+	s.logger.Debug("verifying the confirmation code")
+	user, err := s.repo.GetUserByEmail(ctx, request.Email)
+	if err != nil {
+		s.logger.Error("error fetching the user", "error", err)
+		errMsg := err.Error()
+		if strings.Contains(errMsg, utils.PgNoRowsMsg) {
+			err := errors.New("user not found")
+			return err.Error(), err
+		} else {
+			err := errors.New("internal server error. Please try again later")
+			return err.Error(), err
+		}
+	}
+	// if user is verified, return success.
+	if user.Verified == true {
+		return "Email has been successfully verified.", nil
+	}
+	// Get limit data
+	isInsert := false
+	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Empty row get limit data", "error", err)
+		// No row, need insert
+		isInsert = true
+		limitData.UserID = user.ID
+		limitData.NumOfLogin = 1
+	} else {
+		limitData.NumOfLogin += 1
+	}
+	// Check if limit is reached
+	if limitData.NumOfLogin > s.configs.LoginLimit {
+		s.logger.Error("Verify Mail limit reached", "error", err)
+		return "You've tried to Sign-in too many times. try again tomorrow", errors.New("you've tried to sign in too many times. try again tomorrow")
+	}
+	// Update limit data
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	if err != nil {
+		s.logger.Error("Cannot insert or update limit data", "error", err)
+		return "Internal Error, Please Try Again Later.", errors.New("internal Error, Please Try Again Later")
+	}
+	// if user is not verified, check the code
+	actualVerificationData, err := s.repo.GetVerificationData(ctx, request.Email, database.MailConfirmation)
+	if err != nil {
+		s.logger.Error("unable to fetch verification data", "error", err)
+		if strings.Contains(err.Error(), utils.PgNoRowsMsg) {
+			err := errors.New("internal server error. Please try again later")
+			return err.Error(), err
+		}
+		err := errors.New("can't verify Email. Please try again later")
+		return err.Error(), err
+	}
+	valid, err := s.verify(ctx, actualVerificationData, request)
+	if !valid {
+		return err.Error(), err
+	}
+	// Update user's verified status
+	err = s.repo.UpdateUserVerificationStatus(ctx, request.Email, true)
+	if err != nil {
+		s.logger.Error("unable to set user verification status to true")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
+	}
+
+	// delete the VerificationData from db
+	err = s.repo.DeleteVerificationData(ctx, request.Email, database.MailConfirmation)
+	if err != nil {
+		s.logger.Error("unable to delete the verification data", "error", err)
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
+	}
+	// Reset limit data
+	limitData.NumOfLogin = 0
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, false)
+	if err != nil {
+		s.logger.Error("Cannot reset number of login", "error", err)
+		return "Internal Error, Please Try Again Later.", errors.New("internal Error, Please Try Again Later")
+	}
+	s.logger.Debug("user mail verification succeeded")
+	return "Email has been successfully verified.", nil
+}
+
+func (s *userService) verify(ctx context.Context, actualVerificationData *database.VerificationData, request *VerifyMailRequest) (bool, error) {
+	// check for expiration
+	if actualVerificationData.ExpiresAt.Before(time.Now()) {
+		s.logger.Error("verification data provided is expired")
+		err := s.repo.DeleteVerificationData(ctx, actualVerificationData.Email, actualVerificationData.Type)
+		s.logger.Error("unable to delete verification data from db", "error", err)
+		return false, errors.New("verification data provided is expired")
+	}
+
+	if actualVerificationData.Code != request.Code {
+		s.logger.Error("verification of mail failed. Invalid verification code provided")
+		return false, errors.New("verification of mail failed. Invalid verification code provided")
+	}
+	return true, nil
 }
 
 //Login authenticates a user.

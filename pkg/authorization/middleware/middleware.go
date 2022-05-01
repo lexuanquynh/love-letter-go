@@ -123,7 +123,8 @@ func RateLimitRequest(tb *ratelimit.Bucket, logger hclog.Logger) endpoint.Middle
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request interface{}) (resp interface{}, err error) {
 			if tb.TakeAvailable(1) == 0 {
-				return nil, errors.New("rate limit exceeded")
+				logger.Error("rate limit exceeded")
+				return nil, errors.New("you request too fast, please slow down")
 			}
 			return next(ctx, request)
 			return

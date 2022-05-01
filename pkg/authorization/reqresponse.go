@@ -7,6 +7,12 @@ type RegisterRequest struct {
 	RePassword string `json:"re-password" validate:"required"`
 }
 
+// VerifyMailRequest is used for verifying a new account/user.
+type VerifyMailRequest struct {
+	Email string `json:"email" validate:"required,email"`
+	Code  string `json:"code" validate:"required"`
+}
+
 // LoginRequest is the request for login
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`

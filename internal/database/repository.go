@@ -5,6 +5,8 @@ import "context"
 type UserRepository interface {
 	// CreateUser Create  new user
 	CreateUser(ctx context.Context, user *User) error
+	// UpdateUserVerificationStatus Update user verification status
+	UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error
 	// StoreVerificationData Save verification data into database
 	StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error
 	// StoreProfileData Save profile data into database

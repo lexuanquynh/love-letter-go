@@ -32,6 +32,15 @@ func (repo *postgresRepository) CreateUser(ctx context.Context, user *User) erro
 	return err
 }
 
+// UpdateUserVerificationStatus updates user verification status to true
+func (repo *postgresRepository) UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error {
+	query := "update users set verified = $1 where email = $2"
+	if _, err := repo.db.ExecContext(ctx, query, status, email); err != nil {
+		return err
+	}
+	return nil
+}
+
 // StoreVerificationData adds a mail verification data to db
 func (repo *postgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error {
 	if isInsert {
@@ -73,7 +82,7 @@ func (repo *postgresRepository) DeleteVerificationData(ctx context.Context, emai
 
 // GetUserByEmail returns the user with the given email.
 func (repo *postgresRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	query := "select id, email, username, password, tokenhash, createdat, updatedat from users where email = $1"
+	query := "select * from users where email = $1"
 	user := &User{}
 	err := repo.db.GetContext(ctx, user, query, email)
 	return user, err
@@ -81,7 +90,7 @@ func (repo *postgresRepository) GetUserByEmail(ctx context.Context, email string
 
 // GetUserByID returns the user with the given id.
 func (repo *postgresRepository) GetUserByID(ctx context.Context, id string) (*User, error) {
-	query := "select id, email, username, password, tokenhash, createdat, updatedat from users where id = $1"
+	query := "select  * from users where id = $1"
 	user := &User{}
 	err := repo.db.GetContext(ctx, user, query, id)
 	return user, err
@@ -131,7 +140,7 @@ func (repo *postgresRepository) UpdateProfileData(ctx context.Context, profileDa
 
 // GetProfileByID returns the profile with the given user id.
 func (repo *postgresRepository) GetProfileByID(ctx context.Context, userId string) (*ProfileData, error) {
-	query := "select id, userid, email, firstname, lastname, avatarurl, phone, street, city, state, zipcode, country, createdat, updatedat from profiles where userid = $1"
+	query := "select * from profiles where userid = $1"
 	profile := &ProfileData{}
 	err := repo.db.GetContext(ctx, profile, query, userId)
 	return profile, err
@@ -202,7 +211,7 @@ func (repo *postgresRepository) InsertListOfPasswords(ctx context.Context, passw
 
 // GetLimitData returns the limit data
 func (repo *postgresRepository) GetLimitData(ctx context.Context, userID string) (*LimitData, error) {
-	query := "select id, userid, numofsendmail, numofchangepassword, numoflogin, createdat, updatedat from limits where userid = $1"
+	query := "select * from limits where userid = $1"
 	limitData := &LimitData{}
 	err := repo.db.GetContext(ctx, limitData, query, userID)
 	return limitData, err

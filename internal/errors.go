@@ -3,6 +3,7 @@ package utils
 import "errors"
 
 var PgDuplicateKeyMsg = "duplicate key value violates unique constraint"
+var PgNoRowsMsg = "no rows in result set"
 
 type CustomErrorWrapper struct {
 	Message string `json:"message"` // Human-readable message for clients
