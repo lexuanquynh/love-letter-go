@@ -71,6 +71,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/reset-password", httptransport.NewServer(
+		ep.ResetPasswordEndpoint,
+		decodeHTTPResetPasswordRequest,
+		encodeResponse,
+		options...,
+	))
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -234,6 +240,30 @@ func decodeHTTPGetForgetPasswordCodeRequest(_ context.Context, r *http.Request) 
 		}
 		if req.Email == "" {
 			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPResetPasswordRequest decode request
+func decodeHTTPResetPasswordRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.CreateNewPasswordWithCodeRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+		}
+		if req.Email == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+		}
+		if req.Code == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("code is required"), "code is required")
+		}
+		if req.NewPassword == "" {
+			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("new password is required"), "new password is required")
 		}
 		return req, nil
 	} else {

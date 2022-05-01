@@ -9,6 +9,10 @@ type UserRepository interface {
 	StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error
 	// StoreProfileData Save profile data into database
 	StoreProfileData(ctx context.Context, profileData *ProfileData) error
+	// GetVerificationData Get verification data from database
+	GetVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) (*VerificationData, error)
+	//DeleteVerificationData Delete verification data from database
+	DeleteVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) error
 	// UpdateProfileData Update profile data into database
 	UpdateProfileData(ctx context.Context, profileData *ProfileData) error
 	// GetUserByEmail Get user by email

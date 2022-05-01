@@ -53,6 +53,24 @@ func (repo *postgresRepository) StoreVerificationData(ctx context.Context, verif
 	}
 }
 
+// GetVerificationData retrieves the stored verification code.
+func (repo *postgresRepository) GetVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) (*VerificationData, error) {
+	query := "select * from verifications where email = $1 and type = $2"
+
+	var verificationData VerificationData
+	if err := repo.db.GetContext(ctx, &verificationData, query, email, verificationDataType); err != nil {
+		return nil, err
+	}
+	return &verificationData, nil
+}
+
+// DeleteVerificationData deletes a used verification data
+func (repo *postgresRepository) DeleteVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) error {
+	query := "delete from verifications where email = $1 and type = $2"
+	_, err := repo.db.ExecContext(ctx, query, email, verificationDataType)
+	return err
+}
+
 // GetUserByEmail returns the user with the given email.
 func (repo *postgresRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := "select id, email, username, password, tokenhash, createdat, updatedat from users where email = $1"

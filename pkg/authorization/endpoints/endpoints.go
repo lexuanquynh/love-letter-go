@@ -23,6 +23,7 @@ type Set struct {
 	UpdateProfileEndpoint         endpoint.Endpoint
 	UpdatePasswordEndpoint        endpoint.Endpoint
 	GetForgetPasswordCodeEndpoint endpoint.Endpoint
+	ResetPasswordEndpoint         endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r database.UserRepository, logger hclog.Logger, validator *database.Validation) Set {
@@ -56,6 +57,10 @@ func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r
 
 	getForgetPasswordCodeEndpoint := MakeGetForgetPasswordCodeEndpoint(svc)
 	getForgetPasswordCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(getForgetPasswordCodeEndpoint)
+
+	resetPasswordEndpoint := MakeCreateNewPasswordWithCodeEndpoint(svc)
+	resetPasswordEndpoint = middleware.ValidateParamRequest(validator, logger)(resetPasswordEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -66,6 +71,7 @@ func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r
 		UpdateProfileEndpoint:         updateProfileEndpoint,
 		UpdatePasswordEndpoint:        updatePasswordEndpoint,
 		GetForgetPasswordCodeEndpoint: getForgetPasswordCodeEndpoint,
+		ResetPasswordEndpoint:         resetPasswordEndpoint,
 	}
 }
 
@@ -233,5 +239,22 @@ func MakeGetForgetPasswordCodeEndpoint(svc authorization.Service) endpoint.Endpo
 			return nil, err
 		}
 		return "successfully mailed password reset code. Please check your email.", nil
+	}
+}
+
+// MakeCreateNewPasswordWithCodeEndpoint returns an endpoint that invokes ResetPassword on the service.
+func MakeCreateNewPasswordWithCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.CreateNewPasswordWithCodeRequest)
+		if !ok {
+			err := errors.New("invalid request")
+			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			return nil, cusErr
+		}
+		err := svc.ResetPassword(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return "successfully updated password.", nil
 	}
 }

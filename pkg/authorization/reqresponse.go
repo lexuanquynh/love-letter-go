@@ -108,3 +108,9 @@ type PasswordResetResponse struct {
 type GetForgetPasswordCodeRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+type CreateNewPasswordWithCodeRequest struct {
+	Code        string `json:"code" validate:"required"`
+	Email       string `json:"email" validate:"required,email"`
+	NewPassword string `json:"new_password" validate:"required"`
+}

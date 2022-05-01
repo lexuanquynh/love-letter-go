@@ -353,7 +353,8 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	user, err := s.repo.GetUserByID(ctx, userID)
 	if err != nil {
 		s.logger.Error("Cannot get user", "error", err)
-		return "cannot get user", errors.New("cannot get user")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
 	}
 	// Check if user is banned
 	if user.Banned {
@@ -381,29 +382,34 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
 	if err != nil {
 		s.logger.Error("Cannot insert or update limit data", "error", err)
-		return "Internal Error, Please Try Again Later.", errors.New("internal Error, Please Try Again Later")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
 	}
 	// Compare new password and confirm password
 	if request.NewPassword != request.ConfirmPassword {
 		s.logger.Error("New password and confirm password are not the same", "error", err)
-		return "New password and confirm password are not the same", errors.New("new password and confirm password are not the same")
+		err := errors.New("new password and confirm password are not the same")
+		return err.Error(), err
 	}
 	// Check if password is correct
 	if isSame := s.auth.ComparePassword(user.Password, request.OldPassword); isSame == false {
 		s.logger.Error("Password is incorrect", "error", err)
-		return "Password is incorrect", errors.New("password is incorrect")
+		err := errors.New("password is incorrect")
+		return err.Error(), err
 	}
 	// Hash new password
 	hashedPassword, err := s.hashPassword(request.NewPassword)
 	if err != nil {
 		s.logger.Error("Cannot hash password", "error", err)
-		return "cannot change password", errors.New("cannot hash password")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
 	}
 	// Check hashed password is not contains in list of passwords
 	listOfPasswords, err := s.repo.GetListOfPasswords(ctx, userID)
 	if err != nil {
 		s.logger.Error("Cannot get list of passwords", "error", err)
-		return "cannot change passwords", errors.New("cannot get list of passwords")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
 	}
 	for _, password := range listOfPasswords {
 		if isSame := s.auth.ComparePassword(password, request.NewPassword); isSame == true {
@@ -417,7 +423,8 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	err = s.repo.UpdatePassword(ctx, userID, hashedPassword, tokenHash)
 	if err != nil {
 		s.logger.Error("Cannot update password", "error", err)
-		return "cannot update password", errors.New("cannot update password")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
 	}
 	// Insert password into list of passwords user
 	passwordUsers := &database.PassworUsers{
@@ -427,14 +434,16 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	err = s.repo.InsertListOfPasswords(ctx, passwordUsers)
 	if err != nil {
 		s.logger.Error("Cannot update password into list of passwords", "error", err)
-		return "cannot update password into list of passwords", errors.New("cannot update password into list of passwords")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
 	}
 	// Reset limit data
 	limitData.NumOfChangePassword = 0
 	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, false)
 	if err != nil {
 		s.logger.Error("Cannot delete limit data", "error", err)
-		return "cannot delete limit data", errors.New("cannot delete limit data")
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
 	}
 	s.logger.Info("Password changed", "userID", userID)
 	return "Password changed", nil
@@ -514,5 +523,90 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) e
 		return errors.New("unable to send mail")
 	}
 	s.logger.Debug("successfully mailed password reset code")
+	return nil
+}
+
+// ResetPassword creates new password with code.
+func (s *userService) ResetPassword(ctx context.Context, request *CreateNewPasswordWithCodeRequest) error {
+	actualVerificationData, err := s.repo.GetVerificationData(ctx, request.Email, database.PassReset)
+	if err != nil {
+		s.logger.Error("unable to get verification data", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	if actualVerificationData.Code != request.Code {
+		s.logger.Error("invalid code", "error", err)
+		return errors.New("invalid code")
+	}
+	if actualVerificationData.ExpiresAt.Before(time.Now()) {
+		s.logger.Error("verification data provided is expired")
+		err := s.repo.DeleteVerificationData(ctx, actualVerificationData.Email, actualVerificationData.Type)
+		s.logger.Error("unable to delete verification data from db", "error", err)
+		return errors.New("verification data provided is expired")
+	}
+	user, err := s.repo.GetUserByEmail(ctx, request.Email)
+	if err != nil {
+		s.logger.Error("unable to get user", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	// Hash new password
+	hashedPassword, err := s.hashPassword(request.NewPassword)
+	if err != nil {
+		s.logger.Error("Cannot hash password", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	// Check hashed password is not contains in list of passwords
+	listOfPasswords, err := s.repo.GetListOfPasswords(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Cannot get list of passwords", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	for _, password := range listOfPasswords {
+		if isSame := s.auth.ComparePassword(password, request.NewPassword); isSame == true {
+			s.logger.Error("New password is the same as old password", "error", err)
+			return errors.New("password has been used. please choose another password")
+		}
+	}
+	// Update token hash. It makes refresh token tobe invalid.
+	tokenHash := utils.GenerateRandomString(15)
+	// Update user password
+	err = s.repo.UpdatePassword(ctx, user.ID, hashedPassword, tokenHash)
+	if err != nil {
+		s.logger.Error("Cannot update password", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	// Insert password into list of passwords user
+	passwordUsers := &database.PassworUsers{
+		UserID:   user.ID,
+		Password: hashedPassword,
+	}
+	err = s.repo.InsertListOfPasswords(ctx, passwordUsers)
+	if err != nil {
+		s.logger.Error("Cannot update password into list of passwords", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	// Get limit data
+	isInsert := false
+	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Empty row get limit data", "error", err)
+		// No row, need insert
+		isInsert = true
+		limitData.UserID = user.ID
+		limitData.NumOfChangePassword = 1
+	} else {
+		limitData.NumOfChangePassword += 1
+	}
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	if err != nil {
+		s.logger.Error("Cannot delete limit data", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	// delete the VerificationData from db
+	err = s.repo.DeleteVerificationData(ctx, actualVerificationData.Email, actualVerificationData.Type)
+	if err != nil {
+		s.logger.Error("unable to delete the verification data", "error", err)
+		return errors.New("internal server error. Please try again later")
+	}
+	s.logger.Info("Password changed", "userID", user.ID)
 	return nil
 }
