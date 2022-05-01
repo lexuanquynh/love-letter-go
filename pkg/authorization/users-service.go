@@ -142,7 +142,7 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
 	if err != nil {
 		s.logger.Error("Cannot insert or update limit data", "error", err)
-		return "Internal Error, Please Try Again Later.", errors.New("cannot insert or update limit data")
+		return "Internal Error, Please Try Again Later.", errors.New("internal Error, Please Try Again Later")
 	}
 
 	// Check if password is correct
@@ -162,6 +162,14 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 		s.logger.Error("Error generating refreshToken", "error", err)
 		return "Internal Error, Please Try Again Later.", err
 	}
+	// Reset limit data
+	limitData.NumOfLogin = 0
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, false)
+	if err != nil {
+		s.logger.Error("Cannot reset number of login", "error", err)
+		return "Internal Error, Please Try Again Later.", errors.New("internal Error, Please Try Again Later")
+	}
+
 	s.logger.Debug("successfully generated token")
 	loginResponse := LoginResponse{
 		Email:        user.Email,
@@ -367,13 +375,13 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	// Check if limit is reached
 	if limitData.NumOfChangePassword > s.configs.ChangePasswordLimit {
 		s.logger.Error("Change password limit reached", "error", err)
-		return "Change password limit reached", errors.New("change password limit reached")
+		return "You've tried to change password too many times. try again tomorrow", errors.New("you've tried to change password too many times. try again tomorrow")
 	}
 	// Update limit data
 	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
 	if err != nil {
 		s.logger.Error("Cannot insert or update limit data", "error", err)
-		return "cannot insert or update limit data", errors.New("cannot insert or update limit data")
+		return "Internal Error, Please Try Again Later.", errors.New("internal Error, Please Try Again Later")
 	}
 	// Compare new password and confirm password
 	if request.NewPassword != request.ConfirmPassword {
@@ -443,17 +451,12 @@ func (s *userService) hashPassword(password string) (string, error) {
 }
 
 // GetForgetPasswordCode gets forget password code.
-func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) (string, error) {
-	// Check if email is valid
-	//if isValid := s.auth.IsValidEmail(request.Email); isValid == false {
-	//	s.logger.Error("Email is not valid", "error", err)
-	//	return "Email is not valid", errors.New("email is not valid")
-	//}
+func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) error {
 	// Check if email is registered
 	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		s.logger.Error("Email is not registered", "error", err)
-		return "Email is not registered", errors.New("email is not registered")
+		return errors.New("email is not registered")
 	}
 	// Get limit data
 	isInsert := false
@@ -468,15 +471,16 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) (
 		limitData.NumOfSendMail += 1
 	}
 	// Check if user has reached limit send mail
-	if limitData.NumOfSendMail >= s.configs.SendMailLimit {
+	if limitData.NumOfSendMail > s.configs.SendMailLimit {
 		s.logger.Error("User has reached limit send mail.", "error", err)
-		return "User has reached limit send mail.", errors.New("user has reached limit send mail")
+		return errors.New("successfully mailed password reset code. Please check your email")
+
 	}
 	// Insert or update limit data
 	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
 	if err != nil {
 		s.logger.Error("Cannot update limit data", "error", err)
-		return "cannot update limit data", errors.New("cannot update limit data")
+		return errors.New("cannot update limit data")
 	}
 	// Generate forget password code
 	forgetPasswordCode := utils.GenerateRandomString(8)
@@ -492,7 +496,7 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) (
 	err = s.repo.StoreVerificationData(ctx, verificationData, false)
 	if err != nil {
 		s.logger.Error("unable to store password reset verification data", "error", err)
-		return "unable to store password reset verification data", errors.New("unable to store password reset verification data")
+		return errors.New("unable to store password reset verification data")
 	}
 	// Send verification mail
 	from := s.configs.MailSender
@@ -507,8 +511,8 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) (
 	err = s.mailService.SendMail(mailReq)
 	if err != nil {
 		s.logger.Error("unable to send mail", "error", err)
-		return "unable to send mail", errors.New("unable to send mail")
+		return errors.New("unable to send mail")
 	}
 	s.logger.Debug("successfully mailed password reset code")
-	return "successfully mailed password reset code. Please check your email.", nil
+	return nil
 }

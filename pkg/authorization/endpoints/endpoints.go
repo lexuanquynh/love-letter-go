@@ -225,11 +225,13 @@ func MakeGetForgetPasswordCodeEndpoint(svc authorization.Service) endpoint.Endpo
 			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
 			return nil, cusErr
 		}
-		message, err := svc.GetForgetPasswordCode(ctx, req.Email)
+		err := svc.GetForgetPasswordCode(ctx, req.Email)
 		if err != nil {
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, message)
-			return nil, cusErr
+			if strings.Contains(err.Error(), "successfully mailed password reset code") {
+				return err.Error(), nil
+			}
+			return nil, err
 		}
-		return message, nil
+		return "successfully mailed password reset code. Please check your email.", nil
 	}
 }

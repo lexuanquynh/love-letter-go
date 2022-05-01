@@ -43,7 +43,7 @@ func (repo *postgresRepository) StoreVerificationData(ctx context.Context, verif
 			verificationData.Type)
 		return err
 	} else {
-		query := "update verifications set code=$1, expiresat=$2, type=$3 where email=$5"
+		query := "update verifications set code=$1, expiresat=$2, type=$3 where email=$4"
 		_, err := repo.db.ExecContext(ctx, query,
 			verificationData.Code,
 			verificationData.ExpiresAt,
