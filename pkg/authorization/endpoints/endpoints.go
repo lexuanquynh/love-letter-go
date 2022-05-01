@@ -9,6 +9,7 @@ import (
 	"errors"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/hashicorp/go-hclog"
+	"github.com/juju/ratelimit"
 	"net/http"
 	"strings"
 )
@@ -26,39 +27,54 @@ type Set struct {
 	ResetPasswordEndpoint         endpoint.Endpoint
 }
 
-func NewEndpointSet(svc authorization.Service, auth middleware.Authentication, r database.UserRepository, logger hclog.Logger, validator *database.Validation) Set {
+func NewEndpointSet(svc authorization.Service,
+	auth middleware.Authentication,
+	r database.UserRepository,
+	logger hclog.Logger,
+	validator *database.Validation,
+	tb *ratelimit.Bucket) Set {
 	healthCheckEndpoint := MakeHealthCheckEndpoint(svc)
+	healthCheckEndpoint = middleware.RateLimitRequest(tb, logger)(healthCheckEndpoint)
 
 	registerEndpoint := MakeRegisterEndpoint(svc)
 	registerEndpoint = middleware.ValidateParamRequest(validator, logger)(registerEndpoint)
+	registerEndpoint = middleware.RateLimitRequest(tb, logger)(registerEndpoint)
 
 	loginEndpoint := MakeLoginEndpoint(svc)
+	loginEndpoint = middleware.RateLimitRequest(tb, logger)(loginEndpoint)
 	loginEndpoint = middleware.ValidateParamRequest(validator, logger)(loginEndpoint)
 
 	logoutEndpoint := MakeLogoutEndpoint(svc)
+	logoutEndpoint = middleware.RateLimitRequest(tb, logger)(logoutEndpoint)
 	logoutEndpoint = middleware.ValidateParamRequest(validator, logger)(logoutEndpoint)
 	logoutEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(logoutEndpoint)
 
 	getUserEndpoint := MakeGetUserEndpoint(svc)
+	getUserEndpoint = middleware.RateLimitRequest(tb, logger)(getUserEndpoint)
 	getUserEndpoint = middleware.ValidateParamRequest(validator, logger)(getUserEndpoint)
 	getUserEndpoint = middleware.ValidateAccessToken(auth, logger)(getUserEndpoint)
 
 	getProfileEndpoint := MakeGetProfileEndpoint(svc)
+	getProfileEndpoint = middleware.RateLimitRequest(tb, logger)(getProfileEndpoint)
 	getProfileEndpoint = middleware.ValidateParamRequest(validator, logger)(getProfileEndpoint)
 	getProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(getProfileEndpoint)
 
 	updateProfileEndpoint := MakeUpdateProfileEndpoint(svc)
+	updateProfileEndpoint = middleware.RateLimitRequest(tb, logger)(updateProfileEndpoint)
 	updateProfileEndpoint = middleware.ValidateParamRequest(validator, logger)(updateProfileEndpoint)
 	updateProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(updateProfileEndpoint)
 
 	updatePasswordEndpoint := MakeUpdatePasswordEndpoint(svc)
+	updatePasswordEndpoint = middleware.RateLimitRequest(tb, logger)(updatePasswordEndpoint)
 	updatePasswordEndpoint = middleware.ValidateParamRequest(validator, logger)(updatePasswordEndpoint)
 	updatePasswordEndpoint = middleware.ValidateAccessToken(auth, logger)(updatePasswordEndpoint)
 
 	getForgetPasswordCodeEndpoint := MakeGetForgetPasswordCodeEndpoint(svc)
+	getForgetPasswordCodeEndpoint = middleware.RateLimitRequest(tb, logger)(getForgetPasswordCodeEndpoint)
 	getForgetPasswordCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(getForgetPasswordCodeEndpoint)
 
 	resetPasswordEndpoint := MakeCreateNewPasswordWithCodeEndpoint(svc)
+	resetPasswordEndpoint = middleware.RateLimitRequest(tb, logger)(resetPasswordEndpoint)
 	resetPasswordEndpoint = middleware.ValidateParamRequest(validator, logger)(resetPasswordEndpoint)
 
 	return Set{

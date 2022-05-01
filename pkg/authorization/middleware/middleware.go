@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/hashicorp/go-hclog"
+	"github.com/juju/ratelimit"
 	"regexp"
 	"strings"
 )
@@ -112,6 +113,19 @@ func ValidateParamRequest(validator *database.Validation, logger hclog.Logger) e
 				return nil, errors.New("please check your param request")
 			}
 			resp, err = next(ctx, request)
+			return
+		}
+	}
+}
+
+// RateLimitRequest is a middleware that limits the number of requests
+func RateLimitRequest(tb *ratelimit.Bucket, logger hclog.Logger) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (resp interface{}, err error) {
+			if tb.TakeAvailable(1) == 0 {
+				return nil, errors.New("rate limit exceeded")
+			}
+			return next(ctx, request)
 			return
 		}
 	}

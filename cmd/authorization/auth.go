@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-co-op/gocron"
+	"github.com/juju/ratelimit"
 	"github.com/oklog/oklog/pkg/group"
 	"net"
 	"net/http"
@@ -144,10 +145,13 @@ func main() {
 	})
 	s.StartAsync()
 
+	// Create rate limiter for users.
+	rlBucket := ratelimit.NewBucket(1*time.Second, 5)
+
 	var (
 		httpAddr    = net.JoinHostPort("localhost", configs.HttpPort)
 		service     = authorization.NewUserService(logger, configs, repository, mailService, auth)
-		eps         = endpoints.NewEndpointSet(service, auth, repository, logger, validator)
+		eps         = endpoints.NewEndpointSet(service, auth, repository, logger, validator, rlBucket)
 		httpHandler = transport.NewHTTPHandler(eps)
 	)
 
