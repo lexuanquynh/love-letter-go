@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-co-op/gocron"
+	"github.com/jmoiron/sqlx"
 	"github.com/juju/ratelimit"
 	"github.com/oklog/oklog/pkg/group"
 	"net"
@@ -110,7 +111,12 @@ func main() {
 	validator := database.NewValidation()
 	// create a new connection to the postgres db store
 	db, err := database.NewConnection(configs, logger)
-	defer db.Close()
+	defer func(db *sqlx.DB) {
+		err := db.Close()
+		if err != nil {
+
+		}
+	}(db)
 	if err != nil {
 		logger.Error("unable to connect to db", "error", err)
 		return
@@ -130,14 +136,18 @@ func main() {
 
 	// Reset limit data for users.
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(1).Day().At("00:01").Do(func() {
+	_, err = s.Every(1).Day().At("00:01").Do(func() {
 		logger.Info("Clear limit data for users after 1 day at 00:01.")
-		ctx := context.Background()
+		var ctx = context.Background()
 		err := repository.ClearAllLimitData(ctx)
 		if err != nil {
 			logger.Error("Error clearing limit data", "error", err)
 		}
 	})
+	if err != nil {
+		logger.Error("Error scheduling limit data", "error", err)
+		return
+	}
 	s.StartAsync()
 
 	// Create rate limiter for users.
@@ -165,7 +175,11 @@ func main() {
 			return http.Serve(httpListener, httpHandler)
 		}, func(error) {
 			logger.Error("could not start the server", "error", err)
-			httpListener.Close()
+			err := httpListener.Close()
+			if err != nil {
+				logger.Error("could not close the listener", "error", err)
+				return
+			}
 		})
 	}
 	{
