@@ -112,8 +112,7 @@ func ValidateParamRequest(validator *database.Validation, logger hclog.Logger) e
 				logger.Error("validation of verification data json failed", "error", errs)
 				return nil, errors.New("please check your param request")
 			}
-			resp, err = next(ctx, request)
-			return
+			return next(ctx, request)
 		}
 	}
 }
@@ -127,7 +126,6 @@ func RateLimitRequest(tb *ratelimit.Bucket, logger hclog.Logger) endpoint.Middle
 				return nil, errors.New("you request too fast, please slow down")
 			}
 			return next(ctx, request)
-			return
 		}
 	}
 }

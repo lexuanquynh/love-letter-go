@@ -2,9 +2,11 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"github.com/hashicorp/go-hclog"
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
+	"log"
 	"time"
 )
 
@@ -179,7 +181,12 @@ func (repo *postgresRepository) GetListOfPasswords(ctx context.Context, userID s
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(rows)
 	var passwords []string
 	for rows.Next() {
 		var password string
