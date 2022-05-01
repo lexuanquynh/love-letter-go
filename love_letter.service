@@ -1,0 +1,14 @@
+[Unit]
+Description=Love letter APIs
+After=multi-user.target
+
+[Service]
+User=root
+Group=root
+Type=simple
+Restart=always
+RestartSec=5s
+ExecStart=/root/go/auth
+
+[Install]
+WantedBy=multi-user.target
