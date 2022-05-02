@@ -8,7 +8,7 @@ Group=root
 Type=simple
 Restart=always
 RestartSec=5s
-ExecStart=/root/go/auth
+ExecStart=/usr/local/src/love_letter/auth
 
 [Install]
 WantedBy=multi-user.target

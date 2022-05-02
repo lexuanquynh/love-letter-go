@@ -36,11 +36,11 @@ type Configurations struct {
 
 // NewConfigurations returns a new Configuration object
 func NewConfigurations(logger hclog.Logger) *Configurations {
-	configs, err := LoadConfig("./")
+	configs, err := LoadConfig("./") // for local development
+	//configs, err := LoadConfig("/usr/local/src/love_letter") // for production
 	if err != nil {
-		log.Fatal("cannot load config:", err)
+		log.Fatal("cannot load config: ", err)
 	}
-
 	//logger.Debug("serve port", configs.ServerAddress)
 	logger.Debug("db host", configs.DBHost)
 	logger.Debug("db name", configs.DBName)

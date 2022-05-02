@@ -1,11 +1,11 @@
 ## Desploy service
 ### Chỉnh file env về dạng:
 ```
-configs, err := LoadConfig("/usr/local/src/")
+configs, err := LoadConfig("/usr/local/src/love_letter")
 ```
 Sau đó copy file này lên:
 ```
-scp app.env root@ipadress:/usr/local/src 
+scp app.env root@ipadress:/usr/local/src/love_letter
 ```
 ### Create service:
 
@@ -23,19 +23,25 @@ vi /etc/systemd/system/love_letter.service
 scp path/to/file/tomove user@host:path/to/file/topaste
 scp auth root@<ipaddress>:go
 ```
-
+### Create a service:
+```
+sudo vi /etc/systemd/system/love_letter.service
+```
  ### To run service:
 
  ```
-systemctl start love_letter.service
-systemctl enable love_letter.service
-systemctl status love_letter.service
+sudo systemctl start love_letter.service
+sudo systemctl enable love_letter.service
+sudo systemctl status love_letter.service
 ```
-
+To stop:
+```
+sudo systemctl stop love_letter.service
+```
 ### Create a config in /etc/nginx/sites-available/love_letter file:
 
 ```
-vi /etc/nginx/sites-available/love_letter
+vi /etc/nginx/sites-available/love_letter.conf
 ```
 
 ### Create a symbolic link of our config file to the sites-enabled folder:
@@ -48,6 +54,13 @@ ln -s /etc/nginx/sites-available/love_letter.conf /etc/nginx/sites-enabled/love_
 
 ```
 nginx -t && nginx -s reload
+```
+
+check status:
+
+```
+systemctl status nginx.service
+systemctl status love_letter.service
 ```
 
 if server not run, try:
@@ -95,3 +108,17 @@ sudo ufw status verbose
 ```
 sudo ufw allow 8081
 ```
+
+<!-- ### Mở nginx:
+
+```
+sudo ufw app list
+sudo ufw allow 'Nginx Full'
+sudo ufw allow 'Nginx HTTP'
+sudo ufw allow 'Nginx HTTPS' -->
+<!-- ```
+
+check status:
+```
+sudo ufw status
+``` -->
