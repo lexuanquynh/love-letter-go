@@ -120,3 +120,15 @@ type CreateNewPasswordWithCodeRequest struct {
 	Email       string `json:"email" validate:"required,email"`
 	NewPassword string `json:"new_password" validate:"required"`
 }
+
+// GenerateAccessTokenRequest is used to generate access token
+type GenerateAccessTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
+// GenerateAccessResponse is the response for generate access token
+type GenerateAccessResponse struct {
+	RefreshToken string `json:"refresh_token,omitempty"`
+	AccessToken  string `json:"access_token,omitempty"`
+	Username     string `json:"username,omitempty"`
+}

@@ -82,6 +82,13 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/generate-access-token", httptransport.NewServer(
+		ep.GenerateAccessTokenEndpoint,
+		decodeHTTPGenerateAccessTokenRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -290,6 +297,24 @@ func decodeHTTPResetPasswordRequest(_ context.Context, r *http.Request) (interfa
 		}
 		if req.NewPassword == "" {
 			return nil, utils.NewErrorResponse(utils.NewPasswordRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGenerateAccessTokenRequest decode request
+func decodeHTTPGenerateAccessTokenRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GenerateAccessTokenRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.RefreshToken == "" {
+			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
 		}
 		return req, nil
 	} else {

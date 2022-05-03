@@ -20,22 +20,23 @@ type UserIDKey struct{}
 func ValidateRefreshToken(auth Authentication, r database.UserRepository, logger hclog.Logger) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-			authErr := authorizedRefreshToken(ctx, auth, r, logger, request)
+			userID, authErr := authorizedRefreshToken(ctx, auth, r, logger, request)
 			if authErr != nil {
 				return nil, authErr
 			}
+			ctx = context.WithValue(ctx, UserIDKey{}, userID)
 			return next(ctx, request)
 		}
 	}
 }
 
 // authorizedRefreshToken validates the refresh token.
-func authorizedRefreshToken(ctx context.Context, auth Authentication, r database.UserRepository, logger hclog.Logger, request interface{}) error {
+func authorizedRefreshToken(ctx context.Context, auth Authentication, r database.UserRepository, logger hclog.Logger, request interface{}) (string, error) {
 	token, err := extractValue(request, "refresh_token")
 	if err != nil {
 		logger.Error("extract value token failed", "err", err)
 		cusErr := utils.NewErrorResponse(utils.BadRequest)
-		return cusErr
+		return "", cusErr
 	}
 	logger.Debug("token present in header", token)
 
@@ -43,7 +44,7 @@ func authorizedRefreshToken(ctx context.Context, auth Authentication, r database
 	if err != nil {
 		logger.Error("token validation failed", "error", err)
 		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
-		return cusErr
+		return "", cusErr
 	}
 	logger.Debug("refresh token validated")
 
@@ -51,16 +52,16 @@ func authorizedRefreshToken(ctx context.Context, auth Authentication, r database
 	if err != nil {
 		logger.Error("You're not authorized. Please try again latter.", err)
 		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
-		return cusErr
+		return "", cusErr
 	}
 
 	actualCustomKey := auth.GenerateCustomKey(user.ID, user.TokenHash)
 	if customKey != actualCustomKey {
 		logger.Debug("wrong token: authentication failed")
 		cusErr := utils.NewErrorResponse(utils.Unauthorized)
-		return cusErr
+		return "", cusErr
 	}
-	return nil
+	return userID, nil
 }
 
 func extractValue(request interface{}, key string) (string, error) {

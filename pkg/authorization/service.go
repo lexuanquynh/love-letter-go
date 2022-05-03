@@ -15,4 +15,5 @@ type Service interface {
 	UpdatePassword(ctx context.Context, request *UpdatePasswordRequest) (string, error)
 	GetForgetPasswordCode(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, request *CreateNewPasswordWithCodeRequest) error
+	GenerateAccessToken(ctx context.Context, request *GenerateAccessTokenRequest) (interface{}, error)
 }

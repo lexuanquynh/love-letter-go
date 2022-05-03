@@ -24,6 +24,7 @@ type Set struct {
 	UpdatePasswordEndpoint        endpoint.Endpoint
 	GetForgetPasswordCodeEndpoint endpoint.Endpoint
 	ResetPasswordEndpoint         endpoint.Endpoint
+	GenerateAccessTokenEndpoint   endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -80,6 +81,11 @@ func NewEndpointSet(svc authorization.Service,
 	resetPasswordEndpoint = middleware.RateLimitRequest(tb, logger)(resetPasswordEndpoint)
 	resetPasswordEndpoint = middleware.ValidateParamRequest(validator, logger)(resetPasswordEndpoint)
 
+	generateAccessTokenEndpoint := MakeGenerateAccessTokenEndpoint(svc)
+	generateAccessTokenEndpoint = middleware.RateLimitRequest(tb, logger)(generateAccessTokenEndpoint)
+	generateAccessTokenEndpoint = middleware.ValidateParamRequest(validator, logger)(generateAccessTokenEndpoint)
+	generateAccessTokenEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(generateAccessTokenEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -92,6 +98,7 @@ func NewEndpointSet(svc authorization.Service,
 		UpdatePasswordEndpoint:        updatePasswordEndpoint,
 		GetForgetPasswordCodeEndpoint: getForgetPasswordCodeEndpoint,
 		ResetPasswordEndpoint:         resetPasswordEndpoint,
+		GenerateAccessTokenEndpoint:   generateAccessTokenEndpoint,
 	}
 }
 
@@ -283,5 +290,21 @@ func MakeCreateNewPasswordWithCodeEndpoint(svc authorization.Service) endpoint.E
 			return nil, err
 		}
 		return "successfully updated password.", nil
+	}
+}
+
+// MakeGenerateAccessTokenEndpoint returns an endpoint that invokes GenerateAccessToken on the service.
+func MakeGenerateAccessTokenEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GenerateAccessTokenRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		token, err := svc.GenerateAccessToken(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return token, nil
 	}
 }

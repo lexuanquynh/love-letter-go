@@ -775,3 +775,37 @@ func (s *userService) ResetPassword(ctx context.Context, request *CreateNewPassw
 	s.logger.Info("Password changed", "userID", user.ID)
 	return nil
 }
+
+// GenerateAccessToken generate access token
+func (s *userService) GenerateAccessToken(ctx context.Context, request *GenerateAccessTokenRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr.Error(), cusErr
+	}
+	accessToken, err := s.auth.GenerateAccessToken(user)
+	if err != nil {
+		s.logger.Error("unable to generate access token", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+
+	s.logger.Debug("Successfully generated new access token")
+	return GenerateAccessResponse{
+		AccessToken: accessToken,
+		Username:    user.Username,
+	}, nil
+}
