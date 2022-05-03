@@ -62,7 +62,7 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 	err = s.repo.CreateUser(ctx, &user)
 	if err != nil {
 		s.logger.Error("Error creating user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		cusErr := utils.NewErrorResponse(utils.ExistUser)
 		return cusErr.Error(), cusErr
 	}
 	// Generate authentication code
@@ -267,7 +267,7 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 	// Check if password is correct
 	if isSame := s.auth.ComparePassword(user.Password, request.Password); !isSame {
 		s.logger.Error("Password is incorrect", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Unauthorized)
+		cusErr := utils.NewErrorResponse(utils.PasswordIncorrect)
 		return cusErr.Error(), cusErr
 	}
 	// Generate accessToken

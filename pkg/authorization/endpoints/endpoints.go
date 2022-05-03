@@ -110,8 +110,7 @@ func MakeRegisterEndpoint(svc authorization.Service) endpoint.Endpoint {
 				cusErr := utils.NewErrorResponse(utils.Conflict)
 				return nil, cusErr
 			}
-			cusErr := utils.NewErrorResponse(utils.BadRequest)
-			return nil, cusErr
+			return nil, err
 		}
 		return message, err
 	}

@@ -33,6 +33,10 @@ const (
 	PasswordIncorrect       = 13
 	ChoiceOtherPassword     = 14
 	EmailNotRegistered      = 15
+	QuicklyRequest          = 16
+	ValidationJSONFailure   = 17
+	ValidationTokenFailure  = 18
+	ExistUser               = 19
 )
 
 func (e ErrorResponse) Error() string {
@@ -85,6 +89,14 @@ func (e ErrorResponse) Error() string {
 		return "Password has been used. Please choose another password."
 	case EmailNotRegistered:
 		return "Email not registered"
+	case QuicklyRequest:
+		return "Too many requests. Please try again later."
+	case ValidationJSONFailure:
+		return "validation of verification data json failed"
+	case ValidationTokenFailure:
+		return "validation of verification token failed"
+	case ExistUser:
+		return "User already exists"
 	default:
 		return "Unknown Error"
 	}

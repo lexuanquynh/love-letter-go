@@ -336,6 +336,8 @@ func errEncoder(ctx context.Context, err error, w http.ResponseWriter) {
 	errCode := int(cusErr.ErrorType)
 	if errCode == utils.TooManyRequests {
 		w.WriteHeader(http.StatusForbidden)
+	} else if errCode == utils.PasswordIncorrect || errCode == utils.ValidationTokenFailure {
+		w.WriteHeader(http.StatusUnauthorized)
 	} else if errCode >= 400 && errCode < 500 {
 		w.WriteHeader(int(cusErr.ErrorType))
 	} else {

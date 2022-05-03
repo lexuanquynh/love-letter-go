@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	utils "LoveLetterProject/internal"
 	"LoveLetterProject/internal/database"
 	"context"
 	"encoding/json"
@@ -33,27 +34,31 @@ func authorizedRefreshToken(ctx context.Context, auth Authentication, r database
 	token, err := extractValue(request, "refresh_token")
 	if err != nil {
 		logger.Error("extract value token failed", "err", err)
-		return errors.New("extract value token failed")
+		cusErr := utils.NewErrorResponse(utils.BadRequest)
+		return cusErr
 	}
 	logger.Debug("token present in header", token)
 
 	userID, customKey, err := auth.ValidateRefreshToken(token)
 	if err != nil {
 		logger.Error("token validation failed", "error", err)
-		return errors.New("token validation failed")
+		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
+		return cusErr
 	}
 	logger.Debug("refresh token validated")
 
 	user, err := r.GetUserByID(ctx, userID)
 	if err != nil {
 		logger.Error("You're not authorized. Please try again latter.", err)
-		return errors.New("you're not authorized. Please try again latter")
+		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
+		return cusErr
 	}
 
 	actualCustomKey := auth.GenerateCustomKey(user.ID, user.TokenHash)
 	if customKey != actualCustomKey {
 		logger.Debug("wrong token: authentication failed")
-		return errors.New("wrong token: authentication failed")
+		cusErr := utils.NewErrorResponse(utils.Unauthorized)
+		return cusErr
 	}
 	return nil
 }
@@ -79,7 +84,9 @@ func ValidateAccessToken(auth Authentication, logger hclog.Logger) endpoint.Midd
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 			userID, valid := authorizedAccessToken(auth, logger, request)
 			if !valid {
-				return nil, errors.New("invalid token: authentication failed")
+				logger.Error("You're not authorized. Please try again latter.")
+				cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
+				return nil, cusErr
 			}
 			ctx = context.WithValue(ctx, UserIDKey{}, userID)
 			return next(ctx, request)
@@ -110,7 +117,8 @@ func ValidateParamRequest(validator *database.Validation, logger hclog.Logger) e
 			errs := validator.Validate(request)
 			if len(errs) != 0 {
 				logger.Error("validation of verification data json failed", "error", errs)
-				return nil, errors.New("please check your param request")
+				cusErr := utils.NewErrorResponse(utils.ValidationJSONFailure)
+				return nil, cusErr
 			}
 			return next(ctx, request)
 		}
@@ -123,7 +131,8 @@ func RateLimitRequest(tb *ratelimit.Bucket, logger hclog.Logger) endpoint.Middle
 		return func(ctx context.Context, request interface{}) (resp interface{}, err error) {
 			if tb.TakeAvailable(1) == 0 {
 				logger.Error("rate limit exceeded")
-				return nil, errors.New("you request too fast, please slow down")
+				cusErr := utils.NewErrorResponse(utils.QuicklyRequest)
+				return nil, cusErr
 			}
 			return next(ctx, request)
 		}
