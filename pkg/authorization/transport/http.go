@@ -328,7 +328,10 @@ func errEncoder(ctx context.Context, err error, w http.ResponseWriter) {
 			Message:   catchErr.Error(),
 		}
 		w.WriteHeader(catchErr.Code)
-		json.NewEncoder(w).Encode(res)
+		err := json.NewEncoder(w).Encode(res)
+		if err != nil {
+			return
+		}
 		return
 	}
 	w.WriteHeader(cusErr.Code)
@@ -337,5 +340,8 @@ func errEncoder(ctx context.Context, err error, w http.ResponseWriter) {
 		ErrorCode: cusErr.Code,
 		Message:   cusErr.Message,
 	}
-	json.NewEncoder(w).Encode(res)
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		return
+	}
 }

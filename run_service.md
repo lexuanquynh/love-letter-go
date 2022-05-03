@@ -38,16 +38,17 @@ To stop:
 ```
 sudo systemctl stop love_letter.service
 ```
+Thêm nội dung file như file mẫu.
 ### Create a config in /etc/nginx/sites-available/love_letter file:
 
 ```
-vi /etc/nginx/sites-available/love_letter.conf
+vi /etc/nginx/sites-available/love_letter
 ```
-
+Thêm nội dung file như file mẫu.
 ### Create a symbolic link of our config file to the sites-enabled folder:
 
 ```
-ln -s /etc/nginx/sites-available/love_letter.conf /etc/nginx/sites-enabled/love_letter.conf
+ln -s /etc/nginx/sites-available/love_letter /etc/nginx/sites-enabled/love_letter
 ```
 
 ### Finally, reload nginx to apply config:
@@ -122,3 +123,21 @@ check status:
 ```
 sudo ufw status
 ``` -->
+
+### Thao tác với postgres trên server
+Để login vào postgres trên server:
+
+```
+sudo -u postgres psql
+```
+Hiển thị database:
+
+```
+\l
+```
+
+Để chọn database trên server:
+
+```
+\c database_name
+```

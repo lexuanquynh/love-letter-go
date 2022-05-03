@@ -46,8 +46,10 @@ func (repo *postgresRepository) UpdateUserVerificationStatus(ctx context.Context
 // StoreVerificationData adds a mail verification data to db
 func (repo *postgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error {
 	if isInsert {
-		query := "insert into verifications(email, code, expiresat, type) values($1, $2, $3, $4)"
+		id := uuid.NewV4().String()
+		query := "insert into verifications(id, email, code, expiresat, type) values($1, $2, $3, $4, $5)"
 		_, err := repo.db.ExecContext(ctx, query,
+			id,
 			verificationData.Email,
 			verificationData.Code,
 			verificationData.ExpiresAt,

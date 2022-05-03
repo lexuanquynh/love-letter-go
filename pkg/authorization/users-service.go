@@ -62,8 +62,23 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 		s.logger.Error("Error creating user", "error", err)
 		return "Cannot create user", err
 	}
-	// Send email to user
+	// Generate authentication code
 	authedCode := utils.GenerateRandomString(8)
+
+	// Saving the code authentication into database
+	verificationData := database.VerificationData{
+		Email:     request.Email,
+		Code:      authedCode,
+		Type:      database.MailConfirmation,
+		ExpiresAt: time.Now().Add(time.Hour * time.Duration(s.configs.MailVerifCodeExpiration)),
+	}
+	err = s.repo.StoreVerificationData(ctx, &verificationData, true)
+	if err != nil {
+		s.logger.Error("Error storing verification data", "error", err)
+		err := errors.New("internal server error. Please try again later")
+		return err.Error(), err
+	}
+	// Send email to user
 	from := s.configs.MailSender
 	to := []string{user.Email}
 	subject := s.configs.MailTitle
@@ -77,18 +92,6 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 	if err != nil {
 		s.logger.Error("unable to send mail", "error", err)
 		return "Cannot send mail", errors.New("unable to send mail")
-	}
-	// Saving the code authentication into database
-	verificationData := database.VerificationData{
-		Email:     request.Email,
-		Code:      authedCode,
-		Type:      database.MailConfirmation,
-		ExpiresAt: time.Now().Add(time.Hour * time.Duration(s.configs.MailVerifCodeExpiration)),
-	}
-	err = s.repo.StoreVerificationData(ctx, &verificationData, true)
-	if err != nil {
-		s.logger.Error("Error storing verification data", "error", err)
-		return "Cannot create verification data", errors.New("cannot create verification data")
 	}
 
 	// Store user info into Profile database
@@ -601,8 +604,15 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) e
 		Type:      database.PassReset,
 		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.PassResetCodeExpiration)),
 	}
+	// Check insert or update
+	isInsert = false
+	_, err = s.repo.GetVerificationData(ctx, user.Email, database.PassReset)
+	if err != nil {
+		isInsert = true
+		s.logger.Error("Cannot get verification data", "error", err)
+	}
 
-	err = s.repo.StoreVerificationData(ctx, verificationData, false)
+	err = s.repo.StoreVerificationData(ctx, verificationData, isInsert)
 	if err != nil {
 		s.logger.Error("unable to store password reset verification data", "error", err)
 		return errors.New("unable to store password reset verification data")

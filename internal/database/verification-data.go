@@ -17,6 +17,7 @@ const (
 
 // VerificationData represents the type for the data stored for verification.
 type VerificationData struct {
+	ID        string               `json:"id"`
 	Email     string               `json:"email" validate:"required,email" sql:"email"`
 	Code      string               `json:"code" validate:"required" sql:"code"`
 	ExpiresAt time.Time            `json:"expiresat" sql:"expiresat"`

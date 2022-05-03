@@ -40,11 +40,12 @@ const userSchema = `
 // schema for verification table
 const verificationSchema = `
 		create table if not exists verifications (
+			id 		   Varchar(36) not null,
 			email 		Varchar(100) not null,
 			code  		Varchar(10) not null,
 			expiresat 	Timestamp not null,
 			type        Varchar(10) not null,		
-			Primary Key (email),
+			Primary Key (id),
 			Constraint fk_user_email Foreign Key(email) References users(email)
 				On Delete Cascade On Update Cascade
 		)
