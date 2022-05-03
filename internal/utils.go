@@ -3,9 +3,14 @@ package utils
 import (
 	"math/rand"
 	"strings"
+	"time"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // GenerateRandomString generate a string of random characters of given length
 func GenerateRandomString(n int) string {

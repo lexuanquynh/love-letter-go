@@ -37,6 +37,7 @@ const (
 	ValidationJSONFailure   = 17
 	ValidationTokenFailure  = 18
 	ExistUser               = 19
+	CodeInvalid             = 20
 )
 
 func (e ErrorResponse) Error() string {
@@ -97,6 +98,8 @@ func (e ErrorResponse) Error() string {
 		return "validation of verification token failed"
 	case ExistUser:
 		return "User already exists"
+	case CodeInvalid:
+		return "Verify code invalid"
 	default:
 		return "Unknown Error"
 	}

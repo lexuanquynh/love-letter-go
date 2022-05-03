@@ -169,7 +169,7 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 	valid, err := s.verify(ctx, actualVerificationData, request)
 	if !valid {
 		s.logger.Error("verification code is not valid", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Unauthorized)
+		cusErr := utils.NewErrorResponse(utils.CodeInvalid)
 		return cusErr.Error(), cusErr
 	}
 	// Update user's verified status
@@ -728,7 +728,7 @@ func (s *userService) ResetPassword(ctx context.Context, request *CreateNewPassw
 	for _, password := range listOfPasswords {
 		if isSame := s.auth.ComparePassword(password, request.NewPassword); isSame == true {
 			s.logger.Error("New password is the same as old password", "error", err)
-			return utils.NewErrorResponse(utils.PasswordNotMatch)
+			return utils.NewErrorResponse(utils.ChoiceOtherPassword)
 		}
 	}
 	// Update token hash. It makes refresh token tobe invalid.

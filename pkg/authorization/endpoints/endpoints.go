@@ -250,11 +250,7 @@ func MakeUpdatePasswordEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		message, err := svc.UpdatePassword(ctx, &req)
-		if err != nil {
-			cusErr := utils.NewErrorResponse(utils.InternalServerError)
-			return nil, cusErr
-		}
-		return message, nil
+		return message, err
 	}
 }
 
