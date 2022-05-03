@@ -6,7 +6,6 @@ import (
 	"LoveLetterProject/pkg/authorization/endpoints"
 	"context"
 	"encoding/json"
-	"errors"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"net/http"
 )
@@ -98,20 +97,20 @@ func decodeHTTPRegisterRequest(_ context.Context, r *http.Request) (interface{},
 		var req authorization.RegisterRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.Email == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+			return nil, utils.NewErrorResponse(utils.MailRequired)
 		}
 		if req.Password == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("password is required"), "password is required")
+			return nil, utils.NewErrorResponse(utils.PasswordRequired)
 		}
 		if req.Password != req.RePassword {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("passwords is not same"), "passwords is not same")
+			return nil, utils.NewErrorResponse(utils.PasswordNotMatch)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -122,17 +121,17 @@ func decodeHTTPVerifyMailRequest(_ context.Context, r *http.Request) (interface{
 		var req authorization.VerifyMailRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.Email == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+			return nil, utils.NewErrorResponse(utils.MailRequired)
 		}
 		if req.Code == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("code is required"), "code is required")
+			return nil, utils.NewErrorResponse(utils.CodeRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -143,17 +142,17 @@ func decodeHTTPLoginRequest(_ context.Context, r *http.Request) (interface{}, er
 		var req authorization.LoginRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.Email == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+			return nil, utils.NewErrorResponse(utils.MailRequired)
 		}
 		if req.Password == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("password is required"), "password is required")
+			return nil, utils.NewErrorResponse(utils.PasswordRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -164,14 +163,14 @@ func decodeHTTPLogoutRequest(_ context.Context, r *http.Request) (interface{}, e
 		var req authorization.LogoutRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.RefreshToken == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("refresh token is required"), "refresh token is required")
+			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -182,14 +181,14 @@ func decodeHTTPGetUserRequest(_ context.Context, r *http.Request) (interface{}, 
 		var req authorization.GetUserRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.AccessToken == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -200,14 +199,14 @@ func decodeHTTPGetProfileRequest(_ context.Context, r *http.Request) (interface{
 		var req authorization.GetProfileRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.AccessToken == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -218,14 +217,14 @@ func decodeHTTPUpdateProfileRequest(_ context.Context, r *http.Request) (interfa
 		var req authorization.UpdateProfileRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.AccessToken == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -236,23 +235,23 @@ func decodeHTTPUpdatePasswordRequest(_ context.Context, r *http.Request) (interf
 		var req authorization.UpdatePasswordRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.AccessToken == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("access token is required"), "access token is required")
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.OldPassword == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("old password is required"), "old password is required")
+			return nil, utils.NewErrorResponse(utils.OldPasswordRequired)
 		}
 		if req.NewPassword == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("new password is required"), "new password is required")
+			return nil, utils.NewErrorResponse(utils.NewPasswordRequired)
 		}
 		if req.ConfirmPassword == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("confirm password is required"), "confirm password is required")
+			return nil, utils.NewErrorResponse(utils.ConfirmPasswordRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -263,14 +262,14 @@ func decodeHTTPGetForgetPasswordCodeRequest(_ context.Context, r *http.Request) 
 		var req authorization.GetForgetPasswordCodeRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.Email == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+			return nil, utils.NewErrorResponse(utils.MailRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -281,20 +280,20 @@ func decodeHTTPResetPasswordRequest(_ context.Context, r *http.Request) (interfa
 		var req authorization.CreateNewPasswordWithCodeRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("invalid request body"), "invalid request body")
+			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.Email == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("email is required"), "email is required")
+			return nil, utils.NewErrorResponse(utils.MailRequired)
 		}
 		if req.Code == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("code is required"), "code is required")
+			return nil, utils.NewErrorResponse(utils.CodeRequired)
 		}
 		if req.NewPassword == "" {
-			return nil, utils.NewErrorWrapper(http.StatusBadRequest, errors.New("new password is required"), "new password is required")
+			return nil, utils.NewErrorResponse(utils.NewPasswordRequired)
 		}
 		return req, nil
 	} else {
-		cusErr := utils.NewErrorWrapper(http.StatusBadRequest, errors.New("bad Request"), "Bad Request")
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
 		return nil, cusErr
 	}
 }
@@ -319,26 +318,34 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 func errEncoder(ctx context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	cusErr, ok := err.(utils.CustomErrorWrapper)
+	cusErr, ok := err.(utils.ErrorResponse)
 	if !ok {
-		catchErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, err.Error())
+		catchErr := utils.NewErrorResponse(utils.InternalServerError)
 		res := authorization.GenericErrorResponse{
 			Status:    false,
-			ErrorCode: catchErr.Code,
+			ErrorCode: int(catchErr.ErrorType),
 			Message:   catchErr.Error(),
 		}
-		w.WriteHeader(catchErr.Code)
+		w.WriteHeader(http.StatusInternalServerError)
 		err := json.NewEncoder(w).Encode(res)
 		if err != nil {
 			return
 		}
 		return
 	}
-	w.WriteHeader(cusErr.Code)
+	errCode := int(cusErr.ErrorType)
+	if errCode == utils.TooManyRequests {
+		w.WriteHeader(http.StatusForbidden)
+	} else if errCode >= 400 && errCode < 500 {
+		w.WriteHeader(int(cusErr.ErrorType))
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
 	res := authorization.GenericErrorResponse{
 		Status:    false,
-		ErrorCode: cusErr.Code,
-		Message:   cusErr.Message,
+		ErrorCode: errCode,
+		Message:   cusErr.Error(),
 	}
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {

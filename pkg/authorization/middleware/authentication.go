@@ -6,12 +6,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"github.com/golang-jwt/jwt"
 	"github.com/hashicorp/go-hclog"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
-	"net/http"
 	"time"
 )
 
@@ -77,14 +75,14 @@ func (auth *AuthService) GenerateRefreshToken(user *database.User) (string, erro
 	signBytes, err := ioutil.ReadFile(auth.configs.RefreshTokenPrivateKeyPath)
 	if err != nil {
 		auth.logger.Error("unable to read private key", "error", err)
-		cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to read private key")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return "", cusErr
 	}
 
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(signBytes)
 	if err != nil {
 		auth.logger.Error("unable to parse private key", "error", err)
-		cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to parse private key")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return "", cusErr
 	}
 
@@ -110,14 +108,14 @@ func (auth *AuthService) GenerateAccessToken(user *database.User) (string, error
 	signBytes, err := ioutil.ReadFile(auth.configs.AccessTokenPrivateKeyPath)
 	if err != nil {
 		auth.logger.Error("unable to read private key", "error", err)
-		cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to read private key")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return "", cusErr
 	}
 
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(signBytes)
 	if err != nil {
 		auth.logger.Error("unable to parse private key", "error", err)
-		cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to parse private key")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return "", cusErr
 	}
 
@@ -142,21 +140,20 @@ func (auth *AuthService) ValidateAccessToken(tokenString string) (string, error)
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			auth.logger.Error("Unexpected signing method in auth token")
-			err := errors.New("unexpected signing method in auth token")
-			cusErr := utils.NewErrorWrapper(http.StatusUnauthorized, err, "Unexpected signing method in auth token")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 		verifyBytes, err := ioutil.ReadFile(auth.configs.AccessTokenPublicKeyPath)
 		if err != nil {
 			auth.logger.Error("unable to read public key", "error", err)
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to read public key")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 
 		verifyKey, err := jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 		if err != nil {
 			auth.logger.Error("unable to parse public key", "error", err)
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to parse public key")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 
@@ -170,8 +167,7 @@ func (auth *AuthService) ValidateAccessToken(tokenString string) (string, error)
 
 	claims, ok := token.Claims.(*AccessTokenCustomClaims)
 	if !ok || !token.Valid || claims.UserID == "" || claims.KeyType != "access" {
-		err := errors.New("invalid token")
-		cusErr := utils.NewErrorWrapper(http.StatusUnauthorized, err, "invalid token")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return "", cusErr
 	}
 	return claims.UserID, nil
@@ -183,21 +179,20 @@ func (auth *AuthService) ValidateRefreshToken(tokenString string) (string, strin
 	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			auth.logger.Error("Unexpected signing method in auth token")
-			err := errors.New("unexpected signing method in auth token")
-			cusErr := utils.NewErrorWrapper(http.StatusUnauthorized, err, "Unexpected signing method in auth token")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 		verifyBytes, err := ioutil.ReadFile(auth.configs.RefreshTokenPublicKeyPath)
 		if err != nil {
 			auth.logger.Error("unable to read public key", "error", err)
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to read public key")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 
 		verifyKey, err := jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 		if err != nil {
 			auth.logger.Error("unable to parse public key", "error", err)
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "unable to parse public key")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 
@@ -213,8 +208,7 @@ func (auth *AuthService) ValidateRefreshToken(tokenString string) (string, strin
 	auth.logger.Debug("ok", ok)
 	if !ok || !token.Valid || claims.UserID == "" || claims.KeyType != "refresh" {
 		auth.logger.Debug("could not extract claims from token")
-		err := errors.New("invalid token")
-		cusErr := utils.NewErrorWrapper(http.StatusUnauthorized, err, "invalid token")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return "", "", cusErr
 	}
 	return claims.UserID, claims.CustomKey, nil

@@ -6,11 +6,9 @@ import (
 	"LoveLetterProject/pkg/authorization"
 	"LoveLetterProject/pkg/authorization/middleware"
 	"context"
-	"errors"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/hashicorp/go-hclog"
 	"github.com/juju/ratelimit"
-	"net/http"
 	"strings"
 )
 
@@ -102,18 +100,17 @@ func MakeRegisterEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.RegisterRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		message, err := svc.SignUp(ctx, &req)
 
 		if err != nil {
 			if strings.Contains(err.Error(), utils.PgDuplicateKeyMsg) {
-				cusErr := utils.NewErrorWrapper(http.StatusConflict, err, "Tài khoản đã tồn tại. Vui lòng thử lại.")
+				cusErr := utils.NewErrorResponse(utils.Conflict)
 				return nil, cusErr
 			}
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "Không thể tạo tài khoản. Vui lòng thử lại.")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		return message, err
@@ -125,8 +122,7 @@ func MakeVerifyMailEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.VerifyMailRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		message, err := svc.VerifyMail(ctx, &req)
@@ -143,15 +139,14 @@ func MakeLoginEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.LoginRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
-			return nil, cusErr
+			err := utils.NewErrorResponse(utils.BadRequest)
+			return nil, err
 		}
 		user, err := svc.Login(ctx, &req)
 
 		if err != nil {
 			if strings.Contains(err.Error(), utils.PgDuplicateKeyMsg) {
-				cusErr := utils.NewErrorWrapper(http.StatusConflict, err, "Account already exists. Please try again.")
+				cusErr := utils.NewErrorResponse(utils.Conflict)
 				return nil, cusErr
 			}
 			return nil, err
@@ -173,14 +168,13 @@ func MakeLogoutEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.LogoutRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		err := svc.Logout(ctx, &req)
 
 		if err != nil {
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "Can't logout. Please try again later.")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		message := "Logout successfully"
@@ -193,13 +187,12 @@ func MakeGetUserEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		_, ok := request.(authorization.GetUserRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		user, err := svc.GetUser(ctx)
 		if err != nil {
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "Can't get user. Please try again later.")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 
@@ -212,13 +205,12 @@ func MakeGetProfileEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		_, ok := request.(authorization.GetProfileRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		profile, err := svc.GetProfile(ctx)
 		if err != nil {
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "Can't get profile. Please try again later.")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 
@@ -231,13 +223,12 @@ func MakeUpdateProfileEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.UpdateProfileRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		profile, err := svc.UpdateProfile(ctx, &req)
 		if err != nil {
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, "Can't update profile. Please try again later.")
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 		return profile, nil
@@ -249,13 +240,12 @@ func MakeUpdatePasswordEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.UpdatePasswordRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		message, err := svc.UpdatePassword(ctx, &req)
 		if err != nil {
-			cusErr := utils.NewErrorWrapper(http.StatusInternalServerError, err, message)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
 		return message, nil
@@ -267,14 +257,13 @@ func MakeGetForgetPasswordCodeEndpoint(svc authorization.Service) endpoint.Endpo
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.GetForgetPasswordCodeRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		err := svc.GetForgetPasswordCode(ctx, req.Email)
 		if err != nil {
 			if strings.Contains(err.Error(), "successfully mailed password reset code") {
-				return err.Error(), nil
+				return "successfully mailed password reset code. Please check your email.", nil
 			}
 			return nil, err
 		}
@@ -287,8 +276,7 @@ func MakeCreateNewPasswordWithCodeEndpoint(svc authorization.Service) endpoint.E
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.CreateNewPasswordWithCodeRequest)
 		if !ok {
-			err := errors.New("invalid request")
-			cusErr := utils.NewErrorWrapper(http.StatusBadRequest, err, "invalid request")
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		err := svc.ResetPassword(ctx, &req)
