@@ -49,6 +49,6 @@ type UserRepository interface {
 	DeleteMatchVerifyDataByUserID(ctx context.Context, userID string) error
 	// GetMatchLoveDataByUserID Get match love data
 	GetMatchLoveDataByUserID(ctx context.Context, userID string) (*MatchLoveData, error)
-	// InsertOrUpdateMatchLoveData Insert or update match love data
-	InsertOrUpdateMatchLoveData(ctx context.Context, matchData *MatchLoveData) error
+	// InsertOrDeleteMatchLoveData Insert or update match love data
+	InsertOrDeleteMatchLoveData(ctx context.Context, matchData *MatchLoveData, isDelete bool) error
 }

@@ -266,9 +266,10 @@ func (repo *postgresRepository) InsertOrUpdateLimitData(ctx context.Context, lim
 	isInsert := false
 	if err != nil {
 		isInsert = true
+		limitData.ID = uuid.NewV4().String()
+		limitData.CreatedAt = time.Now()
 	}
-	limitData.ID = uuid.NewV4().String()
-	limitData.CreatedAt = time.Now()
+
 	limitData.UpdatedAt = time.Now()
 	// Insert or update
 	if isInsert {
@@ -334,9 +335,9 @@ func (repo *postgresRepository) InsertOrUpdateMatchVerifyData(ctx context.Contex
 	isInsert := false
 	if err != nil {
 		isInsert = true
+		matchData.ID = uuid.NewV4().String()
+		matchData.CreatedAt = time.Now()
 	}
-	matchData.ID = uuid.NewV4().String()
-	matchData.CreatedAt = time.Now()
 	matchData.UpdatedAt = time.Now()
 	// Insert or update
 	if isInsert {
@@ -386,36 +387,23 @@ func (repo *postgresRepository) GetMatchLoveDataByUserID(ctx context.Context, us
 	return matchData, err
 }
 
-// InsertOrUpdateMatchLoveData Insert or update match love data
-func (repo *postgresRepository) InsertOrUpdateMatchLoveData(ctx context.Context, matchData *MatchLoveData) error {
-	// Check exist or not match data
-	_, err := repo.GetMatchLoveDataByUserID(ctx, matchData.UserID)
-	isInsert := false
-	if err != nil {
-		isInsert = true
-
-	}
-	matchData.ID = uuid.NewV4().String()
-	matchData.CreatedAt = time.Now()
-	matchData.UpdatedAt = time.Now()
-	// Insert or update
-	if isInsert {
-		// Insert the match data
-		query := "insert into matchloves(id, userid, matchid, createdat, updatedat) values($1, $2, $3, $4, $5)"
+// InsertOrDeleteMatchLoveData Insert or delete match love data
+func (repo *postgresRepository) InsertOrDeleteMatchLoveData(ctx context.Context, matchData *MatchLoveData, isDelete bool) error {
+	// if delete
+	if isDelete {
+		query := "delete from matchloves where userid = $1 or matchid = $1"
+		_, err := repo.db.ExecContext(ctx, query, matchData.UserID)
+		return err
+	} else {
+		// insert new row
+		matchData.ID = uuid.NewV4().String()
+		matchData.CreatedAt = time.Now()
+		query := "insert into matchloves(id, userid, matchid, createdat) values($1, $2, $3, $4)"
 		_, err := repo.db.ExecContext(ctx, query,
 			matchData.ID,
 			matchData.UserID,
 			matchData.MatchID,
-			matchData.CreatedAt,
-			matchData.UpdatedAt)
-		return err
-	} else {
-		// Update the match data
-		query := "update matchloves set matchid = $1, updatedat = $2 where userid = $3"
-		_, err := repo.db.ExecContext(ctx, query,
-			matchData.MatchID,
-			matchData.UpdatedAt,
-			matchData.UserID)
+			matchData.CreatedAt)
 		return err
 	}
 }

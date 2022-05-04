@@ -50,5 +50,4 @@ type MatchLoveData struct {
 	UserID    string    `json:"userid" sql:"userid"`
 	MatchID   string    `json:"matchid" sql:"matchid"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
-	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }

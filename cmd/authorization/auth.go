@@ -112,10 +112,7 @@ const matchLoveSchema = `
 			userid 	Varchar(36) not null,
 			matchid 	Varchar(36) not null,
 			createdat  Timestamp not null,
-			updatedat  Timestamp not null,	
-			Primary Key (id),
-			Constraint fk_user_id Foreign Key(userid) References users(id)
-				On Delete Cascade On Update Cascade
+			Primary Key (id)
 		)
 `
 

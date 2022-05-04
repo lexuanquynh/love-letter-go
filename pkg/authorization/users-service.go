@@ -1017,7 +1017,7 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 	// Match user with new love
 	matchLove.UserID = user.ID
 	matchLove.MatchID = matchData.UserID
-	err = s.repo.InsertOrUpdateMatchLoveData(ctx, matchLove)
+	err = s.repo.InsertOrDeleteMatchLoveData(ctx, matchLove, false)
 	if err != nil {
 		s.logger.Error("Cannot insert or update match love data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1066,9 +1066,8 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
 		return cusErr
 	}
-	// Delete match data or update match data with code is empty
-	matchLove.MatchID = ""
-	err = s.repo.InsertOrUpdateMatchLoveData(ctx, matchLove)
+	// Delete match data
+	err = s.repo.InsertOrDeleteMatchLoveData(ctx, matchLove, true)
 	if err != nil {
 		s.logger.Error("Cannot delete match love data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)

@@ -118,7 +118,7 @@ func (e ErrorResponse) Error() string {
 	case UserAlreadyMatched:
 		return "user already matched"
 	case MatchCodeIsNotFound:
-		return "match code is not found"
+		return "match code is not exactly"
 	case UserNotMatch:
 		return "user not match"
 	default:
