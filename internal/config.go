@@ -23,6 +23,7 @@ type Configurations struct {
 	SendGridApiKey             string `mapstructure:"SENDGRID_API_KEY"`
 	MailVerifCodeExpiration    int    `mapstructure:"MAIL_VERIFICATION_CODE_EXPIRATION"` // in hours
 	PassResetCodeExpiration    int    `mapstructure:"PASSWORD_RESET_CODE_EXPIRATION"`    // in minutes
+	MatchCodeExpiration        int    `mapstructure:"MATCH_CODE_EXPIRATION"`             // in minutes
 	MailVerifTemplateID        string `mapstructure:"MAIL_VERIFICATION_TEMPLATE_ID"`
 	PassResetTemplateID        string `mapstructure:"PASSWORD_RESET_TEMPLATE_ID"`
 	MailSender                 string `mapstructure:"MAIL_SENDER"`

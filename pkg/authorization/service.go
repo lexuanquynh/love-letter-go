@@ -18,4 +18,7 @@ type Service interface {
 	ResetPassword(ctx context.Context, request *CreateNewPasswordWithCodeRequest) error
 	GenerateAccessToken(ctx context.Context) (interface{}, error)
 	GetVerifyMailCode(ctx context.Context) error
+	GetMatchCode(ctx context.Context) (interface{}, error)
+	MatchLover(ctx context.Context, request *MatchLoverRequest) error
+	UnMatchedLover(ctx context.Context) error
 }

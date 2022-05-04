@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/hashicorp/go-hclog"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
@@ -913,5 +914,166 @@ func (s *userService) GetVerifyMailCode(ctx context.Context) error {
 		return cusErr
 	}
 	s.logger.Debug("successfully mailed password reset code")
+	return nil
+}
+
+// GetMatchCode get match code
+func (s *userService) GetMatchCode(ctx context.Context) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	// Generate match code
+	matchCode := utils.GenerateRandomString(8)
+	// Store match code to db
+	matchData := &database.MatchVerifyData{
+		UserID:    user.ID,
+		Code:      matchCode,
+		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.MatchCodeExpiration)),
+	}
+	err = s.repo.InsertOrUpdateMatchVerifyData(ctx, matchData)
+	if err != nil {
+		s.logger.Error("unable to store match data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	s.logger.Debug("successfully generate & stored match code")
+	getMatchCodeResponse := &GetMatchCodeResponse{
+		Code:    matchCode,
+		Message: fmt.Sprintf("Successfully generated match code. Match code will expire in %d minute or when a new match code is generated.", s.configs.MatchCodeExpiration),
+	}
+	return getMatchCodeResponse, nil
+}
+
+// MatchLover match love
+func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest) error {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Check if user has match code
+	matchData, err := s.repo.GetMatchVerifyDataByCode(ctx, request.Code)
+	if err != nil {
+		s.logger.Error("Cannot get match data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.MatchCodeIsNotFound)
+		return cusErr
+	}
+	if matchData.Code == "" {
+		s.logger.Error("User does not have match code")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if match code is expired
+	if matchData.ExpiresAt.Before(time.Now()) {
+		s.logger.Error("Match code is expired")
+		cusErr := utils.NewErrorResponse(utils.MatchCodeIsExpired)
+		return cusErr
+	}
+	// Check if match code is correct
+	if matchData.Code != request.Code {
+		s.logger.Error("Match code is incorrect")
+		cusErr := utils.NewErrorResponse(utils.MatchCodeIsIncorrect)
+		return cusErr
+	}
+	// Check if user has already matched
+	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("User not match", "error", err)
+	}
+	// Check if user has already matched
+	if matchLove.MatchID != "" {
+		s.logger.Error("User has already matched")
+		cusErr := utils.NewErrorResponse(utils.UserAlreadyMatched)
+		return cusErr
+	}
+	// Match user with new love
+	matchLove.UserID = user.ID
+	matchLove.MatchID = matchData.UserID
+	err = s.repo.InsertOrUpdateMatchLoveData(ctx, matchLove)
+	if err != nil {
+		s.logger.Error("Cannot insert or update match love data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Delete match data
+	err = s.repo.DeleteMatchVerifyDataByUserID(ctx, matchData.UserID)
+	if err != nil {
+		s.logger.Error("Cannot delete match data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	s.logger.Debug("Successfully matched user")
+	return nil
+}
+
+// UnMatchedLover unmatched lover
+func (s *userService) UnMatchedLover(ctx context.Context) error {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Check if user has match code
+	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("User does not match with someone", "error", err)
+		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+		return cusErr
+	}
+	if matchLove.MatchID == "" {
+		s.logger.Error("User does not match with someone")
+		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+		return cusErr
+	}
+	// Delete match data or update match data with code is empty
+	matchLove.MatchID = ""
+	err = s.repo.InsertOrUpdateMatchLoveData(ctx, matchLove)
+	if err != nil {
+		s.logger.Error("Cannot delete match love data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	s.logger.Debug("Successfully unmatch lover")
 	return nil
 }

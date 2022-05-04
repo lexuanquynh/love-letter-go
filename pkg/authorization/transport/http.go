@@ -101,6 +101,24 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/get-match-code", httptransport.NewServer(
+		ep.GetMatchCodeEndpoint,
+		decodeHTTPGetMatchCodeRequest,
+		encodeResponse,
+		options...,
+	))
+	m.Handle("/match-lover", httptransport.NewServer(
+		ep.MatchLoverEndpoint,
+		decodeHTTPMatchLoverRequest,
+		encodeResponse,
+		options...,
+	))
+	m.Handle("/un-match-lover", httptransport.NewServer(
+		ep.UnMatchLoverEndpoint,
+		decodeHTTPUnMatchLoverRequest,
+		encodeResponse,
+		options...,
+	))
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
@@ -375,6 +393,64 @@ func decodeHTTPGetVerifyMailCodeRequest(_ context.Context, r *http.Request) (int
 	}
 }
 
+// decodeHTTPGetMatchCodeRequest decode request
+func decodeHTTPGetMatchCodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetMatchCodeRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPMatchLoverRequest decode request
+func decodeHTTPMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.MatchLoverRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		if req.Code == "" {
+			return nil, utils.NewErrorResponse(utils.CodeRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPUnMatchLoverRequest decode request
+func decodeHTTPUnMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.UnMatchLoverRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// encodeResponse encode response
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 

@@ -74,7 +74,7 @@ const profileSchema = `
 		)
 `
 
-// schema for securityuser table
+// schema for security user table
 const securityUserSchema = `
 		create table if not exists passworusers (
 			id 		   Varchar(36) not null,
@@ -98,6 +98,35 @@ const limitSchema = `
 			numofchangepassword Int default 0,
 		    numoflogin 	   Int default 0,
 			createdat  Timestamp not null,
+			updatedat  Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
+// schema for match love table
+const matchLoveSchema = `
+		create table if not exists matchloves (
+			id 		   Varchar(36) not null,
+			userid 	Varchar(36) not null,
+			matchid 	Varchar(36) not null,
+			createdat  Timestamp not null,
+			updatedat  Timestamp not null,	
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
+// schema for generate match code table
+const generateMatchCodeSchema = `
+		create table if not exists generatematchcodes (
+			id 		   Varchar(36) not null,
+			userid 	Varchar(36) not null,
+			code  		Varchar(10) not null,
+			expiresat 	Timestamp not null,
+		    createdat  Timestamp not null,
 			updatedat  Timestamp not null,
 			Primary Key (id),
 			Constraint fk_user_id Foreign Key(userid) References users(id)
@@ -129,6 +158,9 @@ func main() {
 	db.MustExec(profileSchema)
 	db.MustExec(securityUserSchema)
 	db.MustExec(limitSchema)
+	db.MustExec(matchLoveSchema)
+	db.MustExec(generateMatchCodeSchema)
+	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
 	repository := database.NewPostgresRepository(db, logger)
 	// mailService contains the utility methods to send an email

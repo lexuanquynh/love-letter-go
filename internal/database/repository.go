@@ -41,4 +41,14 @@ type UserRepository interface {
 	InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, limitType LimitType) error
 	// ClearLimitData Clear limit data
 	ClearLimitData(ctx context.Context, limitType LimitType) error
+	// GetMatchVerifyDataByCode Get match data
+	GetMatchVerifyDataByCode(ctx context.Context, userID string) (*MatchVerifyData, error)
+	// InsertOrUpdateMatchVerifyData Insert or update match data
+	InsertOrUpdateMatchVerifyData(ctx context.Context, matchData *MatchVerifyData) error
+	// DeleteMatchVerifyDataByUserID Delete match data
+	DeleteMatchVerifyDataByUserID(ctx context.Context, userID string) error
+	// GetMatchLoveDataByUserID Get match love data
+	GetMatchLoveDataByUserID(ctx context.Context, userID string) (*MatchLoveData, error)
+	// InsertOrUpdateMatchLoveData Insert or update match love data
+	InsertOrUpdateMatchLoveData(ctx context.Context, matchData *MatchLoveData) error
 }

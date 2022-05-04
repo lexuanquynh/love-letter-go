@@ -40,6 +40,11 @@ const (
 	CodeInvalid             = 20
 	UsernameRequired        = 21
 	ExistUserName           = 22
+	MatchCodeIsExpired      = 23
+	MatchCodeIsIncorrect    = 24
+	UserAlreadyMatched      = 25
+	MatchCodeIsNotFound     = 26
+	UserNotMatch            = 27
 )
 
 func (e ErrorResponse) Error() string {
@@ -106,6 +111,16 @@ func (e ErrorResponse) Error() string {
 		return "Username required"
 	case ExistUserName:
 		return "Username already exists"
+	case MatchCodeIsExpired:
+		return "match code is expired"
+	case MatchCodeIsIncorrect:
+		return "match code is incorrect"
+	case UserAlreadyMatched:
+		return "user already matched"
+	case MatchCodeIsNotFound:
+		return "match code is not found"
+	case UserNotMatch:
+		return "user not match"
 	default:
 		return "Unknown Error"
 	}

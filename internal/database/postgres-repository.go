@@ -318,3 +318,95 @@ func (repo *postgresRepository) ClearLimitData(ctx context.Context, limitType Li
 	_, err := repo.db.ExecContext(ctx, query)
 	return err
 }
+
+// GetMatchVerifyDataByCode returns the match data
+func (repo *postgresRepository) GetMatchVerifyDataByCode(ctx context.Context, code string) (*MatchVerifyData, error) {
+	query := "select * from generatematchcodes where code = $1"
+	matchData := &MatchVerifyData{}
+	err := repo.db.GetContext(ctx, matchData, query, code)
+	return matchData, err
+}
+
+// InsertOrUpdateMatchVerifyData updates the match data
+func (repo *postgresRepository) InsertOrUpdateMatchVerifyData(ctx context.Context, matchData *MatchVerifyData) error {
+	// Check exist or not match data
+	_, err := repo.GetMatchVerifyDataByCode(ctx, matchData.Code)
+	isInsert := false
+	if err != nil {
+		isInsert = true
+	}
+	matchData.ID = uuid.NewV4().String()
+	matchData.CreatedAt = time.Now()
+	matchData.UpdatedAt = time.Now()
+	// Insert or update
+	if isInsert {
+		// Insert the match data
+		query := "insert into generatematchcodes(id, userid, code, expiresat, createdat, updatedat) values($1, $2, $3, $4, $5, $6)"
+		_, err := repo.db.ExecContext(ctx, query,
+			matchData.ID,
+			matchData.UserID,
+			matchData.Code,
+			matchData.ExpiresAt,
+			matchData.CreatedAt,
+			matchData.UpdatedAt)
+		return err
+	} else {
+		// Update the match data
+		query := "update generatematchcodes set code = $1, expiresat = $2, updatedat = $3 where userid = $4"
+		_, err := repo.db.ExecContext(ctx, query,
+			matchData.Code,
+			matchData.ExpiresAt,
+			matchData.UpdatedAt,
+			matchData.UserID)
+		return err
+	}
+}
+
+// DeleteMatchVerifyDataByUserID deletes the match data
+func (repo *postgresRepository) DeleteMatchVerifyDataByUserID(ctx context.Context, userID string) error {
+	query := "delete from generatematchcodes where userid = $1"
+	_, err := repo.db.ExecContext(ctx, query, userID)
+	return err
+}
+
+// GetMatchLoveDataByUserID returns the match love data
+func (repo *postgresRepository) GetMatchLoveDataByUserID(ctx context.Context, userID string) (*MatchLoveData, error) {
+	query := "select * from matchloves where userid = $1"
+	matchData := &MatchLoveData{}
+	err := repo.db.GetContext(ctx, matchData, query, userID)
+	return matchData, err
+}
+
+// InsertOrUpdateMatchLoveData Insert or update match love data
+func (repo *postgresRepository) InsertOrUpdateMatchLoveData(ctx context.Context, matchData *MatchLoveData) error {
+	// Check exist or not match data
+	_, err := repo.GetMatchLoveDataByUserID(ctx, matchData.UserID)
+	isInsert := false
+	if err != nil {
+		isInsert = true
+
+	}
+	matchData.ID = uuid.NewV4().String()
+	matchData.CreatedAt = time.Now()
+	matchData.UpdatedAt = time.Now()
+	// Insert or update
+	if isInsert {
+		// Insert the match data
+		query := "insert into matchloves(id, userid, matchid, createdat, updatedat) values($1, $2, $3, $4, $5)"
+		_, err := repo.db.ExecContext(ctx, query,
+			matchData.ID,
+			matchData.UserID,
+			matchData.MatchID,
+			matchData.CreatedAt,
+			matchData.UpdatedAt)
+		return err
+	} else {
+		// Update the match data
+		query := "update matchloves set matchid = $1, updatedat = $2 where userid = $3"
+		_, err := repo.db.ExecContext(ctx, query,
+			matchData.MatchID,
+			matchData.UpdatedAt,
+			matchData.UserID)
+		return err
+	}
+}

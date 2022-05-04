@@ -143,3 +143,25 @@ type GenerateAccessResponse struct {
 type GetVerifyMailCodeRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
+
+// GetMatchCodeRequest is used to get match code
+type GetMatchCodeRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+}
+
+// GetMatchCodeResponse is the response for get match code
+type GetMatchCodeResponse struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// MatchLoverRequest is used to match love
+type MatchLoverRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Code        string `json:"code" validate:"required"`
+}
+
+// UnMatchLoverRequest is used to unmatch love
+type UnMatchLoverRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+}
