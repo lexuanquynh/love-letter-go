@@ -30,6 +30,7 @@ type Set struct {
 	GetMatchCodeEndpoint          endpoint.Endpoint
 	MatchLoverEndpoint            endpoint.Endpoint
 	UnMatchLoverEndpoint          endpoint.Endpoint
+	GetMatchedLoverEndpoint       endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -116,6 +117,11 @@ func NewEndpointSet(svc authorization.Service,
 	unMatchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(unMatchLoverEndpoint)
 	unMatchLoverEndpoint = middleware.ValidateAccessToken(auth, logger)(unMatchLoverEndpoint)
 
+	getMatchedLoverEndpoint := MakeGetMatchedLoverEndpoint(svc)
+	getMatchedLoverEndpoint = middleware.RateLimitRequest(tb, logger)(getMatchedLoverEndpoint)
+	getMatchedLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(getMatchedLoverEndpoint)
+	getMatchedLoverEndpoint = middleware.ValidateAccessToken(auth, logger)(getMatchedLoverEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -134,6 +140,7 @@ func NewEndpointSet(svc authorization.Service,
 		GetMatchCodeEndpoint:          getMatchCodeEndpoint,
 		MatchLoverEndpoint:            matchLoverEndpoint,
 		UnMatchLoverEndpoint:          unMatchLoverEndpoint,
+		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
 	}
 }
 
@@ -417,5 +424,21 @@ func MakeUnMatchedLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return "successfully unmatched lover", nil
+	}
+}
+
+// MakeGetMatchedLoverEndpoint returns an endpoint that invokes GetMatchLover on the service.
+func MakeGetMatchedLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_, ok := request.(authorization.GetMatchedLoverRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		matchLover, err := svc.GetMatchLover(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return matchLover, nil
 	}
 }

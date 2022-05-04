@@ -1077,3 +1077,58 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 	s.logger.Debug("Successfully unmatch lover")
 	return nil
 }
+
+// GetMatchLover get lover
+func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	// Check if user has match code
+	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("User does not match with someone", "error", err)
+		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+		return nil, cusErr
+	}
+	if matchLove.MatchID == "" {
+		s.logger.Error("User does not match with someone")
+		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+		return nil, cusErr
+	}
+	// Get lover
+	lover, err := s.repo.GetUserByID(ctx, matchLove.MatchID)
+	if err != nil {
+		s.logger.Error("Cannot get lover", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if lover is banned
+	if lover.Banned {
+		s.logger.Error("Lover is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	s.logger.Debug("Successfully get lover")
+	response := GetLoverResponse{
+		UserID:   lover.ID,
+		Email:    lover.Email,
+		Username: lover.Username,
+		Verified: lover.Verified,
+	}
+	return response, nil
+}

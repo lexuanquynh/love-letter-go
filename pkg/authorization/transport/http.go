@@ -119,6 +119,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/get-matched-lover", httptransport.NewServer(
+		ep.GetMatchedLoverEndpoint,
+		decodeHTTPGetMatchedLoverRequest,
+		encodeResponse,
+		options...,
+	))
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
@@ -436,6 +442,24 @@ func decodeHTTPMatchLoverRequest(_ context.Context, r *http.Request) (interface{
 func decodeHTTPUnMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.UnMatchLoverRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetMatchedLoverRequest decode request
+func decodeHTTPGetMatchedLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetMatchedLoverRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)

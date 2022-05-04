@@ -374,6 +374,15 @@ func (repo *postgresRepository) GetMatchLoveDataByUserID(ctx context.Context, us
 	query := "select * from matchloves where userid = $1"
 	matchData := &MatchLoveData{}
 	err := repo.db.GetContext(ctx, matchData, query, userID)
+	if err != nil {
+		query = "select * from matchloves where matchid = $1"
+		err = repo.db.GetContext(ctx, matchData, query, userID)
+		if err == nil {
+			temp := matchData.MatchID
+			matchData.MatchID = matchData.UserID
+			matchData.UserID = temp
+		}
+	}
 	return matchData, err
 }
 

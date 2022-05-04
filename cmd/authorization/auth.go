@@ -134,6 +134,23 @@ const generateMatchCodeSchema = `
 		)
 `
 
+// schema for mail table
+const mailSchema = `
+		create table if not exists mails (
+			id 		   Varchar(36) not null,
+			userid 		Varchar(36) not null,
+			matchid 	Varchar(36) not null default '',
+			title		Varchar(255) not null,
+			content		Varchar(1000) not null,
+			timeopen 	Timestamp not null,
+			createdat   Timestamp not null,
+			updatedat   Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
 func main() {
 	logger := utils.NewLogger()
 
@@ -160,6 +177,8 @@ func main() {
 	db.MustExec(limitSchema)
 	db.MustExec(matchLoveSchema)
 	db.MustExec(generateMatchCodeSchema)
+	db.MustExec(mailSchema)
+
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
 	repository := database.NewPostgresRepository(db, logger)

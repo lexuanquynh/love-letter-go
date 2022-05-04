@@ -21,4 +21,5 @@ type Service interface {
 	GetMatchCode(ctx context.Context) (interface{}, error)
 	MatchLover(ctx context.Context, request *MatchLoverRequest) error
 	UnMatchedLover(ctx context.Context) error
+	GetMatchLover(ctx context.Context) (interface{}, error)
 }

@@ -71,6 +71,14 @@ type GetUserResponse struct {
 	Verified bool   `json:"verified"`
 }
 
+// GetLoverResponse is the response for get lover info
+type GetLoverResponse struct {
+	UserID   string `json:"user_id"`
+	Email    string `json:"email"`
+	Username string `json:"username,omitempty"`
+	Verified bool   `json:"verified"`
+}
+
 // GetProfileResponse is the response for get user profile
 type GetProfileResponse struct {
 	Email     string `json:"email"`
@@ -163,5 +171,10 @@ type MatchLoverRequest struct {
 
 // UnMatchLoverRequest is used to unmatch love
 type UnMatchLoverRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+}
+
+// GetMatchedLoverRequest is used to get match lover
+type GetMatchedLoverRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
