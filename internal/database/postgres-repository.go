@@ -44,6 +44,16 @@ func (repo *postgresRepository) UpdateUserVerificationStatus(ctx context.Context
 	return nil
 }
 
+// CheckUsernameExists checks if the given username exists in the database.
+func (repo *postgresRepository) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
+	query := "select count(*) from users where username = $1"
+	var count int
+	if err := repo.db.GetContext(ctx, &count, query, username); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // StoreVerificationData adds a mail verification data to db
 func (repo *postgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error {
 	if isInsert {

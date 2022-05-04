@@ -39,6 +39,12 @@ type GetUserRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
 
+// UpdateUserNameRequest is used to update user name
+type UpdateUserNameRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Username    string `json:"username" validate:"required"`
+}
+
 // GetProfileRequest is used to get user profile
 type GetProfileRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`

@@ -19,6 +19,7 @@ type Set struct {
 	LoginEndpoint                 endpoint.Endpoint
 	LogoutEndpoint                endpoint.Endpoint
 	GetUserEndpoint               endpoint.Endpoint
+	UpdateUserNameEndpoint        endpoint.Endpoint
 	GetProfileEndpoint            endpoint.Endpoint
 	UpdateProfileEndpoint         endpoint.Endpoint
 	UpdatePasswordEndpoint        endpoint.Endpoint
@@ -58,6 +59,11 @@ func NewEndpointSet(svc authorization.Service,
 	getUserEndpoint = middleware.RateLimitRequest(tb, logger)(getUserEndpoint)
 	getUserEndpoint = middleware.ValidateParamRequest(validator, logger)(getUserEndpoint)
 	getUserEndpoint = middleware.ValidateAccessToken(auth, logger)(getUserEndpoint)
+
+	updateUserNameEndpoint := MakeUpdateUserNameEndpoint(svc)
+	updateUserNameEndpoint = middleware.RateLimitRequest(tb, logger)(updateUserNameEndpoint)
+	updateUserNameEndpoint = middleware.ValidateParamRequest(validator, logger)(updateUserNameEndpoint)
+	updateUserNameEndpoint = middleware.ValidateAccessToken(auth, logger)(updateUserNameEndpoint)
 
 	getProfileEndpoint := MakeGetProfileEndpoint(svc)
 	getProfileEndpoint = middleware.RateLimitRequest(tb, logger)(getProfileEndpoint)
@@ -101,6 +107,7 @@ func NewEndpointSet(svc authorization.Service,
 		GetUserEndpoint:               getUserEndpoint,
 		GetProfileEndpoint:            getProfileEndpoint,
 		UpdateProfileEndpoint:         updateProfileEndpoint,
+		UpdateUserNameEndpoint:        updateUserNameEndpoint,
 		UpdatePasswordEndpoint:        updatePasswordEndpoint,
 		GetForgetPasswordCodeEndpoint: getForgetPasswordCodeEndpoint,
 		ResetPasswordEndpoint:         resetPasswordEndpoint,
@@ -210,6 +217,22 @@ func MakeGetUserEndpoint(svc authorization.Service) endpoint.Endpoint {
 		}
 
 		return user, err
+	}
+}
+
+// MakeUpdateUserNameEndpoint returns an endpoint that invokes UpdateUserName on the service.
+func MakeUpdateUserNameEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.UpdateUserNameRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		user, err := svc.UpdateUserName(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return user, nil
 	}
 }
 

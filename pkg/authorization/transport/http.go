@@ -64,6 +64,13 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/update-username", httptransport.NewServer(
+		ep.UpdateUserNameEndpoint,
+		decodeHTTPUpdateUsernameRequest,
+		encodeResponse,
+		options...,
+	))
+
 	m.Handle("/update-password", httptransport.NewServer(
 		ep.UpdatePasswordEndpoint,
 		decodeHTTPUpdatePasswordRequest,
@@ -231,6 +238,27 @@ func decodeHTTPUpdateProfileRequest(_ context.Context, r *http.Request) (interfa
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPUpdateUsernameRequest decode request
+func decodeHTTPUpdateUsernameRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.UpdateUserNameRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.Username == "" {
+			return nil, utils.NewErrorResponse(utils.UsernameRequired)
 		}
 		if req.AccessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)

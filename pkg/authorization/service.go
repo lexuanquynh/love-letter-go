@@ -10,6 +10,7 @@ type Service interface {
 	Login(ctx context.Context, request *LoginRequest) (interface{}, error)
 	Logout(ctx context.Context, request *LogoutRequest) error
 	GetUser(ctx context.Context) (interface{}, error)
+	UpdateUserName(ctx context.Context, request *UpdateUserNameRequest) (interface{}, error)
 	GetProfile(ctx context.Context) (interface{}, error)
 	UpdateProfile(ctx context.Context, request *UpdateProfileRequest) (interface{}, error)
 	UpdatePassword(ctx context.Context, request *UpdatePasswordRequest) (string, error)

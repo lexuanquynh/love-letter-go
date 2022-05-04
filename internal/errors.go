@@ -38,6 +38,8 @@ const (
 	ValidationTokenFailure  = 18
 	ExistUser               = 19
 	CodeInvalid             = 20
+	UsernameRequired        = 21
+	ExistUserName           = 22
 )
 
 func (e ErrorResponse) Error() string {
@@ -100,6 +102,10 @@ func (e ErrorResponse) Error() string {
 		return "User already exists"
 	case CodeInvalid:
 		return "Verify code invalid"
+	case UsernameRequired:
+		return "Username required"
+	case ExistUserName:
+		return "Username already exists"
 	default:
 		return "Unknown Error"
 	}

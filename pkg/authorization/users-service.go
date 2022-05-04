@@ -393,6 +393,50 @@ func (s *userService) GetProfile(ctx context.Context) (interface{}, error) {
 	return profileResponse, nil
 }
 
+// UpdateUserName updates user name.
+func (s *userService) UpdateUserName(ctx context.Context, request *UpdateUserNameRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr.Error(), cusErr
+	}
+	// Check if username is already taken
+	if exist, err := s.repo.CheckUsernameExists(ctx, request.Username); exist || err != nil {
+		s.logger.Error("Username is already taken", "error", err)
+		cusErr := utils.NewErrorResponse(utils.ExistUserName)
+		return cusErr.Error(), cusErr
+	}
+	// Update user name
+	user.Username = request.Username
+	err = s.repo.UpdateUser(ctx, user)
+	if err != nil {
+		s.logger.Error("Cannot update user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+	s.logger.Debug("Update user name success", "email", user.Email)
+	// Make response data
+	userResponse := GetUserResponse{
+		Email:    user.Email,
+		Username: user.Username,
+		Verified: user.Verified,
+	}
+	return userResponse, nil
+}
+
 // UpdateProfile updates user profile.
 func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileRequest) (interface{}, error) {
 	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)

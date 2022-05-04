@@ -23,6 +23,8 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, id string) (*User, error)
 	// UpdateUser Update user
 	UpdateUser(ctx context.Context, user *User) error
+	// CheckUsernameExists Check if username exists
+	CheckUsernameExists(ctx context.Context, username string) (bool, error)
 	// GetProfileByID Get profile by user id
 	GetProfileByID(ctx context.Context, userId string) (*ProfileData, error)
 	// UpdateProfile Update profile
