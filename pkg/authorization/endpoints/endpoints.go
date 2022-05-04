@@ -347,6 +347,6 @@ func MakeGetVerifyMailCodeEndpoint(svc authorization.Service) endpoint.Endpoint 
 		if err != nil {
 			return nil, err
 		}
-		return "successfully mailed verification code. Please check your email.", nil
+		return "Email has been successfully verified", nil
 	}
 }

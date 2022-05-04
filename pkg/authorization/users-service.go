@@ -131,7 +131,7 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 		return "Email has been successfully verified.", nil
 	}
 	// Get limit data
-	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeLogin)
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeSendVerifyMail)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
 	}
@@ -142,7 +142,7 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 		return cusErr.Error(), cusErr
 	}
 	// Update limit data
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeLogin)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeSendVerifyMail)
 	if err != nil {
 		s.logger.Error("Cannot insert or update limit data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -181,8 +181,8 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 		return cusErr.Error(), cusErr
 	}
 	// Reset limit data
-	limitData.NumOfLogin = 0
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeLogin)
+	limitData.NumOfSendMailVerify = 0
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeSendVerifyMail)
 	if err != nil {
 		s.logger.Error("Cannot reset number of login", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -315,6 +315,7 @@ func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error 
 	user.TokenHash = utils.GenerateRandomString(15)
 	// Generate refreshToken
 	refreshToken, err := s.auth.GenerateRefreshToken(user)
+
 	if err != nil {
 		s.logger.Error("Error generating refreshToken", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -846,6 +847,11 @@ func (s *userService) GetVerifyMailCode(ctx context.Context) error {
 		s.logger.Error("User is banned", "error", err)
 		cusErr := utils.NewErrorResponse(utils.Forbidden)
 		return cusErr
+	}
+	// Check if user is verified
+	if user.Verified {
+		s.logger.Error("Email has been successfully verified")
+		return nil
 	}
 	// Get limit data
 	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeSendVerifyMail)
