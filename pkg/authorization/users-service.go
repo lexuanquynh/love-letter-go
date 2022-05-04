@@ -983,7 +983,7 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 	matchData, err := s.repo.GetMatchVerifyDataByCode(ctx, request.Code)
 	if err != nil {
 		s.logger.Error("Cannot get match data", "error", err)
-		cusErr := utils.NewErrorResponse(utils.MatchCodeIsNotFound)
+		cusErr := utils.NewErrorResponse(utils.MatchCodeIsNotExactly)
 		return cusErr
 	}
 	if matchData.Code == "" {
@@ -1073,7 +1073,7 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
-	s.logger.Debug("Successfully unmatch lover")
+	s.logger.Debug("Successfully unmatched lover")
 	return nil
 }
 
@@ -1130,4 +1130,52 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		Verified: lover.Verified,
 	}
 	return response, nil
+}
+
+// CreateLoveLetter create love letter
+func (s *userService) CreateLoveLetter(ctx context.Context, request *CreateLoveLetterRequest) error {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Get match lover
+	matchID := ""
+	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("User does not match with someone", "error", err)
+	}
+	matchID = matchLove.MatchID
+	// Create love letter
+	loveLetter := &database.LoveLetter{
+		UserID:  user.ID,
+		MatchID: matchID,
+		Title:   request.Title,
+		Body:    request.Body,
+	}
+	err = s.repo.CreateLoveLetter(ctx, loveLetter)
+	if err != nil {
+		s.logger.Error("Cannot create love letter", "error", err)
+		if strings.Contains(err.Error(), "value too long for type character varying") {
+			cusErr := utils.NewErrorResponse(utils.ValueTooLong)
+			return cusErr
+		}
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	s.logger.Debug("Successfully create love letter")
+	return nil
 }

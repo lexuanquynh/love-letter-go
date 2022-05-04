@@ -178,3 +178,19 @@ type UnMatchLoverRequest struct {
 type GetMatchedLoverRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
+
+// CreateLoveLetterRequest is used to create love letter
+type CreateLoveLetterRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Title       string `json:"title" validate:"required"`
+	Body        string `json:"body" validate:"required"`
+}
+
+//id 		   Varchar(36) not null,
+//userid 		Varchar(36) not null,
+//matchid 	Varchar(36) null,
+//title		Varchar(255) not null,
+//content		Varchar(1000) not null,
+//timeopen 	Timestamp not null,
+//createdat   Timestamp not null,
+//updatedat   Timestamp not null,

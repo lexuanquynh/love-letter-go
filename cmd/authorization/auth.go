@@ -131,14 +131,16 @@ const generateMatchCodeSchema = `
 		)
 `
 
-// schema for mail table
-const mailSchema = `
-		create table if not exists mails (
+// schema for love letter table
+const loveLetterSchema = `
+		create table if not exists loveletter (
 			id 		   Varchar(36) not null,
 			userid 		Varchar(36) not null,
-			matchid 	Varchar(36) not null default '',
+			matchid 	Varchar(36) null,
 			title		Varchar(255) not null,
-			content		Varchar(1000) not null,
+			body		Varchar(32000) not null,
+		    isread 		Boolean default false,
+		    isdelete 	Boolean default false,
 			timeopen 	Timestamp not null,
 			createdat   Timestamp not null,
 			updatedat   Timestamp not null,
@@ -174,7 +176,7 @@ func main() {
 	db.MustExec(limitSchema)
 	db.MustExec(matchLoveSchema)
 	db.MustExec(generateMatchCodeSchema)
-	db.MustExec(mailSchema)
+	db.MustExec(loveLetterSchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

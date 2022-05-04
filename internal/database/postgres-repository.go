@@ -407,3 +407,25 @@ func (repo *postgresRepository) InsertOrDeleteMatchLoveData(ctx context.Context,
 		return err
 	}
 }
+
+// CreateLoveLetter creates a love letter
+func (repo *postgresRepository) CreateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error {
+	loveLetter.ID = uuid.NewV4().String()
+	loveLetter.TimeOpen = time.Now()
+	loveLetter.CreatedAt = time.Now()
+	loveLetter.UpdatedAt = time.Now()
+	query := "insert into loveletter(id, userid, matchid, title, body, isread, isdelete, timeopen, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
+	_, err := repo.db.ExecContext(ctx, query,
+		loveLetter.ID,
+		loveLetter.UserID,
+		loveLetter.MatchID,
+		loveLetter.Title,
+		loveLetter.Body,
+		loveLetter.IsRead,
+		loveLetter.IsDelete,
+		loveLetter.TimeOpen,
+		loveLetter.CreatedAt,
+		loveLetter.UpdatedAt)
+	return err
+}

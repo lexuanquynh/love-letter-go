@@ -43,8 +43,11 @@ const (
 	MatchCodeIsExpired      = 23
 	MatchCodeIsIncorrect    = 24
 	UserAlreadyMatched      = 25
-	MatchCodeIsNotFound     = 26
+	MatchCodeIsNotExactly   = 26
 	UserNotMatch            = 27
+	TitleRequired           = 28
+	BodyRequired            = 29
+	ValueTooLong            = 30
 )
 
 func (e ErrorResponse) Error() string {
@@ -117,10 +120,16 @@ func (e ErrorResponse) Error() string {
 		return "match code is incorrect"
 	case UserAlreadyMatched:
 		return "user already matched"
-	case MatchCodeIsNotFound:
+	case MatchCodeIsNotExactly:
 		return "match code is not exactly"
 	case UserNotMatch:
 		return "user not match"
+	case TitleRequired:
+		return "title required"
+	case BodyRequired:
+		return "body required"
+	case ValueTooLong:
+		return "value too long"
 	default:
 		return "Unknown Error"
 	}

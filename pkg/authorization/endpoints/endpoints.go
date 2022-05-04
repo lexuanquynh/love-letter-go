@@ -31,6 +31,7 @@ type Set struct {
 	MatchLoverEndpoint            endpoint.Endpoint
 	UnMatchLoverEndpoint          endpoint.Endpoint
 	GetMatchedLoverEndpoint       endpoint.Endpoint
+	CreateLoveLetterEndpoint      endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -122,6 +123,11 @@ func NewEndpointSet(svc authorization.Service,
 	getMatchedLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(getMatchedLoverEndpoint)
 	getMatchedLoverEndpoint = middleware.ValidateAccessToken(auth, logger)(getMatchedLoverEndpoint)
 
+	createLoveLetterEndpoint := MakeCreateLoveLetterEndpoint(svc)
+	createLoveLetterEndpoint = middleware.RateLimitRequest(tb, logger)(createLoveLetterEndpoint)
+	createLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(createLoveLetterEndpoint)
+	createLoveLetterEndpoint = middleware.ValidateAccessToken(auth, logger)(createLoveLetterEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -141,6 +147,7 @@ func NewEndpointSet(svc authorization.Service,
 		MatchLoverEndpoint:            matchLoverEndpoint,
 		UnMatchLoverEndpoint:          unMatchLoverEndpoint,
 		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
+		CreateLoveLetterEndpoint:      createLoveLetterEndpoint,
 	}
 }
 
@@ -440,5 +447,21 @@ func MakeGetMatchedLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return matchLover, nil
+	}
+}
+
+// MakeCreateLoveLetterEndpoint returns an endpoint that invokes CreateLoveLetter on the service.
+func MakeCreateLoveLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.CreateLoveLetterRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		err := svc.CreateLoveLetter(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return "successfully created love letter", nil
 	}
 }
