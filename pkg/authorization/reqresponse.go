@@ -132,3 +132,8 @@ type GenerateAccessResponse struct {
 	AccessToken  string `json:"access_token,omitempty"`
 	Username     string `json:"username,omitempty"`
 }
+
+// GetVerifyMailCodeRequest is used to get verify mail code
+type GetVerifyMailCodeRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+}

@@ -88,6 +88,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/get-verify-mail-code", httptransport.NewServer(
+		ep.GetVerifyMailCodeEndpoint,
+		decodeHTTPGetVerifyMailCodeRequest,
+		encodeResponse,
+		options...,
+	))
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
@@ -315,6 +321,24 @@ func decodeHTTPGenerateAccessTokenRequest(_ context.Context, r *http.Request) (i
 		}
 		if req.RefreshToken == "" {
 			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetVerifyMailCodeRequest decode request
+func decodeHTTPGetVerifyMailCodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetVerifyMailCodeRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {

@@ -777,7 +777,7 @@ func (s *userService) ResetPassword(ctx context.Context, request *CreateNewPassw
 }
 
 // GenerateAccessToken generate access token
-func (s *userService) GenerateAccessToken(ctx context.Context, request *GenerateAccessTokenRequest) (interface{}, error) {
+func (s *userService) GenerateAccessToken(ctx context.Context) (interface{}, error) {
 	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
 	if !ok {
 		s.logger.Error("Error getting userID from context")
@@ -808,4 +808,94 @@ func (s *userService) GenerateAccessToken(ctx context.Context, request *Generate
 		AccessToken: accessToken,
 		Username:    user.Username,
 	}, nil
+}
+
+// GetVerifyMailCode get verify mail code
+func (s *userService) GetVerifyMailCode(ctx context.Context) error {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Get limit data
+	isInsert := false
+	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Empty row get limit data", "error", err)
+		// No row, need insert
+		isInsert = true
+		limitData.UserID = user.ID
+		limitData.NumOfSendMail = 1
+	} else {
+		limitData.NumOfSendMail += 1
+	}
+	// Check if user has reached limit send mail
+	if limitData.NumOfSendMail > s.configs.SendMailLimit {
+		s.logger.Error("User has reached limit send mail.", "error", err)
+		cusErr := utils.NewErrorResponse(utils.TooManyRequests)
+		return cusErr
+
+	}
+	// Insert or update limit data
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	if err != nil {
+		s.logger.Error("Cannot update limit data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Generate forget password code
+	forgetPasswordCode := utils.GenerateRandomString(8)
+
+	// store the password reset code to db
+	verificationData := &database.VerificationData{
+		Email:     user.Email,
+		Code:      forgetPasswordCode,
+		Type:      database.MailConfirmation,
+		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.PassResetCodeExpiration)),
+	}
+	// Check insert or update
+	isInsert = false
+	_, err = s.repo.GetVerificationData(ctx, user.Email, database.MailConfirmation)
+	if err != nil {
+		isInsert = true
+		s.logger.Error("Cannot get verification data", "error", err)
+	}
+
+	err = s.repo.StoreVerificationData(ctx, verificationData, isInsert)
+	if err != nil {
+		s.logger.Error("unable to store password reset verification data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Send verification mail
+	from := s.configs.MailSender
+	to := []string{user.Email}
+	subject := s.configs.MailTitle
+	mailType := MailConfirmation
+	mailData := &MailData{
+		Username: user.Username,
+		Code:     forgetPasswordCode,
+	}
+	mailReq := s.mailService.NewMail(from, to, subject, mailType, mailData)
+	err = s.mailService.SendMail(mailReq)
+	if err != nil {
+		s.logger.Error("unable to send mail", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	s.logger.Debug("successfully mailed password reset code")
+	return nil
 }

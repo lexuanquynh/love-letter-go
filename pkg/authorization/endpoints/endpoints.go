@@ -25,6 +25,7 @@ type Set struct {
 	GetForgetPasswordCodeEndpoint endpoint.Endpoint
 	ResetPasswordEndpoint         endpoint.Endpoint
 	GenerateAccessTokenEndpoint   endpoint.Endpoint
+	GetVerifyMailCodeEndpoint     endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -86,6 +87,11 @@ func NewEndpointSet(svc authorization.Service,
 	generateAccessTokenEndpoint = middleware.ValidateParamRequest(validator, logger)(generateAccessTokenEndpoint)
 	generateAccessTokenEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(generateAccessTokenEndpoint)
 
+	getVerifyMailCodeEndpoint := MakeGetVerifyMailCodeEndpoint(svc)
+	getVerifyMailCodeEndpoint = middleware.RateLimitRequest(tb, logger)(getVerifyMailCodeEndpoint)
+	getVerifyMailCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(getVerifyMailCodeEndpoint)
+	getVerifyMailCodeEndpoint = middleware.ValidateAccessToken(auth, logger)(getVerifyMailCodeEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -99,6 +105,7 @@ func NewEndpointSet(svc authorization.Service,
 		GetForgetPasswordCodeEndpoint: getForgetPasswordCodeEndpoint,
 		ResetPasswordEndpoint:         resetPasswordEndpoint,
 		GenerateAccessTokenEndpoint:   generateAccessTokenEndpoint,
+		GetVerifyMailCodeEndpoint:     getVerifyMailCodeEndpoint,
 	}
 }
 
@@ -292,15 +299,31 @@ func MakeCreateNewPasswordWithCodeEndpoint(svc authorization.Service) endpoint.E
 // MakeGenerateAccessTokenEndpoint returns an endpoint that invokes GenerateAccessToken on the service.
 func MakeGenerateAccessTokenEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(authorization.GenerateAccessTokenRequest)
+		_, ok := request.(authorization.GenerateAccessTokenRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
-		token, err := svc.GenerateAccessToken(ctx, &req)
+		token, err := svc.GenerateAccessToken(ctx)
 		if err != nil {
 			return nil, err
 		}
 		return token, nil
+	}
+}
+
+// MakeGetVerifyMailCodeEndpoint returns an endpoint that invokes GetVerifyMailCode on the service.
+func MakeGetVerifyMailCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_, ok := request.(authorization.GetVerifyMailCodeRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		err := svc.GetVerifyMailCode(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return "successfully mailed verification code. Please check your email.", nil
 	}
 }

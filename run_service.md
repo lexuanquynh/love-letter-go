@@ -141,3 +141,8 @@ Hiển thị database:
 ```
 \c database_name
 ```
+
+### Test request trên server:
+
+```
+wrk -c 10 -d 10s -t10 http://localhost:8081/api/v1/health
