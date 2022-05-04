@@ -93,7 +93,8 @@ const limitSchema = `
 		create table if not exists limits (
 			id 		   Varchar(36) not null,
 			userid 	Varchar(36) not null,
-			numofsendmail 	   Int default 0,
+			numofsendmailverify 	   Int default 0,
+			numofsendresetpassword  Int default 0,
 			numofchangepassword Int default 0,
 		    numoflogin 	   Int default 0,
 			createdat  Timestamp not null,
@@ -135,19 +136,41 @@ func main() {
 	// authService contains all methods that help in authorizing a user request
 	auth := middleware.NewAuthService(logger, configs)
 
-	// Reset limit data for users.
 	s := gocron.NewScheduler(time.UTC)
+	// Reset limit send mail for users.
 	_, err = s.Every(1).Day().At("00:01").Do(func() {
 		logger.Info("Clear limit data for users after 1 day at 00:01.")
 		var ctx = context.Background()
-		err := repository.ClearAllLimitData(ctx)
+		err := repository.ClearLimitData(ctx, database.LimitTypeSendVerifyMail)
 		if err != nil {
-			logger.Error("Error clearing limit data", "error", err)
+			logger.Error("Error clearing limit send mail data", "error", err)
+		}
+		// Reset limit login for users.
+		err = repository.ClearLimitData(ctx, database.LimitTypeLogin)
+		if err != nil {
+			logger.Error("Error clearing limit login data", "error", err)
 		}
 	})
 	if err != nil {
 		logger.Error("Error scheduling limit data", "error", err)
 		return
+	}
+	// Reset limit change password for users after 15 minutes.
+	_, err = s.Every(15).Minute().Do(func() {
+		logger.Info("Clear change password, send pass reset mail limit data for users after 15 minutes.")
+		var ctx = context.Background()
+		err := repository.ClearLimitData(ctx, database.LimitTypeChangePassword)
+		if err != nil {
+			logger.Error("Error clearing limit change password data", "error", err)
+		}
+		// Limit for send mail get password code reset
+		err = repository.ClearLimitData(ctx, database.LimitTypeSendPassResetMail)
+		if err != nil {
+			logger.Error("Error clearing limit send mail data", "error", err)
+		}
+	})
+	if err != nil {
+		logger.Error("Error scheduling limit data", "error", err)
 	}
 	s.StartAsync()
 

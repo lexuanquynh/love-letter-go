@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/hashicorp/go-hclog"
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
@@ -219,26 +220,55 @@ func (repo *postgresRepository) InsertListOfPasswords(ctx context.Context, passw
 }
 
 // GetLimitData returns the limit data
-func (repo *postgresRepository) GetLimitData(ctx context.Context, userID string) (*LimitData, error) {
+func (repo *postgresRepository) GetLimitData(ctx context.Context, userID string, limitType LimitType) (*LimitData, error) {
 	query := "select * from limits where userid = $1"
 	limitData := &LimitData{}
 	err := repo.db.GetContext(ctx, limitData, query, userID)
+	if err != nil {
+		if limitType == LimitTypeLogin {
+			limitData.NumOfLogin = 1
+		} else if limitType == LimitTypeSendVerifyMail {
+			limitData.NumOfSendMailVerify = 1
+		} else if limitType == LimitTypeSendPassResetMail {
+			limitData.NumOfSendResetPassword = 1
+		} else if limitType == LimitTypeChangePassword {
+			limitData.NumOfChangePassword = 1
+		}
+	} else {
+		if limitType == LimitTypeLogin {
+			limitData.NumOfLogin += 1
+		} else if limitType == LimitTypeSendVerifyMail {
+			limitData.NumOfSendMailVerify += 1
+		} else if limitType == LimitTypeSendPassResetMail {
+			limitData.NumOfSendResetPassword += 1
+		} else if limitType == LimitTypeChangePassword {
+			limitData.NumOfChangePassword += 1
+		}
+	}
+	limitData.UserID = userID
 	return limitData, err
 }
 
 // InsertOrUpdateLimitData updates the limit data
-func (repo *postgresRepository) InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, isInsert bool) error {
+func (repo *postgresRepository) InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, limitType LimitType) error {
+	// Check exist or not limit data
+	_, err := repo.GetLimitData(ctx, limitData.UserID, limitType)
+	isInsert := false
+	if err != nil {
+		isInsert = true
+	}
 	limitData.ID = uuid.NewV4().String()
 	limitData.CreatedAt = time.Now()
 	limitData.UpdatedAt = time.Now()
 	// Insert or update
 	if isInsert {
 		// Insert the limit data
-		query := "insert into limits(id, userid, numofsendmail, numofchangepassword, numoflogin, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7)"
+		query := "insert into limits(id, userid, numofsendmailverify, numofsendresetpassword, numofchangepassword, numoflogin, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7, $8)"
 		_, err := repo.db.ExecContext(ctx, query,
 			limitData.ID,
 			limitData.UserID,
-			limitData.NumOfSendMail,
+			limitData.NumOfSendMailVerify,
+			limitData.NumOfSendResetPassword,
 			limitData.NumOfChangePassword,
 			limitData.NumOfLogin,
 			limitData.CreatedAt,
@@ -246,9 +276,10 @@ func (repo *postgresRepository) InsertOrUpdateLimitData(ctx context.Context, lim
 		return err
 	} else {
 		// Update the limit data
-		query := "update limits set numofsendmail = $1, numofchangepassword = $2, numoflogin = $3, updatedat = $4 where userid = $5"
+		query := "update limits set numofsendmailverify = $1, numofsendresetpassword = $2, numofchangepassword = $3, numoflogin = $4, updatedat = $5 where userid = $6"
 		_, err := repo.db.ExecContext(ctx, query,
-			limitData.NumOfSendMail,
+			limitData.NumOfSendMailVerify,
+			limitData.NumOfSendResetPassword,
 			limitData.NumOfChangePassword,
 			limitData.NumOfLogin,
 			limitData.UpdatedAt,
@@ -257,9 +288,23 @@ func (repo *postgresRepository) InsertOrUpdateLimitData(ctx context.Context, lim
 	}
 }
 
-// ClearAllLimitData clears all limit data
-func (repo *postgresRepository) ClearAllLimitData(ctx context.Context) error {
-	query := "delete from limits"
+// ClearLimitData clears the limit data
+func (repo *postgresRepository) ClearLimitData(ctx context.Context, limitType LimitType) error {
+	var query string
+	if limitType == LimitTypeLogin {
+		// Clear all num of login limit
+		query = "update limits set numoflogin = 0"
+	} else if limitType == LimitTypeSendVerifyMail {
+		// Clear all num of send mail limit
+		query = "update limits set numofsendmailverify = 0"
+	} else if limitType == LimitTypeSendPassResetMail {
+		query = "update limits set numofsendresetpassword = 0"
+	} else if limitType == LimitTypeChangePassword {
+		// Clear all num of change password limit
+		query = "update limits set numofchangepassword = 0"
+	} else {
+		return errors.New("limit type is not valid")
+	}
 	_, err := repo.db.ExecContext(ctx, query)
 	return err
 }

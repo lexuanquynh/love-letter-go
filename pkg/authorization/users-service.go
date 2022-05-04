@@ -131,16 +131,9 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 		return "Email has been successfully verified.", nil
 	}
 	// Get limit data
-	isInsert := false
-	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
-		// No row, need insert
-		isInsert = true
-		limitData.UserID = user.ID
-		limitData.NumOfLogin = 1
-	} else {
-		limitData.NumOfLogin += 1
 	}
 	// Check if limit is reached
 	if limitData.NumOfLogin > s.configs.LoginLimit {
@@ -149,7 +142,7 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 		return cusErr.Error(), cusErr
 	}
 	// Update limit data
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Cannot insert or update limit data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -189,7 +182,7 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 	}
 	// Reset limit data
 	limitData.NumOfLogin = 0
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, false)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Cannot reset number of login", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -239,16 +232,9 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 		return cusErr.Error(), cusErr
 	}
 	// Get limit data
-	isInsert := false
-	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
-		// No row, need insert
-		isInsert = true
-		limitData.UserID = user.ID
-		limitData.NumOfLogin = 1
-	} else {
-		limitData.NumOfLogin += 1
 	}
 	// Check if limit is reached
 	if limitData.NumOfLogin > s.configs.LoginLimit {
@@ -257,7 +243,7 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 		return cusErr.Error(), cusErr
 	}
 	// Update limit data
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Cannot insert or update limit data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -286,7 +272,7 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 	}
 	// Reset limit data
 	limitData.NumOfLogin = 0
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, false)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Cannot reset number of login", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -334,7 +320,7 @@ func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error 
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
-	s.logger.Debug("successfully generated token", "refreshtoken", refreshToken)
+	s.logger.Debug("successfully generated token", "refresh token", refreshToken)
 	// Update user token hash to database
 	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
@@ -508,16 +494,9 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 		return "User is banned", errors.New("user is banned")
 	}
 	// Get limit data
-	isInsert := false
-	limitData, err := s.repo.GetLimitData(ctx, userID)
+	limitData, err := s.repo.GetLimitData(ctx, userID, database.LimitTypeChangePassword)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
-		// No row, need insert
-		isInsert = true
-		limitData.UserID = userID
-		limitData.NumOfChangePassword = 1
-	} else {
-		limitData.NumOfChangePassword += 1
 	}
 	// Check if limit is reached
 	if limitData.NumOfChangePassword > s.configs.ChangePasswordLimit {
@@ -526,7 +505,7 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 		return cusErr.Error(), cusErr
 	}
 	// Update limit data
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeChangePassword)
 	if err != nil {
 		s.logger.Error("Cannot insert or update limit data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -587,7 +566,7 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 	}
 	// Reset limit data
 	limitData.NumOfChangePassword = 0
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, false)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeChangePassword)
 	if err != nil {
 		s.logger.Error("Cannot delete limit data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -618,26 +597,19 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) e
 		return cusErr
 	}
 	// Get limit data
-	isInsert := false
-	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeSendPassResetMail)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
-		// No row, need insert
-		isInsert = true
-		limitData.UserID = user.ID
-		limitData.NumOfSendMail = 1
-	} else {
-		limitData.NumOfSendMail += 1
 	}
 	// Check if user has reached limit send mail
-	if limitData.NumOfSendMail > s.configs.SendMailLimit {
+	if limitData.NumOfSendResetPassword > s.configs.SendMailResetPasswordLimit {
 		s.logger.Error("User has reached limit send mail.", "error", err)
 		cusErr := utils.NewErrorResponse(utils.TooManyRequests)
 		return cusErr
 
 	}
 	// Insert or update limit data
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeSendPassResetMail)
 	if err != nil {
 		s.logger.Error("Cannot update limit data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -654,7 +626,7 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) e
 		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.PassResetCodeExpiration)),
 	}
 	// Check insert or update
-	isInsert = false
+	isInsert := false
 	_, err = s.repo.GetVerificationData(ctx, user.Email, database.PassReset)
 	if err != nil {
 		isInsert = true
@@ -750,18 +722,11 @@ func (s *userService) ResetPassword(ctx context.Context, request *CreateNewPassw
 		return utils.NewErrorResponse(utils.InternalServerError)
 	}
 	// Get limit data
-	isInsert := false
-	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeChangePassword)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
-		// No row, need insert
-		isInsert = true
-		limitData.UserID = user.ID
-		limitData.NumOfChangePassword = 1
-	} else {
-		limitData.NumOfChangePassword += 1
 	}
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeChangePassword)
 	if err != nil {
 		s.logger.Error("Cannot delete limit data", "error", err)
 		return utils.NewErrorResponse(utils.InternalServerError)
@@ -771,6 +736,14 @@ func (s *userService) ResetPassword(ctx context.Context, request *CreateNewPassw
 	if err != nil {
 		s.logger.Error("unable to delete the verification data", "error", err)
 		return utils.NewErrorResponse(utils.InternalServerError)
+	}
+	// Reset change password limit data
+	limitData.NumOfSendResetPassword = 0
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeSendPassResetMail)
+	if err != nil {
+		s.logger.Error("Cannot update limit data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
 	}
 	s.logger.Info("Password changed", "userID", user.ID)
 	return nil
@@ -831,26 +804,19 @@ func (s *userService) GetVerifyMailCode(ctx context.Context) error {
 		return cusErr
 	}
 	// Get limit data
-	isInsert := false
-	limitData, err := s.repo.GetLimitData(ctx, user.ID)
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeSendVerifyMail)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
-		// No row, need insert
-		isInsert = true
-		limitData.UserID = user.ID
-		limitData.NumOfSendMail = 1
-	} else {
-		limitData.NumOfSendMail += 1
 	}
 	// Check if user has reached limit send mail
-	if limitData.NumOfSendMail > s.configs.SendMailLimit {
+	if limitData.NumOfSendMailVerify > s.configs.SendMailVerifyLimit {
 		s.logger.Error("User has reached limit send mail.", "error", err)
 		cusErr := utils.NewErrorResponse(utils.TooManyRequests)
 		return cusErr
 
 	}
 	// Insert or update limit data
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, isInsert)
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeSendVerifyMail)
 	if err != nil {
 		s.logger.Error("Cannot update limit data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -864,10 +830,10 @@ func (s *userService) GetVerifyMailCode(ctx context.Context) error {
 		Email:     user.Email,
 		Code:      forgetPasswordCode,
 		Type:      database.MailConfirmation,
-		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.PassResetCodeExpiration)),
+		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.MailVerifCodeExpiration)),
 	}
 	// Check insert or update
-	isInsert = false
+	isInsert := false
 	_, err = s.repo.GetVerificationData(ctx, user.Email, database.MailConfirmation)
 	if err != nil {
 		isInsert = true

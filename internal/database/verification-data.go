@@ -9,6 +9,16 @@ const (
 	PassReset
 )
 
+type LimitType int
+
+const (
+	LimitTypeNone LimitType = iota
+	LimitTypeLogin
+	LimitTypeSendVerifyMail
+	LimitTypeSendPassResetMail
+	LimitTypeChangePassword
+)
+
 // Type of verification data
 const (
 	RefreshType = "refresh"
