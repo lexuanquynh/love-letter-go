@@ -1,15 +1,35 @@
 ## Desploy service
 ### Chỉnh file env về dạng:
+for pre-production:
 ```
 configs, err := LoadConfig("/usr/local/src/love_letter")
 ```
-Sau đó copy file này lên:
+for production:
 ```
-scp app.env root@ipadress:/usr/local/src/love_letter
+configs, err := LoadConfig("/usr/local/src/love_letter_product")
 ```
-### Create service:
 
+Sau đó copy file này lên:
+
+for pre-production:
+```
+ scp app.env root@156.67.214.17:/usr/local/src/love_letter
+```
+for production:
+```
+scp app-product.env root@156.67.214.17:/usr/local/src/love_letter_product
+```
+
+### Create service:
+for pre-production:
+```
 vi /etc/systemd/system/love_letter.service
+```
+for production:
+```
+vi /etc/systemd/system/love_letter_product.service
+```
+
 
 ### To build for Linux system:
 
@@ -23,32 +43,131 @@ vi /etc/systemd/system/love_letter.service
 scp path/to/file/tomove user@host:path/to/file/topaste
 scp auth root@<ipaddress>:go
 ```
+for pre-production:
+```
+ scp auth root@156.67.214.17:/usr/local/src/love_letter
+  scp app.env root@156.67.214.17:/usr/local/src/love_letter
+```
+
+for production:
+```
+ scp auth root@156.67.214.17:/usr/local/src/love_letter_product
+  scp app-product.env root@156.67.214.17:/usr/local/src/love_letter_product
+```
+
 ### Create a service:
+for pre-production:
 ```
 sudo vi /etc/systemd/system/love_letter.service
 ```
- ### To run service:
+or for production:
+```
+sudo vi /etc/systemd/system/love_letter_product.service
+```
+with code:
+for pre-production:
+```
+[Unit]
+Description=Love letter APIs pre-production
+After=multi-user.target
 
+[Service]
+User=root
+Group=root
+Type=simple
+Restart=always
+RestartSec=5s
+ExecStart=/usr/local/src/love_letter/auth
+
+[Install]
+WantedBy=multi-user.target
+```
+
+for production:
+```
+[Unit]
+Description=Love letter APIs production
+After=multi-user.target
+
+[Service]
+User=root
+Group=root
+Type=simple
+Restart=always
+RestartSec=5s
+ExecStart=/usr/local/src/love_letter_product/auth
+
+[Install]
+WantedBy=multi-user.target
+```
+
+
+
+ ### To run service:
+for pre-production:
  ```
 sudo systemctl start love_letter.service
 sudo systemctl enable love_letter.service
 sudo systemctl status love_letter.service
 ```
+
+for production:
+```
+sudo systemctl start love_letter_product.service
+sudo systemctl enable love_letter_product.service
+sudo systemctl status love_letter_product.service
+```
+
 To stop:
+for pre-production:
 ```
 sudo systemctl stop love_letter.service
 ```
+for production:
+```
+sudo systemctl stop love_letter_product.service
+```
+
 Thêm nội dung file như file mẫu.
+
 ### Create a config in /etc/nginx/sites-available/love_letter file:
 
+for pre-production:
 ```
 vi /etc/nginx/sites-available/love_letter
 ```
-Thêm nội dung file như file mẫu.
-### Create a symbolic link of our config file to the sites-enabled folder:
+or for production:
+```
+vi /etc/nginx/sites-available/love_letter_product
+```
 
+Thêm nội dung file như file mẫu.
+```
+server {
+        listen 80;
+
+        location /dev {
+                proxy_pass http://127.0.0.1:8081/api/v1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+         location /production {
+                proxy_pass http://127.0.0.1:8082/api/v1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+}
+```
+
+### Create a symbolic link of our config file to the sites-enabled folder:
+for pre-production:
 ```
 ln -s /etc/nginx/sites-available/love_letter /etc/nginx/sites-enabled/love_letter
+```
+
+for production:
+```
+ln -s /etc/nginx/sites-available/love_letter_product /etc/nginx/sites-enabled/love_letter_product
 ```
 
 ### Finally, reload nginx to apply config:
@@ -59,10 +178,17 @@ nginx -t && nginx -s reload
 
 check status:
 
+for pre-production:
 ```
 systemctl status nginx.service
 systemctl status love_letter.service
 ```
+for production:
+```
+systemctl status nginx.service
+systemctl status love_letter_product.service
+```
+
 
 if server not run, try:
 
@@ -110,6 +236,11 @@ sudo ufw status verbose
 sudo ufw allow 8081
 ```
 
+Để xóa:
+```
+sudo ufw status numbered
+sudo ufw delete xxx
+```
 <!-- ### Mở nginx:
 
 ```

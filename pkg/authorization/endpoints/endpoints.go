@@ -32,6 +32,7 @@ type Set struct {
 	UnMatchLoverEndpoint          endpoint.Endpoint
 	GetMatchedLoverEndpoint       endpoint.Endpoint
 	CreateLoveLetterEndpoint      endpoint.Endpoint
+	UpdateLoveLetterEndpoint      endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -127,6 +128,11 @@ func NewEndpointSet(svc authorization.Service,
 	createLoveLetterEndpoint = middleware.RateLimitRequest(tb, logger)(createLoveLetterEndpoint)
 	createLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(createLoveLetterEndpoint)
 	createLoveLetterEndpoint = middleware.ValidateAccessToken(auth, logger)(createLoveLetterEndpoint)
+
+	updateLoveLetterEndpoint := MakeUpdateLoveLetterEndpoint(svc)
+	updateLoveLetterEndpoint = middleware.RateLimitRequest(tb, logger)(updateLoveLetterEndpoint)
+	updateLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(updateLoveLetterEndpoint)
+	updateLoveLetterEndpoint = middleware.ValidateAccessToken(auth, logger)(updateLoveLetterEndpoint)
 
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
@@ -463,5 +469,21 @@ func MakeCreateLoveLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return "successfully created love letter", nil
+	}
+}
+
+// MakeUpdateLoveLetterEndpoint returns an endpoint that invokes UpdateLoveLetter on the service.
+func MakeUpdateLoveLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.UpdateLoveLetterRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		err := svc.UpdateLoveLetter(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return "successfully updated love letter", nil
 	}
 }

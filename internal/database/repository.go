@@ -53,4 +53,6 @@ type UserRepository interface {
 	InsertOrDeleteMatchLoveData(ctx context.Context, matchData *MatchLoveData, isDelete bool) error
 	// CreateLoveLetter Create love letter
 	CreateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error
+	// UpdateLoveLetter Update love letter
+	UpdateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error
 }

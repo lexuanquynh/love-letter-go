@@ -23,4 +23,5 @@ type Service interface {
 	UnMatchedLover(ctx context.Context) error
 	GetMatchLover(ctx context.Context) (interface{}, error)
 	CreateLoveLetter(ctx context.Context, request *CreateLoveLetterRequest) error
+	UpdateLoveLetter(ctx context.Context, request *UpdateLoveLetterRequest) error
 }

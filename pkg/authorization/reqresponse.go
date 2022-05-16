@@ -1,5 +1,7 @@
 package authorization
 
+import "time"
+
 // RegisterRequest is used for registering a new account/user.
 type RegisterRequest struct {
 	Email      string `json:"email" validate:"required,email"`
@@ -186,11 +188,12 @@ type CreateLoveLetterRequest struct {
 	Body        string `json:"body" validate:"required"`
 }
 
-//id 		   Varchar(36) not null,
-//userid 		Varchar(36) not null,
-//matchid 	Varchar(36) null,
-//title		Varchar(255) not null,
-//content		Varchar(1000) not null,
-//timeopen 	Timestamp not null,
-//createdat   Timestamp not null,
-//updatedat   Timestamp not null,
+// UpdateLoveLetterRequest is used to update love letter
+type UpdateLoveLetterRequest struct {
+	AccessToken string    `json:"access_token" validate:"required"`
+	Title       string    `json:"title" validate:"required"`
+	Body        string    `json:"body" validate:"required"`
+	IsRead      bool      `json:"is_read"`
+	IsDelete    bool      `json:"is_delete"`
+	TimeOpen    time.Time `json:"time_open" sql:"timeopen"`
+}

@@ -38,8 +38,9 @@ type Configurations struct {
 
 // NewConfigurations returns a new Configuration object
 func NewConfigurations(logger hclog.Logger) *Configurations {
-	configs, err := LoadConfig("./") // for local development
-	//configs, err := LoadConfig("/usr/local/src/love_letter") // for production
+	configs, err := LoadConfig("./") // quynhlx for local development
+	//configs, err := LoadConfig("/usr/local/src/love_letter") // quynhlx for pre-production
+	//configs, err := LoadConfig("/usr/local/src/love_letter_product") // quynhlx for production
 	if err != nil {
 		log.Fatal("cannot load config: ", err)
 	}
@@ -55,7 +56,8 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 // LoadConfig reads configuration from file or environment variables.
 func LoadConfig(path string) (config *Configurations, err error) {
 	viper.AddConfigPath(path)
-	viper.SetConfigName("app")
+	viper.SetConfigName("app") // quynhlx: for development
+	//viper.SetConfigName("app-product") // quynhlx: for production
 	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()

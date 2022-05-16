@@ -429,3 +429,17 @@ func (repo *postgresRepository) CreateLoveLetter(ctx context.Context, loveLetter
 		loveLetter.UpdatedAt)
 	return err
 }
+
+// UpdateLoveLetter updates a love letter
+func (repo *postgresRepository) UpdateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error {
+	loveLetter.UpdatedAt = time.Now()
+	query := "update loveletter set title = $1, body = $2, isread = $3, isdelete = $4, updatedat = $5 where id = $6"
+	_, err := repo.db.ExecContext(ctx, query,
+		loveLetter.Title,
+		loveLetter.Body,
+		loveLetter.IsRead,
+		loveLetter.IsDelete,
+		loveLetter.UpdatedAt,
+		loveLetter.ID)
+	return err
+}

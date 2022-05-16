@@ -1179,3 +1179,49 @@ func (s *userService) CreateLoveLetter(ctx context.Context, request *CreateLoveL
 	s.logger.Debug("Successfully create love letter")
 	return nil
 }
+
+// UpdateLoveLetter update love letter
+func (s *userService) UpdateLoveLetter(ctx context.Context, request *UpdateLoveLetterRequest) error {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Get love letter quynhlx
+	//loveLetter, err := s.repo.GetLoveLetterByID(ctx, request.ID)
+	//if err != nil {
+	//	s.logger.Error("Cannot get love letter", "error", err)
+	//	cusErr := utils.NewErrorResponse(utils.InternalServerError)
+	//	return cusErr
+	//}
+	//// Check if user is the owner of the love letter
+	//if loveLetter.UserID != user.ID {
+	//	s.logger.Error("User is not the owner of the love letter", "error", err)
+	//	cusErr := utils.NewErrorResponse(utils.Forbidden)
+	//	return cusErr
+	//}
+	//// Update love letter
+	//loveLetter.Title = request.Title
+	//loveLetter.Body = request.Body
+	//err = s.repo.UpdateLoveLetter(ctx, loveLetter)
+	//if err != nil {
+	//	s.logger.Error("Cannot update love letter", "error", err)
+	//	cusErr := utils.NewErrorResponse(utils.InternalServerError)
+	//	return cusErr
+	//}
+	s.logger.Debug("Successfully update love letter")
+	return nil
+}
