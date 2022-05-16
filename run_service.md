@@ -277,3 +277,74 @@ Hiển thị database:
 
 ```
 wrk -c 10 -d 10s -t10 http://localhost:8081/api/v1/health
+```
+
+### Thêm https cho nginx:
+
+```
+sudo apt install certbot python3-certbot-nginx
+sudo vi /etc/nginx/sites-available/love_letter
+```
+
+thêm mỗi dòng:
+```
+server_name loveletter.codetoanbug.com;
+```
+sau đó chạy:
+
+```
+sudo nginx -t
+sudo systemctl reload nginx
+```
+mở https cho nginx:
+```
+sudo ufw allow 'Nginx Full'
+sudo ufw delete allow 'Nginx HTTP'
+```
+
+Sau đó chạy lệnh để tạo https:
+```
+sudo certbot --nginx -d loveletter.codetoanbug.com
+```
+Khi hết hạn https chạy:
+```
+sudo certbot renew --dry-run
+```
+
+file /etc/nginx/sites-available/love_letter sẽ có dạng như sau:
+```
+server {
+        server_name loveletter.codetoanbug.com;
+
+        location /dev {
+                proxy_pass http://127.0.0.1:8081/api/v1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+         location /production {
+                proxy_pass http://127.0.0.1:8082/api/v1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/loveletter.codetoanbug.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/loveletter.codetoanbug.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = loveletter.codetoanbug.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+        listen 80;
+        server_name loveletter.codetoanbug.com;
+    return 404; # managed by Certbot
+	
+}
+```
+
+
