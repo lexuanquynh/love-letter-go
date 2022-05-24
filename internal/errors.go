@@ -93,7 +93,7 @@ func (e ErrorResponse) Error() string {
 	case ExpiredCode:
 		return "Expired Code"
 	case TooManyRequests:
-		return "Too Many Requests"
+		return "You have been locked out for security reasons. Please try again later."
 	case PasswordIncorrect:
 		return "Password Incorrect"
 	case ChoiceOtherPassword:

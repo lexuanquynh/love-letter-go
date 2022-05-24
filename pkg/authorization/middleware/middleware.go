@@ -80,11 +80,11 @@ func extractValue(request interface{}, key string) (string, error) {
 }
 
 // ValidateAccessToken is a middleware that validates the access token
-func ValidateAccessToken(auth Authentication, logger hclog.Logger) endpoint.Middleware {
+func ValidateAccessToken(auth Authentication, r database.UserRepository, logger hclog.Logger) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-			userID, valid := authorizedAccessToken(auth, logger, request)
-			if !valid {
+			userID, err := authorizedAccessToken(ctx, auth, r, logger, request)
+			if err != nil {
 				logger.Error("You're not authorized. Please try again latter.")
 				cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
 				return nil, cusErr
@@ -95,20 +95,37 @@ func ValidateAccessToken(auth Authentication, logger hclog.Logger) endpoint.Midd
 	}
 }
 
-func authorizedAccessToken(auth Authentication, logger hclog.Logger, request interface{}) (string, bool) {
+func authorizedAccessToken(ctx context.Context, auth Authentication, r database.UserRepository, logger hclog.Logger, request interface{}) (string, error) {
 	token, err := extractValue(request, "access_token")
 	if err != nil {
 		logger.Error("token validation failed", "err", err)
-		return "", false
+		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
+		return "", cusErr
 	}
 
-	userID, err := auth.ValidateAccessToken(token)
+	userID, customKey, err := auth.ValidateAccessToken(token)
 	if err != nil {
 		logger.Error("token validation failed", "error", err)
-		return "", false
+		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
+		return "", cusErr
 	}
+
+	user, err := r.GetUserByID(ctx, userID)
+	if err != nil {
+		logger.Error("You're not authorized. Please try again latter.", err)
+		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
+		return "", cusErr
+	}
+
+	actualCustomKey := auth.GenerateCustomKey(user.ID, user.TokenHash)
+	if customKey != actualCustomKey {
+		logger.Debug("wrong token: authentication failed")
+		cusErr := utils.NewErrorResponse(utils.Unauthorized)
+		return "", cusErr
+	}
+
 	logger.Debug("access token validated", userID)
-	return userID, true
+	return userID, nil
 }
 
 // ValidateParamRequest validates the user in the request

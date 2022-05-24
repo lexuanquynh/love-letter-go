@@ -19,7 +19,7 @@ type Authentication interface {
 	GenerateAccessToken(user *database.User) (string, error)
 	GenerateRefreshToken(user *database.User) (string, error)
 	GenerateCustomKey(userID string, password string) string
-	ValidateAccessToken(token string) (string, error)
+	ValidateAccessToken(token string) (string, string, error)
 	ValidateRefreshToken(token string) (string, string, error)
 }
 
@@ -33,8 +33,9 @@ type RefreshTokenCustomClaims struct {
 
 // AccessTokenCustomClaims specifies the claims for access token
 type AccessTokenCustomClaims struct {
-	UserID  string
-	KeyType string
+	UserID    string
+	KeyType   string
+	CustomKey string
 	jwt.StandardClaims
 }
 
@@ -95,10 +96,12 @@ func (auth *AuthService) GenerateRefreshToken(user *database.User) (string, erro
 func (auth *AuthService) GenerateAccessToken(user *database.User) (string, error) {
 	userID := user.ID
 	tokenType := database.AccessType
+	cusKey := auth.GenerateCustomKey(user.ID, user.TokenHash)
 
 	claims := AccessTokenCustomClaims{
 		userID,
 		tokenType,
+		cusKey,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * time.Duration(auth.configs.JwtExpiration)).Unix(),
 			Issuer:    auth.configs.Issuer,
@@ -136,7 +139,7 @@ func (auth *AuthService) GenerateCustomKey(userID string, tokenHash string) stri
 
 // ValidateAccessToken parses and validates the given access token
 // returns the userId present in the token payload
-func (auth *AuthService) ValidateAccessToken(tokenString string) (string, error) {
+func (auth *AuthService) ValidateAccessToken(tokenString string) (string, string, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			auth.logger.Error("Unexpected signing method in auth token")
@@ -162,15 +165,15 @@ func (auth *AuthService) ValidateAccessToken(tokenString string) (string, error)
 
 	if err != nil {
 		auth.logger.Error("unable to parse claims", "error", err)
-		return "", err
+		return "", "", err
 	}
 
 	claims, ok := token.Claims.(*AccessTokenCustomClaims)
 	if !ok || !token.Valid || claims.UserID == "" || claims.KeyType != "access" {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return "", cusErr
+		return "", "", cusErr
 	}
-	return claims.UserID, nil
+	return claims.UserID, claims.CustomKey, nil
 }
 
 // ValidateRefreshToken parses and validates the given refresh token

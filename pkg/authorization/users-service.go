@@ -768,11 +768,13 @@ func (s *userService) ResetPassword(ctx context.Context, request *CreateNewPassw
 		return utils.NewErrorResponse(utils.InternalServerError)
 	}
 	// Get limit data
-	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeChangePassword)
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
 	}
-	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeChangePassword)
+	// Reset login failed count
+	limitData.NumOfLogin = 0
+	err = s.repo.InsertOrUpdateLimitData(ctx, limitData, database.LimitTypeLogin)
 	if err != nil {
 		s.logger.Error("Cannot delete limit data", "error", err)
 		return utils.NewErrorResponse(utils.InternalServerError)

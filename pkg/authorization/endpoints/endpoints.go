@@ -64,27 +64,27 @@ func NewEndpointSet(svc authorization.Service,
 	getUserEndpoint := MakeGetUserEndpoint(svc)
 	getUserEndpoint = middleware.RateLimitRequest(tb, logger)(getUserEndpoint)
 	getUserEndpoint = middleware.ValidateParamRequest(validator, logger)(getUserEndpoint)
-	getUserEndpoint = middleware.ValidateAccessToken(auth, logger)(getUserEndpoint)
+	getUserEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getUserEndpoint)
 
 	updateUserNameEndpoint := MakeUpdateUserNameEndpoint(svc)
 	updateUserNameEndpoint = middleware.RateLimitRequest(tb, logger)(updateUserNameEndpoint)
 	updateUserNameEndpoint = middleware.ValidateParamRequest(validator, logger)(updateUserNameEndpoint)
-	updateUserNameEndpoint = middleware.ValidateAccessToken(auth, logger)(updateUserNameEndpoint)
+	updateUserNameEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateUserNameEndpoint)
 
 	getProfileEndpoint := MakeGetProfileEndpoint(svc)
 	getProfileEndpoint = middleware.RateLimitRequest(tb, logger)(getProfileEndpoint)
 	getProfileEndpoint = middleware.ValidateParamRequest(validator, logger)(getProfileEndpoint)
-	getProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(getProfileEndpoint)
+	getProfileEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getProfileEndpoint)
 
 	updateProfileEndpoint := MakeUpdateProfileEndpoint(svc)
 	updateProfileEndpoint = middleware.RateLimitRequest(tb, logger)(updateProfileEndpoint)
 	updateProfileEndpoint = middleware.ValidateParamRequest(validator, logger)(updateProfileEndpoint)
-	updateProfileEndpoint = middleware.ValidateAccessToken(auth, logger)(updateProfileEndpoint)
+	updateProfileEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateProfileEndpoint)
 
 	updatePasswordEndpoint := MakeUpdatePasswordEndpoint(svc)
 	updatePasswordEndpoint = middleware.RateLimitRequest(tb, logger)(updatePasswordEndpoint)
 	updatePasswordEndpoint = middleware.ValidateParamRequest(validator, logger)(updatePasswordEndpoint)
-	updatePasswordEndpoint = middleware.ValidateAccessToken(auth, logger)(updatePasswordEndpoint)
+	updatePasswordEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updatePasswordEndpoint)
 
 	getForgetPasswordCodeEndpoint := MakeGetForgetPasswordCodeEndpoint(svc)
 	getForgetPasswordCodeEndpoint = middleware.RateLimitRequest(tb, logger)(getForgetPasswordCodeEndpoint)
@@ -102,37 +102,37 @@ func NewEndpointSet(svc authorization.Service,
 	getVerifyMailCodeEndpoint := MakeGetVerifyMailCodeEndpoint(svc)
 	getVerifyMailCodeEndpoint = middleware.RateLimitRequest(tb, logger)(getVerifyMailCodeEndpoint)
 	getVerifyMailCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(getVerifyMailCodeEndpoint)
-	getVerifyMailCodeEndpoint = middleware.ValidateAccessToken(auth, logger)(getVerifyMailCodeEndpoint)
+	getVerifyMailCodeEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getVerifyMailCodeEndpoint)
 
 	getMatchCodeEndpoint := MakeGetMatchCodeEndpoint(svc)
 	getMatchCodeEndpoint = middleware.RateLimitRequest(tb, logger)(getMatchCodeEndpoint)
 	getMatchCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(getMatchCodeEndpoint)
-	getMatchCodeEndpoint = middleware.ValidateAccessToken(auth, logger)(getMatchCodeEndpoint)
+	getMatchCodeEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getMatchCodeEndpoint)
 
 	matchLoverEndpoint := MakeMatchLoverEndpoint(svc)
 	matchLoverEndpoint = middleware.RateLimitRequest(tb, logger)(matchLoverEndpoint)
 	matchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(matchLoverEndpoint)
-	matchLoverEndpoint = middleware.ValidateAccessToken(auth, logger)(matchLoverEndpoint)
+	matchLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(matchLoverEndpoint)
 
 	unMatchLoverEndpoint := MakeUnMatchedLoverEndpoint(svc)
 	unMatchLoverEndpoint = middleware.RateLimitRequest(tb, logger)(unMatchLoverEndpoint)
 	unMatchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(unMatchLoverEndpoint)
-	unMatchLoverEndpoint = middleware.ValidateAccessToken(auth, logger)(unMatchLoverEndpoint)
+	unMatchLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(unMatchLoverEndpoint)
 
 	getMatchedLoverEndpoint := MakeGetMatchedLoverEndpoint(svc)
 	getMatchedLoverEndpoint = middleware.RateLimitRequest(tb, logger)(getMatchedLoverEndpoint)
 	getMatchedLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(getMatchedLoverEndpoint)
-	getMatchedLoverEndpoint = middleware.ValidateAccessToken(auth, logger)(getMatchedLoverEndpoint)
+	getMatchedLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getMatchedLoverEndpoint)
 
 	createLoveLetterEndpoint := MakeCreateLoveLetterEndpoint(svc)
 	createLoveLetterEndpoint = middleware.RateLimitRequest(tb, logger)(createLoveLetterEndpoint)
 	createLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(createLoveLetterEndpoint)
-	createLoveLetterEndpoint = middleware.ValidateAccessToken(auth, logger)(createLoveLetterEndpoint)
+	createLoveLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(createLoveLetterEndpoint)
 
 	updateLoveLetterEndpoint := MakeUpdateLoveLetterEndpoint(svc)
 	updateLoveLetterEndpoint = middleware.RateLimitRequest(tb, logger)(updateLoveLetterEndpoint)
 	updateLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(updateLoveLetterEndpoint)
-	updateLoveLetterEndpoint = middleware.ValidateAccessToken(auth, logger)(updateLoveLetterEndpoint)
+	updateLoveLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateLoveLetterEndpoint)
 
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
