@@ -24,4 +24,5 @@ type Service interface {
 	GetMatchLover(ctx context.Context) (interface{}, error)
 	CreateLoveLetter(ctx context.Context, request *CreateLoveLetterRequest) error
 	UpdateLoveLetter(ctx context.Context, request *UpdateLoveLetterRequest) error
+	GetFeeds(ctx context.Context) (interface{}, error)
 }

@@ -111,6 +111,7 @@ const matchLoveSchema = `
 			id 		   Varchar(36) not null,
 			userid 	Varchar(36) not null,
 			matchid 	Varchar(36) not null,
+		    accept     Boolean default false,
 			createdat  Timestamp not null,
 			Primary Key (id)
 		)
@@ -150,6 +151,60 @@ const loveLetterSchema = `
 		)
 `
 
+// schema for feed table
+const feedSchema = `
+		create table if not exists feeds (	
+			id 		    Int default 0,
+			title		Varchar(255) not null,
+		    isenable 		Boolean default false,
+			Primary Key (id)
+		)
+`
+
+// schema for feed data
+const feedDataSchema = `
+INSERT INTO feeds
+    (id, title, isenable)
+SELECT 0, 'day_counter', false
+WHERE
+    NOT EXISTS (
+        SELECT id FROM feeds WHERE id = 0
+    );
+
+INSERT INTO feeds
+    (id, title, isenable)
+SELECT 1, 'match_lover', true
+WHERE
+    NOT EXISTS (
+        SELECT id FROM feeds WHERE id = 1
+    );
+
+INSERT INTO feeds
+    (id, title, isenable)
+SELECT 2, 'letter_list', false 
+WHERE
+    NOT EXISTS (
+        SELECT id FROM feeds WHERE id = 2
+    );
+
+INSERT INTO feeds
+    (id, title, isenable)
+SELECT 3, 'question_lover', false
+WHERE
+    NOT EXISTS (
+        SELECT id FROM feeds WHERE id = 3
+    );
+
+INSERT INTO feeds
+    (id, title, isenable)
+SELECT 4, 'quick_lover', false
+WHERE
+    NOT EXISTS (
+        SELECT id FROM feeds WHERE id = 4
+    );
+
+`
+
 func main() {
 	logger := utils.NewLogger()
 
@@ -177,6 +232,8 @@ func main() {
 	db.MustExec(matchLoveSchema)
 	db.MustExec(generateMatchCodeSchema)
 	db.MustExec(loveLetterSchema)
+	db.MustExec(feedSchema)
+	db.MustExec(feedDataSchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

@@ -1,6 +1,9 @@
 package authorization
 
-import "time"
+import (
+	"LoveLetterProject/internal/database"
+	"time"
+)
 
 // RegisterRequest is used for registering a new account/user.
 type RegisterRequest struct {
@@ -78,7 +81,7 @@ type GetLoverResponse struct {
 	UserID   string `json:"user_id"`
 	Email    string `json:"email"`
 	Username string `json:"username,omitempty"`
-	Verified bool   `json:"verified"`
+	Accept   bool   `json:"accept"`
 }
 
 // GetProfileResponse is the response for get user profile
@@ -196,4 +199,9 @@ type UpdateLoveLetterRequest struct {
 	IsRead      bool      `json:"is_read"`
 	IsDelete    bool      `json:"is_delete"`
 	TimeOpen    time.Time `json:"time_open" sql:"timeopen"`
+}
+
+// GetFeedsResponse is the response for get feeds
+type GetFeedsResponse struct {
+	Feeds []*database.FeedsData `json:"feed_list"`
 }

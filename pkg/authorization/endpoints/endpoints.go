@@ -33,6 +33,7 @@ type Set struct {
 	GetMatchedLoverEndpoint       endpoint.Endpoint
 	CreateLoveLetterEndpoint      endpoint.Endpoint
 	UpdateLoveLetterEndpoint      endpoint.Endpoint
+	GetFeedsEndpoint              endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -134,6 +135,10 @@ func NewEndpointSet(svc authorization.Service,
 	updateLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(updateLoveLetterEndpoint)
 	updateLoveLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateLoveLetterEndpoint)
 
+	getFeedsEndpoint := MakeGetFeedsEndpoint(svc)
+	getFeedsEndpoint = middleware.RateLimitRequest(tb, logger)(getFeedsEndpoint)
+	//getFeedsEndpoint = middleware.ValidateParamRequest(validator, logger)(getFeedsEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -154,6 +159,7 @@ func NewEndpointSet(svc authorization.Service,
 		UnMatchLoverEndpoint:          unMatchLoverEndpoint,
 		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
 		CreateLoveLetterEndpoint:      createLoveLetterEndpoint,
+		GetFeedsEndpoint:              getFeedsEndpoint,
 	}
 }
 
@@ -485,5 +491,13 @@ func MakeUpdateLoveLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return "successfully updated love letter", nil
+	}
+}
+
+// MakeGetFeedsEndpoint returns an endpoint that invokes GetFeeds on the service.
+func MakeGetFeedsEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		feedResponse, err := svc.GetFeeds(ctx)
+		return feedResponse, err
 	}
 }

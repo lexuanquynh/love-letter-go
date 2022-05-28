@@ -132,6 +132,13 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	m.Handle("/get-feeds", httptransport.NewServer(
+		ep.GetFeedsEndpoint,
+		decodeHTTPGetFeedsRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -520,6 +527,13 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		Data:    response,
 	}
 	return json.NewEncoder(w).Encode(res)
+}
+
+// decodeHTTPGetFeedsRequest decode request
+func decodeHTTPGetFeedsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	logger := utils.NewLogger()
+	logger.Info("decodeHTTPGetFeedsRequest")
+	return nil, nil
 }
 
 func errEncoder(ctx context.Context, err error, w http.ResponseWriter) {

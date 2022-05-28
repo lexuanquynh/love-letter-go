@@ -398,11 +398,12 @@ func (repo *postgresRepository) InsertOrDeleteMatchLoveData(ctx context.Context,
 		// insert new row
 		matchData.ID = uuid.NewV4().String()
 		matchData.CreatedAt = time.Now()
-		query := "insert into matchloves(id, userid, matchid, createdat) values($1, $2, $3, $4)"
+		query := "insert into matchloves(id, userid, matchid, accept, createdat) values($1, $2, $3, $4, $5)"
 		_, err := repo.db.ExecContext(ctx, query,
 			matchData.ID,
 			matchData.UserID,
 			matchData.MatchID,
+			matchData.Accept,
 			matchData.CreatedAt)
 		return err
 	}
@@ -442,4 +443,12 @@ func (repo *postgresRepository) UpdateLoveLetter(ctx context.Context, loveLetter
 		loveLetter.UpdatedAt,
 		loveLetter.ID)
 	return err
+}
+
+// GetFeeds returns the feeds
+func (repo *postgresRepository) GetFeeds(ctx context.Context) ([]*FeedsData, error) {
+	query := "select * from feeds"
+	var feeds []*FeedsData
+	err := repo.db.SelectContext(ctx, &feeds, query)
+	return feeds, err
 }

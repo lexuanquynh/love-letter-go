@@ -939,6 +939,13 @@ func (s *userService) GetMatchCode(ctx context.Context) (interface{}, error) {
 		cusErr := utils.NewErrorResponse(utils.Forbidden)
 		return nil, cusErr
 	}
+
+	lover, _ := s.GetMatchLover(ctx)
+	if lover != nil {
+		s.logger.Error("User is in a relationship")
+		cusErr := utils.NewErrorResponse(utils.UserInRelationship)
+		return nil, cusErr
+	}
 	// Generate match code
 	matchCode := utils.GenerateRandomString(8)
 	// Store match code to db
@@ -1129,7 +1136,7 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		UserID:   lover.ID,
 		Email:    lover.Email,
 		Username: lover.Username,
-		Verified: lover.Verified,
+		Accept:   matchLove.Accept,
 	}
 	return response, nil
 }
@@ -1226,4 +1233,20 @@ func (s *userService) UpdateLoveLetter(ctx context.Context, request *UpdateLoveL
 	//}
 	s.logger.Debug("Successfully update love letter")
 	return nil
+}
+
+// GetFeeds get feeds
+func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
+	// Get feeds
+	feeds, err := s.repo.GetFeeds(ctx)
+	if err != nil {
+		s.logger.Error("Cannot get feeds", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	s.logger.Debug("Successfully gxet feeds")
+	response := GetFeedsResponse{
+		Feeds: feeds,
+	}
+	return response, nil
 }

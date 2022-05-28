@@ -48,6 +48,7 @@ const (
 	TitleRequired           = 28
 	BodyRequired            = 29
 	ValueTooLong            = 30
+	UserInRelationship      = 31
 )
 
 func (e ErrorResponse) Error() string {
@@ -130,6 +131,8 @@ func (e ErrorResponse) Error() string {
 		return "body required"
 	case ValueTooLong:
 		return "value too long"
+	case UserInRelationship:
+		return "user in a relationship"
 	default:
 		return "Unknown Error"
 	}

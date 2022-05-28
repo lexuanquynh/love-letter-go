@@ -55,4 +55,6 @@ type UserRepository interface {
 	CreateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error
 	// UpdateLoveLetter Update love letter
 	UpdateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error
+	// GetFeeds Get feeds
+	GetFeeds(ctx context.Context) ([]*FeedsData, error)
 }

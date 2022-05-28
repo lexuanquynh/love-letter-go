@@ -49,5 +49,13 @@ type MatchLoveData struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"userid" sql:"userid"`
 	MatchID   string    `json:"matchid" sql:"matchid"`
+	Accept    bool      `json:"accept" sql:"accept"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
+}
+
+// FeedsData represents the type for the data stored for verification.
+type FeedsData struct {
+	ID       int    `json:"id"`
+	Title    string `json:"title" validate:"required" sql:"title"`
+	IsEnable bool   `json:"is_enable" sql:"isenable"`
 }

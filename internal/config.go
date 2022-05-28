@@ -34,13 +34,15 @@ type Configurations struct {
 	SendMailVerifyLimit        int    `mapstructure:"SEND_MAIL_VERIFY_LIMIT"`
 	SendMailResetPasswordLimit int    `mapstructure:"SEND_MAIL_RESET_PASSWORD_LIMIT"`
 	LoginLimit                 int    `mapstructure:"LOGIN_LIMIT"`
+	OneSignalAppId             string `mapstructure:"ONE_SIGNAL_APP_ID"`
+	OneSignalAPIKey            string `mapstructure:"ONE_SIGNAL_API_KEY"`
 }
 
 // NewConfigurations returns a new Configuration object
 func NewConfigurations(logger hclog.Logger) *Configurations {
 	configs, err := LoadConfig("./") // quynhlx for local development
-	//configs, err := LoadConfig("/usr/local/src/love_letter") // quynhlx for pre-production
-	//configs, err := LoadConfig("/usr/local/src/love_letter_product") // quynhlx for production
+	//configs, err := LoadConfig("/usr/local/src/love_letter") //  for pre-production
+	//configs, err := LoadConfig("/usr/local/src/love_letter_product") // for production
 	if err != nil {
 		log.Fatal("cannot load config: ", err)
 	}
@@ -57,7 +59,7 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 func LoadConfig(path string) (config *Configurations, err error) {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("app") // quynhlx: for development
-	//viper.SetConfigName("app-product") // quynhlx: for production
+	//viper.SetConfigName("app-product") // : for production
 	viper.SetConfigType("env")
 
 	viper.AutomaticEnv()
