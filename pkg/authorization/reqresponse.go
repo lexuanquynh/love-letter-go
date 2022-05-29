@@ -76,7 +76,7 @@ type GetLoverResponse struct {
 	UserID   string `json:"user_id"`
 	Email    string `json:"email"`
 	Username string `json:"username,omitempty"`
-	Accept   bool   `json:"accept"`
+	Accept   int    `json:"accept"`
 }
 
 // GetProfileResponse is the response for get user profile
@@ -159,10 +159,16 @@ type MatchLoverRequest struct {
 	Code        string `json:"code" validate:"required"`
 }
 
-// AcceptMatchLoverRequest is used to accept match lover
+// AcceptMatchLoverRequest is used to accept match lover. accept: 0: not answer, 1: accept, 2: reject
 type AcceptMatchLoverRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
-	Accept      bool   `json:"accept" validate:"required"`
+	Accept      int    `json:"accept" validate:"required"`
+}
+
+// AcceptMatchLoverResponse is the response for accept match lover
+type AcceptMatchLoverResponse struct {
+	Accept  int    `json:"accept"`
+	Message string `json:"message"`
 }
 
 // CreateLoveLetterRequest is used to create love letter

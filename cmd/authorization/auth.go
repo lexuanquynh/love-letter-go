@@ -105,28 +105,30 @@ const limitSchema = `
 		)
 `
 
-// schema for match love table
+// schema for match love table. accept: 0: not answer, 1: accept, 2: reject
 const matchLoveSchema = `
-		create table if not exists matchloves (
-			id 		   Varchar(36) not null,
+		create table if not exists matchloves (		
 			userid 	Varchar(36) not null,
 			matchid 	Varchar(36) not null,
-		    accept     Boolean default false,
+		    accept     int default 0,
 			createdat  Timestamp not null,
-			Primary Key (id)
+			updatedat  Timestamp not null,
+			Primary Key (userid),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+			
 		)
 `
 
 // schema for generate match code table
 const generateMatchCodeSchema = `
 		create table if not exists generatematchcodes (
-			id 		   Varchar(36) not null,
 			userid 	Varchar(36) not null,
 			code  		Varchar(10) not null,
 			expiresat 	Timestamp not null,
 		    createdat  Timestamp not null,
 			updatedat  Timestamp not null,
-			Primary Key (id),
+			Primary Key (userid),
 			Constraint fk_user_id Foreign Key(userid) References users(id)
 				On Delete Cascade On Update Cascade
 		)
@@ -254,6 +256,8 @@ func main() {
 	repository := database.NewPostgresRepository(db, logger)
 	// mailService contains the utility methods to send an email
 	mailService := authorization.NewSGMailService(logger, configs)
+	// NotificationService contains the utility methods to send an notification
+	notificationService := authorization.NewOneSignalService(logger, configs)
 	// authService contains all methods that help in authorizing a user request
 	auth := middleware.NewAuthService(logger, configs)
 
@@ -300,7 +304,7 @@ func main() {
 
 	var (
 		httpAddr    = net.JoinHostPort("localhost", configs.HttpPort)
-		service     = authorization.NewUserService(logger, configs, repository, mailService, auth)
+		service     = authorization.NewUserService(logger, configs, repository, mailService, auth, notificationService)
 		eps         = endpoints.NewEndpointSet(service, auth, repository, logger, validator, rlBucket)
 		httpHandler = transport.NewHTTPHandler(eps)
 	)

@@ -29,6 +29,7 @@ type Set struct {
 	GetVerifyMailCodeEndpoint     endpoint.Endpoint
 	GetMatchCodeEndpoint          endpoint.Endpoint
 	MatchLoverEndpoint            endpoint.Endpoint
+	AcceptMatchLoverEndpoint      endpoint.Endpoint
 	UnMatchLoverEndpoint          endpoint.Endpoint
 	GetMatchedLoverEndpoint       endpoint.Endpoint
 	CreateLoveLetterEndpoint      endpoint.Endpoint
@@ -117,6 +118,11 @@ func NewEndpointSet(svc authorization.Service,
 	matchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(matchLoverEndpoint)
 	matchLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(matchLoverEndpoint)
 
+	acceptMatchLoverEndpoint := MakeAcceptMatchLoverEndpoint(svc)
+	acceptMatchLoverEndpoint = middleware.RateLimitRequest(tb, logger)(acceptMatchLoverEndpoint)
+	acceptMatchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(acceptMatchLoverEndpoint)
+	acceptMatchLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(acceptMatchLoverEndpoint)
+
 	unMatchLoverEndpoint := MakeUnMatchedLoverEndpoint(svc)
 	unMatchLoverEndpoint = middleware.RateLimitRequest(tb, logger)(unMatchLoverEndpoint)
 	unMatchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(unMatchLoverEndpoint)
@@ -167,6 +173,7 @@ func NewEndpointSet(svc authorization.Service,
 		GetVerifyMailCodeEndpoint:     getVerifyMailCodeEndpoint,
 		GetMatchCodeEndpoint:          getMatchCodeEndpoint,
 		MatchLoverEndpoint:            matchLoverEndpoint,
+		AcceptMatchLoverEndpoint:      acceptMatchLoverEndpoint,
 		UnMatchLoverEndpoint:          unMatchLoverEndpoint,
 		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
 		CreateLoveLetterEndpoint:      createLoveLetterEndpoint,
@@ -440,6 +447,26 @@ func MakeMatchLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return "successfully matched lover", nil
+	}
+}
+
+// MakeAcceptMatchLoverEndpoint returns an endpoint that invokes AcceptMatchLover on the service.
+func MakeAcceptMatchLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.AcceptMatchLoverRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		err := svc.AcceptMatchLover(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		response := authorization.AcceptMatchLoverResponse{
+			Accept:  req.Accept,
+			Message: "Finish response to match lover",
+		}
+		return response, nil
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/OneSignal/onesignal-go-client"
 	"github.com/hashicorp/go-hclog"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
@@ -15,11 +16,12 @@ import (
 )
 
 type userService struct {
-	logger      hclog.Logger
-	configs     *utils.Configurations
-	repo        database.UserRepository
-	mailService MailService
-	auth        middleware.Authentication
+	logger              hclog.Logger
+	configs             *utils.Configurations
+	repo                database.UserRepository
+	mailService         MailService
+	auth                middleware.Authentication
+	notificationService NotificationService
 }
 
 // NewUserService creates a new user service.
@@ -27,13 +29,15 @@ func NewUserService(logger hclog.Logger,
 	configs *utils.Configurations,
 	repo database.UserRepository,
 	mailService MailService,
-	auth middleware.Authentication) *userService {
+	auth middleware.Authentication,
+	notificationService NotificationService) *userService {
 	return &userService{
-		logger:      logger,
-		configs:     configs,
-		repo:        repo,
-		mailService: mailService,
-		auth:        auth,
+		logger:              logger,
+		configs:             configs,
+		repo:                repo,
+		mailService:         mailService,
+		auth:                auth,
+		notificationService: notificationService,
 	}
 }
 
@@ -954,7 +958,7 @@ func (s *userService) GetMatchCode(ctx context.Context) (interface{}, error) {
 		Code:      matchCode,
 		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.MatchCodeExpiration)),
 	}
-	err = s.repo.InsertOrUpdateMatchVerifyData(ctx, matchData)
+	err = s.repo.InsertMatchVerifyData(ctx, matchData)
 	if err != nil {
 		s.logger.Error("unable to store match data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -988,11 +992,25 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		cusErr := utils.NewErrorResponse(utils.Forbidden)
 		return cusErr
 	}
+	// Check if user has already matched
+	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+	if err == nil {
+		s.logger.Error("User are in a relationship")
+		cusErr := utils.NewErrorResponse(utils.UserAlreadyMatched)
+		return cusErr
+	}
+	s.logger.Info("User not match", "error", err)
 	// Check if user has match code
 	matchData, err := s.repo.GetMatchVerifyDataByCode(ctx, request.Code)
 	if err != nil {
 		s.logger.Error("Cannot get match data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.MatchCodeIsNotExactly)
+		return cusErr
+	}
+	// check mathId need different user id
+	if matchData.UserID == user.ID {
+		s.logger.Error("User cannot match with himself")
+		cusErr := utils.NewErrorResponse(utils.UserCannotMatchWithHimself)
 		return cusErr
 	}
 	if matchData.Code == "" {
@@ -1006,27 +1024,10 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		cusErr := utils.NewErrorResponse(utils.MatchCodeIsExpired)
 		return cusErr
 	}
-	// Check if match code is correct
-	if matchData.Code != request.Code {
-		s.logger.Error("Match code is incorrect")
-		cusErr := utils.NewErrorResponse(utils.MatchCodeIsIncorrect)
-		return cusErr
-	}
-	// Check if user has already matched
-	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
-	if err != nil {
-		s.logger.Error("User not match", "error", err)
-	}
-	// Check if user has already matched
-	if matchLove.MatchID != "" {
-		s.logger.Error("User has already matched")
-		cusErr := utils.NewErrorResponse(utils.UserAlreadyMatched)
-		return cusErr
-	}
 	// Match user with new love
 	matchLove.UserID = user.ID
 	matchLove.MatchID = matchData.UserID
-	err = s.repo.InsertOrDeleteMatchLoveData(ctx, matchLove, false)
+	err = s.repo.InsertMatchLoveData(ctx, matchLove)
 	if err != nil {
 		s.logger.Error("Cannot insert or update match love data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1040,6 +1041,29 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		return cusErr
 	}
 	s.logger.Debug("Successfully matched user")
+	// Send notification to matched user
+	var viContent = "💌 💕Có một người đã phải lòng bạn❤😘"
+	contents := onesignal.StringMap{
+		En: "💌 💕Someone has a crush on you❤😘",
+		Vi: &viContent,
+	}
+	data := map[string]interface{}{
+		"userid":  matchLove.UserID,
+		"matchid": matchLove.MatchID,
+	}
+	// get playerData of matched user
+	playerData, err := s.repo.GetPlayerData(ctx, matchLove.MatchID)
+	// if user not enable notification, skip
+	if err != nil {
+		s.logger.Error("Cannot get player data", "error", err)
+		return nil
+	}
+	notificationData := NotificationData{
+		PlayerID: playerData.UUID,
+		Message:  contents,
+		Data:     data,
+	}
+	s.notificationService.SendNotification(ctx, &notificationData)
 	return nil
 }
 
@@ -1076,7 +1100,7 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		return cusErr
 	}
 	// Delete match data
-	err = s.repo.InsertOrDeleteMatchLoveData(ctx, matchLove, true)
+	err = s.repo.DeleteMatchLoveDataByUserID(ctx, user.ID)
 	if err != nil {
 		s.logger.Error("Cannot delete match love data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1142,61 +1166,72 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 }
 
 // AcceptMatchLover accept lover
-//func (s *userService) AcceptMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error {
-//	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
-//	if !ok {
-//		s.logger.Error("Error getting userID from context")
-//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-//		return cusErr
-//	}
-//	user, err := s.repo.GetUserByID(ctx, userID)
-//	if err != nil {
-//		s.logger.Error("Cannot get user", "error", err)
-//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-//		return cusErr
-//	}
-//	// Check if user is banned
-//	if user.Banned {
-//		s.logger.Error("User is banned", "error", err)
-//		cusErr := utils.NewErrorResponse(utils.Forbidden)
-//		return cusErr
-//	}
-//	// Check if user has match code
-//	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
-//	if err != nil {
-//		s.logger.Error("User does not match with someone", "error", err)
-//		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
-//		return cusErr
-//	}
-//	if matchLove.MatchID == "" {
-//		s.logger.Error("User does not match with someone")
-//		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
-//		return cusErr
-//	}
-//	// Get lover
-//	lover, err := s.repo.GetUserByID(ctx, matchLove.MatchID)
-//	if err != nil {
-//		s.logger.Error("Cannot get lover", "error", err)
-//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-//		return cusErr
-//	}
-//	// Check if lover is banned
-//	if lover.Banned {
-//		s.logger.Error("Lover is banned", "error", err)
-//		cusErr := utils.NewErrorResponse(utils.Forbidden)
-//		return cusErr
-//	}
-//	// Update match love
-//	matchLove.Accept = request.Accept
-//	err = s.repo.UpdateMatchLoveData(ctx, matchLove)
-//	if err != nil {
-//		s.logger.Error("Cannot update match love", "error", err)
-//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-//		return cusErr
-//	}
-//	s.logger.Debug("Successfully accept lover")
-//	return nil
-//}
+func (s *userService) AcceptMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Check if user has match code
+	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("User does not match with someone", "error", err)
+		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+		return cusErr
+	}
+	if matchLove.MatchID == "" {
+		s.logger.Error("User does not match with someone")
+		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+		return cusErr
+	}
+	// Get lover
+	lover, err := s.repo.GetUserByID(ctx, matchLove.MatchID)
+	if err != nil {
+		s.logger.Error("Cannot get lover", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if lover is banned
+	if lover.Banned {
+		s.logger.Error("Lover is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Update match love
+	matchLove.Accept = request.Accept
+	err = s.repo.InsertMatchLoveData(ctx, matchLove)
+	if err != nil {
+		s.logger.Error("Cannot update match love", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	s.logger.Debug("Successfully accept lover")
+	// if lover reject match
+	if request.Accept == 2 {
+		// Delete match love
+		err = s.repo.DeleteMatchLoveDataByUserID(ctx, lover.ID)
+		if err != nil {
+			s.logger.Error("Cannot delete match love", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr
+		}
+		s.logger.Debug("Successfully delete match love")
+	}
+	return nil
+}
 
 // CreateLoveLetter create love letter
 func (s *userService) CreateLoveLetter(ctx context.Context, request *CreateLoveLetterRequest) error {

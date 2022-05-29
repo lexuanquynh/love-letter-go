@@ -20,7 +20,7 @@ type Service interface {
 	GetVerifyMailCode(ctx context.Context) error
 	GetMatchCode(ctx context.Context) (interface{}, error)
 	MatchLover(ctx context.Context, request *MatchLoverRequest) error
-	//AcceptMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error
+	AcceptMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error
 	UnMatchedLover(ctx context.Context) error
 	GetMatchLover(ctx context.Context) (interface{}, error)
 	CreateLoveLetter(ctx context.Context, request *CreateLoveLetterRequest) error
