@@ -34,6 +34,8 @@ type Set struct {
 	CreateLoveLetterEndpoint      endpoint.Endpoint
 	UpdateLoveLetterEndpoint      endpoint.Endpoint
 	GetFeedsEndpoint              endpoint.Endpoint
+	InsertPlayerDataEndpoint      endpoint.Endpoint
+	GetPlayerDataEndpoint         endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -137,7 +139,16 @@ func NewEndpointSet(svc authorization.Service,
 
 	getFeedsEndpoint := MakeGetFeedsEndpoint(svc)
 	getFeedsEndpoint = middleware.RateLimitRequest(tb, logger)(getFeedsEndpoint)
-	//getFeedsEndpoint = middleware.ValidateParamRequest(validator, logger)(getFeedsEndpoint)
+
+	insertPlayerDataEndpoint := InsertPlayerDataEndpoint(svc)
+	insertPlayerDataEndpoint = middleware.RateLimitRequest(tb, logger)(insertPlayerDataEndpoint)
+	insertPlayerDataEndpoint = middleware.ValidateParamRequest(validator, logger)(insertPlayerDataEndpoint)
+	insertPlayerDataEndpoint = middleware.ValidateAccessToken(auth, r, logger)(insertPlayerDataEndpoint)
+
+	getPlayerDataEndpoint := GetPlayerDataEndpoint(svc)
+	getPlayerDataEndpoint = middleware.RateLimitRequest(tb, logger)(getPlayerDataEndpoint)
+	getPlayerDataEndpoint = middleware.ValidateParamRequest(validator, logger)(getPlayerDataEndpoint)
+	getPlayerDataEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getPlayerDataEndpoint)
 
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
@@ -160,6 +171,8 @@ func NewEndpointSet(svc authorization.Service,
 		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
 		CreateLoveLetterEndpoint:      createLoveLetterEndpoint,
 		GetFeedsEndpoint:              getFeedsEndpoint,
+		InsertPlayerDataEndpoint:      insertPlayerDataEndpoint,
+		GetPlayerDataEndpoint:         getPlayerDataEndpoint,
 	}
 }
 
@@ -252,7 +265,7 @@ func MakeLogoutEndpoint(svc authorization.Service) endpoint.Endpoint {
 // MakeGetUserEndpoint returns an endpoint that invokes GetUser on the service.
 func MakeGetUserEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		_, ok := request.(authorization.GetUserRequest)
+		_, ok := request.(authorization.CommonAuthorizationRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
@@ -286,7 +299,7 @@ func MakeUpdateUserNameEndpoint(svc authorization.Service) endpoint.Endpoint {
 // MakeGetProfileEndpoint returns an endpoint that invokes GetProfile on the service.
 func MakeGetProfileEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		_, ok := request.(authorization.GetProfileRequest)
+		_, ok := request.(authorization.CommonAuthorizationRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
@@ -385,7 +398,7 @@ func MakeGenerateAccessTokenEndpoint(svc authorization.Service) endpoint.Endpoin
 // MakeGetVerifyMailCodeEndpoint returns an endpoint that invokes GetVerifyMailCode on the service.
 func MakeGetVerifyMailCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		_, ok := request.(authorization.GetVerifyMailCodeRequest)
+		_, ok := request.(authorization.CommonAuthorizationRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
@@ -401,7 +414,7 @@ func MakeGetVerifyMailCodeEndpoint(svc authorization.Service) endpoint.Endpoint 
 // MakeGetMatchCodeEndpoint returns an endpoint that invokes GetMatchCode on the service.
 func MakeGetMatchCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		_, ok := request.(authorization.GetMatchCodeRequest)
+		_, ok := request.(authorization.CommonAuthorizationRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
@@ -433,7 +446,7 @@ func MakeMatchLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 // MakeUnMatchedLoverEndpoint returns an endpoint that invokes UnMatchedLover on the service.
 func MakeUnMatchedLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		_, ok := request.(authorization.UnMatchLoverRequest)
+		_, ok := request.(authorization.CommonAuthorizationRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
@@ -449,7 +462,7 @@ func MakeUnMatchedLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 // MakeGetMatchedLoverEndpoint returns an endpoint that invokes GetMatchLover on the service.
 func MakeGetMatchedLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		_, ok := request.(authorization.GetMatchedLoverRequest)
+		_, ok := request.(authorization.CommonAuthorizationRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
@@ -499,5 +512,37 @@ func MakeGetFeedsEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		feedResponse, err := svc.GetFeeds(ctx)
 		return feedResponse, err
+	}
+}
+
+// InsertPlayerDataEndpoint returns an endpoint that invokes SavePlayerId on the service.
+func InsertPlayerDataEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.InsertPlayerDataRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		err := svc.InsertPlayerData(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return "successfully saved player id", nil
+	}
+}
+
+// GetPlayerDataEndpoint returns an endpoint that invokes GetPlayerData on the service.
+func GetPlayerDataEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_, ok := request.(authorization.CommonAuthorizationRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		playerData, err := svc.GetPlayerData(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return playerData, nil
 	}
 }

@@ -49,6 +49,7 @@ const (
 	BodyRequired            = 29
 	ValueTooLong            = 30
 	UserInRelationship      = 31
+	PlayerIdRequired        = 32
 )
 
 func (e ErrorResponse) Error() string {
@@ -133,6 +134,8 @@ func (e ErrorResponse) Error() string {
 		return "value too long"
 	case UserInRelationship:
 		return "user in a relationship"
+	case PlayerIdRequired:
+		return "player id required"
 	default:
 		return "Unknown Error"
 	}

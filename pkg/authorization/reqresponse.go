@@ -39,8 +39,8 @@ type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
-// GetUserRequest is used to get user info
-type GetUserRequest struct {
+// CommonAuthorizationRequest is used to get user info
+type CommonAuthorizationRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
 
@@ -48,11 +48,6 @@ type GetUserRequest struct {
 type UpdateUserNameRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	Username    string `json:"username" validate:"required"`
-}
-
-// GetProfileRequest is used to get user profile
-type GetProfileRequest struct {
-	AccessToken string `json:"access_token" validate:"required"`
 }
 
 // UpdateProfileRequest is used to update user profile
@@ -152,16 +147,6 @@ type GenerateAccessResponse struct {
 	Username     string `json:"username,omitempty"`
 }
 
-// GetVerifyMailCodeRequest is used to get verify mail code
-type GetVerifyMailCodeRequest struct {
-	AccessToken string `json:"access_token" validate:"required"`
-}
-
-// GetMatchCodeRequest is used to get match code
-type GetMatchCodeRequest struct {
-	AccessToken string `json:"access_token" validate:"required"`
-}
-
 // GetMatchCodeResponse is the response for get match code
 type GetMatchCodeResponse struct {
 	Code    string `json:"code"`
@@ -174,14 +159,10 @@ type MatchLoverRequest struct {
 	Code        string `json:"code" validate:"required"`
 }
 
-// UnMatchLoverRequest is used to unmatch love
-type UnMatchLoverRequest struct {
+// AcceptMatchLoverRequest is used to accept match lover
+type AcceptMatchLoverRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
-}
-
-// GetMatchedLoverRequest is used to get match lover
-type GetMatchedLoverRequest struct {
-	AccessToken string `json:"access_token" validate:"required"`
+	Accept      bool   `json:"accept" validate:"required"`
 }
 
 // CreateLoveLetterRequest is used to create love letter
@@ -204,4 +185,16 @@ type UpdateLoveLetterRequest struct {
 // GetFeedsResponse is the response for get feeds
 type GetFeedsResponse struct {
 	Feeds []*database.FeedsData `json:"feed_list"`
+}
+
+// InsertPlayerDataRequest is used to save player id
+type InsertPlayerDataRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	PlayerID    string `json:"player_id" validate:"required"`
+}
+
+// GetPlayerDataResponse is the response for get player data
+type GetPlayerDataResponse struct {
+	UserID   string `json:"user_id"`
+	PlayerID string `json:"player_id"`
 }

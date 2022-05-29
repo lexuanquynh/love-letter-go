@@ -139,6 +139,20 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	m.Handle("/insert-player-data", httptransport.NewServer(
+		ep.InsertPlayerDataEndpoint,
+		decodeHTTPInsertPlayerDataRequest,
+		encodeResponse,
+		options...,
+	))
+
+	m.Handle("/get-player-data", httptransport.NewServer(
+		ep.GetPlayerDataEndpoint,
+		decodeHTTPGetPlayerDataRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -235,7 +249,7 @@ func decodeHTTPLogoutRequest(_ context.Context, r *http.Request) (interface{}, e
 // decodeHTTPGetUserRequest decode request
 func decodeHTTPGetUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.GetUserRequest
+		var req authorization.CommonAuthorizationRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
@@ -253,7 +267,7 @@ func decodeHTTPGetUserRequest(_ context.Context, r *http.Request) (interface{}, 
 // decodeHTTPGetProfileRequest decode request
 func decodeHTTPGetProfileRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.GetProfileRequest
+		var req authorization.CommonAuthorizationRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
@@ -397,7 +411,7 @@ func decodeHTTPGenerateAccessTokenRequest(_ context.Context, r *http.Request) (i
 // decodeHTTPGetVerifyMailCodeRequest decode request
 func decodeHTTPGetVerifyMailCodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.GetVerifyMailCodeRequest
+		var req authorization.CommonAuthorizationRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
@@ -415,7 +429,7 @@ func decodeHTTPGetVerifyMailCodeRequest(_ context.Context, r *http.Request) (int
 // decodeHTTPGetMatchCodeRequest decode request
 func decodeHTTPGetMatchCodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.GetMatchCodeRequest
+		var req authorization.CommonAuthorizationRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
@@ -454,7 +468,7 @@ func decodeHTTPMatchLoverRequest(_ context.Context, r *http.Request) (interface{
 // decodeHTTPUnMatchLoverRequest decode request
 func decodeHTTPUnMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.UnMatchLoverRequest
+		var req authorization.CommonAuthorizationRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
@@ -472,7 +486,7 @@ func decodeHTTPUnMatchLoverRequest(_ context.Context, r *http.Request) (interfac
 // decodeHTTPGetMatchedLoverRequest decode request
 func decodeHTTPGetMatchedLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.GetMatchedLoverRequest
+		var req authorization.CommonAuthorizationRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
@@ -534,6 +548,45 @@ func decodeHTTPGetFeedsRequest(_ context.Context, r *http.Request) (interface{},
 	logger := utils.NewLogger()
 	logger.Info("decodeHTTPGetFeedsRequest")
 	return nil, nil
+}
+
+// decodeHTTPInsertPlayerDataRequest decode request
+func decodeHTTPInsertPlayerDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.InsertPlayerDataRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		if req.PlayerID == "" {
+			return nil, utils.NewErrorResponse(utils.PlayerIdRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetPlayerDataRequest decode request
+func decodeHTTPGetPlayerDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.CommonAuthorizationRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
 }
 
 func errEncoder(ctx context.Context, err error, w http.ResponseWriter) {

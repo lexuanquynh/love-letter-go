@@ -452,3 +452,36 @@ func (repo *postgresRepository) GetFeeds(ctx context.Context) ([]*FeedsData, err
 	err := repo.db.SelectContext(ctx, &feeds, query)
 	return feeds, err
 }
+
+//create table if not exists players (
+//id 		   Varchar(36) not null,
+//userid 	Varchar(36) not null,
+//uuid 		Varchar(100) not null,
+//createdat  Timestamp not null,
+//updatedat  Timestamp not null,
+//Primary Key (id),
+//Constraint fk_user_id Foreign Key(userid) References users(id)
+//On Delete Cascade On Update Cascade
+//)
+
+// InsertPlayerData inserts player data
+func (repo *postgresRepository) InsertPlayerData(ctx context.Context, playerData *PlayerData) error {
+	playerData.CreatedAt = time.Now()
+	playerData.UpdatedAt = time.Now()
+	query := "insert into players(userid, uuid, createdat, updatedat) values($1, $2, $3, $4)" +
+		"on conflict (userid) do update set uuid = $2, updatedat = $4"
+	_, err := repo.db.ExecContext(ctx, query,
+		playerData.UserID,
+		playerData.UUID,
+		playerData.CreatedAt,
+		playerData.UpdatedAt)
+	return err
+}
+
+// GetPlayerData returns player data
+func (repo *postgresRepository) GetPlayerData(ctx context.Context, userID string) (*PlayerData, error) {
+	query := "select * from players where userid = $1"
+	var playerData PlayerData
+	err := repo.db.GetContext(ctx, &playerData, query, userID)
+	return &playerData, err
+}

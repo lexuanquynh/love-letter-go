@@ -1141,6 +1141,63 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 	return response, nil
 }
 
+// AcceptMatchLover accept lover
+//func (s *userService) AcceptMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error {
+//	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+//	if !ok {
+//		s.logger.Error("Error getting userID from context")
+//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+//		return cusErr
+//	}
+//	user, err := s.repo.GetUserByID(ctx, userID)
+//	if err != nil {
+//		s.logger.Error("Cannot get user", "error", err)
+//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+//		return cusErr
+//	}
+//	// Check if user is banned
+//	if user.Banned {
+//		s.logger.Error("User is banned", "error", err)
+//		cusErr := utils.NewErrorResponse(utils.Forbidden)
+//		return cusErr
+//	}
+//	// Check if user has match code
+//	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+//	if err != nil {
+//		s.logger.Error("User does not match with someone", "error", err)
+//		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+//		return cusErr
+//	}
+//	if matchLove.MatchID == "" {
+//		s.logger.Error("User does not match with someone")
+//		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
+//		return cusErr
+//	}
+//	// Get lover
+//	lover, err := s.repo.GetUserByID(ctx, matchLove.MatchID)
+//	if err != nil {
+//		s.logger.Error("Cannot get lover", "error", err)
+//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+//		return cusErr
+//	}
+//	// Check if lover is banned
+//	if lover.Banned {
+//		s.logger.Error("Lover is banned", "error", err)
+//		cusErr := utils.NewErrorResponse(utils.Forbidden)
+//		return cusErr
+//	}
+//	// Update match love
+//	matchLove.Accept = request.Accept
+//	err = s.repo.UpdateMatchLoveData(ctx, matchLove)
+//	if err != nil {
+//		s.logger.Error("Cannot update match love", "error", err)
+//		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+//		return cusErr
+//	}
+//	s.logger.Debug("Successfully accept lover")
+//	return nil
+//}
+
 // CreateLoveLetter create love letter
 func (s *userService) CreateLoveLetter(ctx context.Context, request *CreateLoveLetterRequest) error {
 	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
@@ -1247,6 +1304,77 @@ func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 	s.logger.Debug("Successfully gxet feeds")
 	response := GetFeedsResponse{
 		Feeds: feeds,
+	}
+	return response, nil
+}
+
+// InsertPlayerData save player data
+func (s *userService) InsertPlayerData(ctx context.Context, request *InsertPlayerDataRequest) error {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return cusErr
+	}
+	// Create player data for insert
+	insertPlayerData := database.PlayerData{
+		UserID: user.ID,
+		UUID:   request.PlayerID,
+	}
+
+	err = s.repo.InsertPlayerData(ctx, &insertPlayerData)
+	if err != nil {
+		s.logger.Error("Cannot insert player data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	s.logger.Debug("Successfully update player data")
+	return nil
+}
+
+// GetPlayerData get player data
+func (s *userService) GetPlayerData(ctx context.Context) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	// Get player data
+	playerData, err := s.repo.GetPlayerData(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Cannot get player data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	s.logger.Debug("Successfully get player data")
+	response := GetPlayerDataResponse{
+		UserID:   playerData.UserID,
+		PlayerID: playerData.UUID,
 	}
 	return response, nil
 }

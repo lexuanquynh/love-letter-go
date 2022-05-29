@@ -57,4 +57,8 @@ type UserRepository interface {
 	UpdateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error
 	// GetFeeds Get feeds
 	GetFeeds(ctx context.Context) ([]*FeedsData, error)
+	// InsertPlayerData Insert player data
+	InsertPlayerData(ctx context.Context, playerData *PlayerData) error
+	// GetPlayerData Get player data
+	GetPlayerData(ctx context.Context, userID string) (*PlayerData, error)
 }

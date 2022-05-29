@@ -59,3 +59,10 @@ type FeedsData struct {
 	Title    string `json:"title" validate:"required" sql:"title"`
 	IsEnable bool   `json:"is_enable" sql:"isenable"`
 }
+
+type PlayerData struct {
+	UserID    string    `json:"userid" sql:"userid"`
+	UUID      string    `json:"uuid" sql:"uuid"`
+	CreatedAt time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
+}
