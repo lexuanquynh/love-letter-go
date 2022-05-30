@@ -1040,6 +1040,33 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
+	// Save lover state to database matchid and state = -1 not answer
+	loverStateData := &database.UserStateData{
+		UserID:    matchLove.MatchID,
+		KeyString: database.MatchLoverStateKey,
+		IntValue:  database.MatchLoverStateNone,
+		CreatedAt: time.Now(),
+	}
+	err = s.repo.InsertUserStateData(ctx, loverStateData)
+	if err != nil {
+		s.logger.Error("Cannot insert or update user state data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	// Save user state to database userid and state = 1 accept match lover
+	userStateData := &database.UserStateData{
+		UserID:    matchLove.UserID,
+		KeyString: database.MatchLoverStateKey,
+		IntValue:  database.MatchLoverStateAccept,
+		CreatedAt: time.Now(),
+	}
+	err = s.repo.InsertUserStateData(ctx, userStateData)
+	if err != nil {
+		s.logger.Error("Cannot insert or update user state data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+
 	s.logger.Debug("Successfully matched user")
 	// Send notification to matched user
 	var viContent = "💌 💕Có một người đã phải lòng bạn❤😘"
@@ -1165,8 +1192,8 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 	return response, nil
 }
 
-// AcceptMatchLover accept lover
-func (s *userService) AcceptMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error {
+// ConfirmMatchLover accept lover
+func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error {
 	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
 	if !ok {
 		s.logger.Error("Error getting userID from context")
@@ -1212,15 +1239,10 @@ func (s *userService) AcceptMatchLover(ctx context.Context, request *AcceptMatch
 	}
 	// Update match love
 	matchLove.Accept = request.Accept
-	err = s.repo.InsertMatchLoveData(ctx, matchLove)
-	if err != nil {
-		s.logger.Error("Cannot update match love", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
+
 	s.logger.Debug("Successfully accept lover")
 	// if lover reject match
-	if request.Accept == 2 {
+	if request.Accept == database.MatchLoverStateReject {
 		// Delete match love
 		err = s.repo.DeleteMatchLoveDataByUserID(ctx, lover.ID)
 		if err != nil {
@@ -1229,6 +1251,41 @@ func (s *userService) AcceptMatchLover(ctx context.Context, request *AcceptMatch
 			return cusErr
 		}
 		s.logger.Debug("Successfully delete match love")
+		// Delete user state data
+		err = s.repo.DeleteUserStateData(ctx, user.ID, database.MatchLoverStateKey)
+		if err != nil {
+			s.logger.Error("Cannot delete user state", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr
+		}
+		// Delete lover state data
+		err = s.repo.DeleteUserStateData(ctx, lover.ID, database.MatchLoverStateKey)
+		if err != nil {
+			s.logger.Error("Cannot delete lover state", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr
+		}
+	} else if request.Accept == database.MatchLoverStateAccept {
+		// lover accept match
+		err = s.repo.InsertMatchLoveData(ctx, matchLove)
+		if err != nil {
+			s.logger.Error("Cannot update match love", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr
+		}
+		// Update lover accept match
+		userStateData := &database.UserStateData{
+			UserID:    matchLove.UserID,
+			KeyString: database.MatchLoverStateKey,
+			IntValue:  request.Accept,
+			CreatedAt: time.Now(),
+		}
+		err = s.repo.InsertUserStateData(ctx, userStateData)
+		if err != nil {
+			s.logger.Error("Cannot update user state", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr
+		}
 	}
 	return nil
 }
@@ -1410,6 +1467,56 @@ func (s *userService) GetPlayerData(ctx context.Context) (interface{}, error) {
 	response := GetPlayerDataResponse{
 		UserID:   playerData.UserID,
 		PlayerID: playerData.UUID,
+	}
+	return response, nil
+}
+
+// GetUserStateData get user state data by userID and keyString
+func (s *userService) GetUserStateData(ctx context.Context, request *GetUserStateDataRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	// Get user state data
+	userStateData, err := s.repo.GetUserStateData(ctx, user.ID, request.KeyString)
+	if err != nil {
+		// if sql: no rows in result s
+		if err.Error() == "sql: no rows in result set" {
+			s.logger.Debug("User state data not found")
+			response := GetUserStateDataResponse{
+				KeyString: request.KeyString,
+				UserID:    user.ID,
+			}
+			return response, nil
+		}
+
+		s.logger.Error("Cannot get user state data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	s.logger.Debug("Successfully get user state data")
+	response := GetUserStateDataResponse{
+		UserID:      userStateData.UserID,
+		KeyString:   userStateData.KeyString,
+		StringValue: userStateData.StringValue,
+		IntValue:    userStateData.IntValue,
+		FloatValue:  userStateData.FloatValue,
+		BoolValue:   userStateData.BoolValue,
+		TimeValue:   userStateData.TimeValue,
 	}
 	return response, nil
 }

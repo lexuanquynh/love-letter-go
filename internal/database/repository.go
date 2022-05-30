@@ -63,4 +63,10 @@ type UserRepository interface {
 	InsertPlayerData(ctx context.Context, playerData *PlayerData) error
 	// GetPlayerData Get player data
 	GetPlayerData(ctx context.Context, userID string) (*PlayerData, error)
+	// InsertUserStateData Insert user state data
+	InsertUserStateData(ctx context.Context, userStateData *UserStateData) error
+	// DeleteUserStateData Delete user state data
+	DeleteUserStateData(ctx context.Context, userID string, keyString string) error
+	// GetUserStateData Get user state data
+	GetUserStateData(ctx context.Context, userID string, keyString string) (*UserStateData, error)
 }

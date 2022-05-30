@@ -105,7 +105,7 @@ const limitSchema = `
 		)
 `
 
-// schema for match love table. accept: 0: not answer, 1: accept, 2: reject
+// schema for match love table. accept: -1: not answer, 1: accept, 2: reject
 const matchLoveSchema = `
 		create table if not exists matchloves (		
 			userid 	Varchar(36) not null,
@@ -150,6 +150,22 @@ const loveLetterSchema = `
 			Primary Key (id),
 			Constraint fk_user_id Foreign Key(userid) References users(id)
 				On Delete Cascade On Update Cascade
+		)
+`
+
+// schema for user state table
+const userStateSchema = `
+		create table if not exists userstates (	
+			userid 			Varchar(36) not null,
+			keystring 		Varchar(36) not null,
+			stringvalue 	Varchar(255) null,
+			intvalue 		int null,
+			boolvalue 		Boolean default false,
+			floatvalue 		float null,
+			timevalue 		Timestamp null,
+			createdat  		Timestamp not null,
+			updatedat   	Timestamp not null,
+		    unique(userid, keystring)			
 		)
 `
 
@@ -250,6 +266,7 @@ func main() {
 	db.MustExec(feedSchema)
 	db.MustExec(feedDataSchema)
 	db.MustExec(playerSchema)
+	db.MustExec(userStateSchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

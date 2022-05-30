@@ -114,9 +114,9 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
-	m.Handle("/accept-match-lover", httptransport.NewServer(
-		ep.AcceptMatchLoverEndpoint,
-		decodeHTTPAcceptMatchLoverRequest,
+	m.Handle("/confirm-match-lover", httptransport.NewServer(
+		ep.ConfirmMatchLoverEndpoint,
+		decodeHTTPConfirmMatchLoverRequest,
 		encodeResponse,
 		options...,
 	))
@@ -160,6 +160,13 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 	//	encodeResponse,
 	//	options...,
 	//))
+
+	m.Handle("/get-user-state", httptransport.NewServer(
+		ep.GetUserStateDataEndpoint,
+		decodeHTTPGetUserStateDataRequest,
+		encodeResponse,
+		options...,
+	))
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
@@ -473,8 +480,8 @@ func decodeHTTPMatchLoverRequest(_ context.Context, r *http.Request) (interface{
 	}
 }
 
-// decodeHTTPAcceptMatchLoverRequest decode request
-func decodeHTTPAcceptMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
+// decodeHTTPConfirmMatchLoverRequest decode request
+func decodeHTTPConfirmMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.AcceptMatchLoverRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
@@ -589,6 +596,27 @@ func decodeHTTPInsertPlayerDataRequest(_ context.Context, r *http.Request) (inte
 		}
 		if req.PlayerID == "" {
 			return nil, utils.NewErrorResponse(utils.PlayerIdRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetUserStateDataRequest decode request
+func decodeHTTPGetUserStateDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetUserStateDataRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		if req.KeyString == "" {
+			return nil, utils.NewErrorResponse(utils.KeyStringRequired)
 		}
 		return req, nil
 	} else {

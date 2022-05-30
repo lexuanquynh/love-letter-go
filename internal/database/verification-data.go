@@ -59,9 +59,31 @@ type FeedsData struct {
 	IsEnable bool   `json:"is_enable" sql:"isenable"`
 }
 
+// PlayerData represents the type for the data stored for send notification.
 type PlayerData struct {
 	UserID    string    `json:"userid" sql:"userid"`
 	UUID      string    `json:"uuid" sql:"uuid"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }
+
+// UserStateData represents the type for the data stored for user state.
+type UserStateData struct {
+	UserID      string    `json:"userid" sql:"userid"`
+	KeyString   string    `json:"keystring" sql:"keystring"`
+	StringValue string    `json:"stringvalue" sql:"stringvalue"`
+	IntValue    int       `json:"intvalue" sql:"intvalue"`
+	BoolValue   bool      `json:"boolvalue" sql:"boolvalue"`
+	FloatValue  float64   `json:"floatvalue" sql:"floatvalue"`
+	TimeValue   time.Time `json:"timevalue" sql:"timevalue"`
+	CreatedAt   time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
+}
+
+const MatchLoverStateKey = "state"
+
+const (
+	MatchLoverStateNone   = -1
+	MatchLoverStateAccept = 1
+	MatchLoverStateReject = 2
+)

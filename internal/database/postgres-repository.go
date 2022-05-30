@@ -516,17 +516,6 @@ func (repo *postgresRepository) GetFeeds(ctx context.Context) ([]*FeedsData, err
 	return feeds, err
 }
 
-//create table if not exists players (
-//id 		   Varchar(36) not null,
-//userid 	Varchar(36) not null,
-//uuid 		Varchar(100) not null,
-//createdat  Timestamp not null,
-//updatedat  Timestamp not null,
-//Primary Key (id),
-//Constraint fk_user_id Foreign Key(userid) References users(id)
-//On Delete Cascade On Update Cascade
-//)
-
 // InsertPlayerData inserts player data
 func (repo *postgresRepository) InsertPlayerData(ctx context.Context, playerData *PlayerData) error {
 	playerData.CreatedAt = time.Now()
@@ -547,4 +536,48 @@ func (repo *postgresRepository) GetPlayerData(ctx context.Context, userID string
 	var playerData PlayerData
 	err := repo.db.GetContext(ctx, &playerData, query, userID)
 	return &playerData, err
+}
+
+//keystring 		Varchar(36) not null,
+//stringvalue 	Varchar(255) null,
+//intvalue 		int null,
+//boolvalue 		Boolean default false,
+//floatvalue 		float null,
+//timevalue 		Timestamp null,
+//createdat  		Timestamp not null,
+//updatedat   	Timestamp not null,
+
+// InsertUserStateData inserts user state data
+func (repo *postgresRepository) InsertUserStateData(ctx context.Context, userStateData *UserStateData) error {
+	userStateData.CreatedAt = time.Now()
+	userStateData.UpdatedAt = time.Now()
+	query := "insert into userstates(userid, keystring, stringvalue, intvalue, boolvalue, floatvalue, timevalue, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8, $9) " +
+		"on conflict (userid, keystring) do update set stringvalue = $3, intvalue = $4, boolvalue = $5, floatvalue = $6, timevalue = $7, updatedat = $9"
+	_, err := repo.db.ExecContext(ctx, query,
+		userStateData.UserID,
+		userStateData.KeyString,
+		userStateData.StringValue,
+		userStateData.IntValue,
+		userStateData.BoolValue,
+		userStateData.FloatValue,
+		userStateData.TimeValue,
+		userStateData.CreatedAt,
+		userStateData.UpdatedAt)
+	return err
+}
+
+// DeleteUserStateData deletes user state data
+func (repo *postgresRepository) DeleteUserStateData(ctx context.Context, userID string, keyString string) error {
+	query := "delete from userstates where userid = $1 and keystring = $2"
+	_, err := repo.db.ExecContext(ctx, query, userID, keyString)
+	return err
+}
+
+// GetUserStateData returns user state data
+func (repo *postgresRepository) GetUserStateData(ctx context.Context, userID string, keyString string) (*UserStateData, error) {
+	query := "select * from userstates where userid = $1 and keystring = $2"
+	var userStateData UserStateData
+	err := repo.db.GetContext(ctx, &userStateData, query, userID, keyString)
+	return &userStateData, err
 }

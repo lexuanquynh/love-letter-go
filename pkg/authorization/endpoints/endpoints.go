@@ -29,7 +29,7 @@ type Set struct {
 	GetVerifyMailCodeEndpoint     endpoint.Endpoint
 	GetMatchCodeEndpoint          endpoint.Endpoint
 	MatchLoverEndpoint            endpoint.Endpoint
-	AcceptMatchLoverEndpoint      endpoint.Endpoint
+	ConfirmMatchLoverEndpoint     endpoint.Endpoint
 	UnMatchLoverEndpoint          endpoint.Endpoint
 	GetMatchedLoverEndpoint       endpoint.Endpoint
 	CreateLoveLetterEndpoint      endpoint.Endpoint
@@ -37,6 +37,7 @@ type Set struct {
 	GetFeedsEndpoint              endpoint.Endpoint
 	InsertPlayerDataEndpoint      endpoint.Endpoint
 	GetPlayerDataEndpoint         endpoint.Endpoint
+	GetUserStateDataEndpoint      endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -118,10 +119,10 @@ func NewEndpointSet(svc authorization.Service,
 	matchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(matchLoverEndpoint)
 	matchLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(matchLoverEndpoint)
 
-	acceptMatchLoverEndpoint := MakeAcceptMatchLoverEndpoint(svc)
-	acceptMatchLoverEndpoint = middleware.RateLimitRequest(tb, logger)(acceptMatchLoverEndpoint)
-	acceptMatchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(acceptMatchLoverEndpoint)
-	acceptMatchLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(acceptMatchLoverEndpoint)
+	confirmMatchLoverEndpoint := MakeConfirmMatchLoverEndpoint(svc)
+	confirmMatchLoverEndpoint = middleware.RateLimitRequest(tb, logger)(confirmMatchLoverEndpoint)
+	confirmMatchLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(confirmMatchLoverEndpoint)
+	confirmMatchLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(confirmMatchLoverEndpoint)
 
 	unMatchLoverEndpoint := MakeUnMatchedLoverEndpoint(svc)
 	unMatchLoverEndpoint = middleware.RateLimitRequest(tb, logger)(unMatchLoverEndpoint)
@@ -156,6 +157,11 @@ func NewEndpointSet(svc authorization.Service,
 	getPlayerDataEndpoint = middleware.ValidateParamRequest(validator, logger)(getPlayerDataEndpoint)
 	getPlayerDataEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getPlayerDataEndpoint)
 
+	getUserStateDataEndpoint := GetUserStateDataEndpoint(svc)
+	getUserStateDataEndpoint = middleware.RateLimitRequest(tb, logger)(getUserStateDataEndpoint)
+	getUserStateDataEndpoint = middleware.ValidateParamRequest(validator, logger)(getUserStateDataEndpoint)
+	getUserStateDataEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getUserStateDataEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -173,13 +179,14 @@ func NewEndpointSet(svc authorization.Service,
 		GetVerifyMailCodeEndpoint:     getVerifyMailCodeEndpoint,
 		GetMatchCodeEndpoint:          getMatchCodeEndpoint,
 		MatchLoverEndpoint:            matchLoverEndpoint,
-		AcceptMatchLoverEndpoint:      acceptMatchLoverEndpoint,
+		ConfirmMatchLoverEndpoint:     confirmMatchLoverEndpoint,
 		UnMatchLoverEndpoint:          unMatchLoverEndpoint,
 		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
 		CreateLoveLetterEndpoint:      createLoveLetterEndpoint,
 		GetFeedsEndpoint:              getFeedsEndpoint,
 		InsertPlayerDataEndpoint:      insertPlayerDataEndpoint,
 		GetPlayerDataEndpoint:         getPlayerDataEndpoint,
+		GetUserStateDataEndpoint:      getUserStateDataEndpoint,
 	}
 }
 
@@ -450,15 +457,15 @@ func MakeMatchLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 	}
 }
 
-// MakeAcceptMatchLoverEndpoint returns an endpoint that invokes AcceptMatchLover on the service.
-func MakeAcceptMatchLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
+// MakeConfirmMatchLoverEndpoint returns an endpoint that invokes ConfirmMatchLover on the service.
+func MakeConfirmMatchLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(authorization.AcceptMatchLoverRequest)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
-		err := svc.AcceptMatchLover(ctx, &req)
+		err := svc.ConfirmMatchLover(ctx, &req)
 		if err != nil {
 			return nil, err
 		}
@@ -571,5 +578,21 @@ func GetPlayerDataEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return playerData, nil
+	}
+}
+
+// GetUserStateDataEndpoint returns an endpoint that invokes GetUserStateData on the service.
+func GetUserStateDataEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetUserStateDataRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		userStateData, err := svc.GetUserStateData(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return userStateData, nil
 	}
 }

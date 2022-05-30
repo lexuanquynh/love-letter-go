@@ -20,7 +20,7 @@ type Service interface {
 	GetVerifyMailCode(ctx context.Context) error
 	GetMatchCode(ctx context.Context) (interface{}, error)
 	MatchLover(ctx context.Context, request *MatchLoverRequest) error
-	AcceptMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error
+	ConfirmMatchLover(ctx context.Context, request *AcceptMatchLoverRequest) error
 	UnMatchedLover(ctx context.Context) error
 	GetMatchLover(ctx context.Context) (interface{}, error)
 	CreateLoveLetter(ctx context.Context, request *CreateLoveLetterRequest) error
@@ -28,4 +28,5 @@ type Service interface {
 	GetFeeds(ctx context.Context) (interface{}, error)
 	InsertPlayerData(ctx context.Context, request *InsertPlayerDataRequest) error
 	GetPlayerData(ctx context.Context) (interface{}, error)
+	GetUserStateData(ctx context.Context, request *GetUserStateDataRequest) (interface{}, error)
 }

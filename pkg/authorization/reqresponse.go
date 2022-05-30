@@ -159,7 +159,7 @@ type MatchLoverRequest struct {
 	Code        string `json:"code" validate:"required"`
 }
 
-// AcceptMatchLoverRequest is used to accept match lover. accept: 0: not answer, 1: accept, 2: reject
+// AcceptMatchLoverRequest is used to accept match lover. accept: -1: not answer, 1: accept, 2: reject
 type AcceptMatchLoverRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	Accept      int    `json:"accept" validate:"required"`
@@ -203,4 +203,21 @@ type InsertPlayerDataRequest struct {
 type GetPlayerDataResponse struct {
 	UserID   string `json:"user_id"`
 	PlayerID string `json:"player_id"`
+}
+
+// GetUserStateDataRequest is used to get user state data
+type GetUserStateDataRequest struct {
+	KeyString   string `json:"key" validate:"required"`
+	AccessToken string `json:"access_token" validate:"required"`
+}
+
+// GetUserStateDataResponse is the response for get user state data
+type GetUserStateDataResponse struct {
+	UserID      string    `json:"user_id"`
+	KeyString   string    `json:"key,omitempty"`
+	StringValue string    `json:"string_value"`
+	IntValue    int       `json:"int_value"`
+	BoolValue   bool      `json:"bool_value"`
+	FloatValue  float64   `json:"float_value"`
+	TimeValue   time.Time `json:"time_value"`
 }

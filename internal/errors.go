@@ -51,6 +51,8 @@ const (
 	UserInRelationship         = 31
 	PlayerIdRequired           = 32
 	UserCannotMatchWithHimself = 33
+	KeyStringRequired          = 34
+	UserIDRequired             = 35
 )
 
 func (e ErrorResponse) Error() string {
@@ -139,6 +141,10 @@ func (e ErrorResponse) Error() string {
 		return "player id required"
 	case UserCannotMatchWithHimself:
 		return "user cannot match with himself"
+	case KeyStringRequired:
+		return "key string required"
+	case UserIDRequired:
+		return "user id required"
 	default:
 		return "Unknown Error"
 	}
