@@ -503,7 +503,7 @@ func InsertPlayerDataEndpoint(svc authorization.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return "successfully saved player id", nil
+		return "successfully saved player data", nil
 	}
 }
 

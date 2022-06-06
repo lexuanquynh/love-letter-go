@@ -55,10 +55,15 @@ type MatchLoveData struct {
 
 // PlayerData represents the type for the data stored for send notification.
 type PlayerData struct {
-	UserID    string    `json:"userid" sql:"userid"`
-	UUID      string    `json:"uuid" sql:"uuid"`
-	CreatedAt time.Time `json:"createdat" sql:"createdat"`
-	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
+	UserID         string    `json:"userid" sql:"userid"`
+	UUID           string    `json:"uuid" sql:"uuid"`
+	DeviceName     string    `json:"device_name" sql:"devicename"`
+	DeviceVersion  string    `json:"device_version" sql:"deviceversion"`
+	DeviceModel    string    `json:"device_model" sql:"devicemodel"`
+	DeviceOS       string    `json:"device_os" sql:"deviceos"`
+	DeviceLocalize string    `json:"device_localize" sql:"devicelocalize"`
+	CreatedAt      time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt      time.Time `json:"updatedat" sql:"updatedat"`
 }
 
 // UserStateData represents the type for the data stored for user state.

@@ -1253,10 +1253,15 @@ func (s *userService) InsertPlayerData(ctx context.Context, request *InsertPlaye
 	}
 	// Create player data for insert
 	insertPlayerData := database.PlayerData{
-		UserID: user.ID,
-		UUID:   request.PlayerID,
+		UserID:         user.ID,
+		UUID:           request.PlayerID,
+		DeviceName:     request.DeviceName,
+		DeviceVersion:  request.DeviceVersion,
+		DeviceModel:    request.DeviceModel,
+		DeviceOS:       request.DeviceOS,
+		DeviceLocalize: request.DeviceLocalize,
 	}
-
+	// Insert player data
 	err = s.repo.InsertPlayerData(ctx, &insertPlayerData)
 	if err != nil {
 		s.logger.Error("Cannot insert player data", "error", err)
@@ -1296,8 +1301,13 @@ func (s *userService) GetPlayerData(ctx context.Context) (interface{}, error) {
 	}
 	s.logger.Debug("Successfully get player data")
 	response := GetPlayerDataResponse{
-		UserID:   playerData.UserID,
-		PlayerID: playerData.UUID,
+		UserID:         playerData.UserID,
+		PlayerID:       playerData.UUID,
+		DeviceName:     playerData.DeviceName,
+		DeviceVersion:  playerData.DeviceVersion,
+		DeviceModel:    playerData.DeviceModel,
+		DeviceOS:       playerData.DeviceOS,
+		DeviceLocalize: playerData.DeviceLocalize,
 	}
 	return response, nil
 }

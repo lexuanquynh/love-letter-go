@@ -152,10 +152,15 @@ const userStateSchema = `
 // Schema for save uuid, we will use this for send notification after
 const playerSchema = `
 		create table if not exists players (			
-			userid 	Varchar(36) not null,
-			uuid 		Varchar(100) not null,
-			createdat  Timestamp not null,
-			updatedat  Timestamp not null,
+			userid 				Varchar(36) not null,
+			uuid 				Varchar(100) not null,
+		    devicename 			Varchar(100)  null,
+		    deviceversion 		Varchar(10)  null,
+		    devicemodel 		Varchar(20)  null,
+		    deviceos 			Varchar(10)  null,
+		    devicelocalize 		Varchar(20)  null,
+			createdat  			Timestamp not null,
+			updatedat  			Timestamp not null,
 			Primary Key (userid),
 			Constraint fk_user_id Foreign Key(userid) References users(id)
 				On Delete Cascade On Update Cascade

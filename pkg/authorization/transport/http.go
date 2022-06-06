@@ -141,12 +141,12 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 	// we don't public this API
-	//m.Handle("/get-player-data", httptransport.NewServer(
-	//	ep.GetPlayerDataEndpoint,
-	//	decodeHTTPGetPlayerDataRequest,
-	//	encodeResponse,
-	//	options...,
-	//))
+	m.Handle("/get-player-data", httptransport.NewServer(
+		ep.GetPlayerDataEndpoint,
+		decodeHTTPGetPlayerDataRequest,
+		encodeResponse,
+		options...,
+	))
 
 	m.Handle("/get-user-state", httptransport.NewServer(
 		ep.GetUserStateDataEndpoint,
