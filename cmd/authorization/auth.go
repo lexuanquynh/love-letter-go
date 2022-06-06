@@ -108,13 +108,15 @@ const limitSchema = `
 // schema for match love table. accept: -1: not answer, 1: accept, 2: reject
 const matchLoveSchema = `
 		create table if not exists matchloves (		
-			userid 	Varchar(36) not null,
-			matchid 	Varchar(36) not null,
+			userid1 	Varchar(36) not null,
+			userid2 	Varchar(36) not null,
+		    email1 	   Varchar(100) not null,
+			email2 	   Varchar(100) not null,
 		    accept1     int default -1,
 		    accept2     int default -1,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
-			unique(userid, matchid)
+			unique(userid1, userid2)
 			
 		)
 `
@@ -123,6 +125,7 @@ const matchLoveSchema = `
 const generateMatchCodeSchema = `
 		create table if not exists generatematchcodes (
 			userid 	Varchar(36) not null,
+		    email 	   Varchar(100) not null,
 			code  		Varchar(10) not null,
 			expiresat 	Timestamp not null,
 		    createdat  Timestamp not null,

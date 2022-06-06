@@ -80,12 +80,12 @@ type GetLoverResponse struct {
 }
 
 // MatchLoverResponse is the response for match lover info
-type MatchLoverResponse struct {
-	UserID   string `json:"user_id"`
-	Email    string `json:"email"`
-	Username string `json:"username,omitempty"`
-	Accept   int    `json:"accept"`
-}
+//type MatchLoverResponse struct {
+//	UserID   string `json:"user_id"`
+//	Email    string `json:"email"`
+//	Username string `json:"username,omitempty"`
+//	Accept   int    `json:"accept"`
+//}
 
 // GetProfileResponse is the response for get user profile
 type GetProfileResponse struct {
@@ -247,6 +247,7 @@ type GetUserStateDataResponse struct {
 
 // Feed is response for feeds API
 type Feed struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data,omitempty"`
+	Index int         `json:"index"`
+	Type  string      `json:"type"`
+	Data  interface{} `json:"data,omitempty"`
 }

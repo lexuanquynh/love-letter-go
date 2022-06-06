@@ -320,58 +320,16 @@ func (repo *postgresRepository) ClearLimitData(ctx context.Context, limitType Li
 	return err
 }
 
-// GetMatchVerifyDataByCode returns the match data
-//func (repo *postgresRepository) GetMatchVerifyDataByCode(ctx context.Context, code string) (*MatchVerifyData, error) {
-//	query := "select * from generatematchcodes where code = $1"
-//	matchData := &MatchVerifyData{}
-//	err := repo.db.GetContext(ctx, matchData, query, code)
-//	return matchData, err
-//}
-
-// InsertOrUpdateMatchVerifyData updates the match data
-//func (repo *postgresRepository) InsertOrUpdateMatchVerifyData(ctx context.Context, matchData *MatchVerifyData) error {
-//	// Check exist or not match data
-//	_, err := repo.GetMatchVerifyDataByCode(ctx, matchData.Code)
-//	isInsert := false
-//	if err != nil {
-//		isInsert = true
-//		matchData.ID = uuid.NewV4().String()
-//		matchData.CreatedAt = time.Now()
-//	}
-//	matchData.UpdatedAt = time.Now()
-//	// Insert or update
-//	if isInsert {
-//		// Insert the match data
-//		query := "insert into generatematchcodes(id, userid, code, expiresat, createdat, updatedat) values($1, $2, $3, $4, $5, $6)"
-//		_, err := repo.db.ExecContext(ctx, query,
-//			matchData.ID,
-//			matchData.UserID,
-//			matchData.Code,
-//			matchData.ExpiresAt,
-//			matchData.CreatedAt,
-//			matchData.UpdatedAt)
-//		return err
-//	} else {
-//		// Update the match data
-//		query := "update generatematchcodes set code = $1, expiresat = $2, updatedat = $3 where userid = $4"
-//		_, err := repo.db.ExecContext(ctx, query,
-//			matchData.Code,
-//			matchData.ExpiresAt,
-//			matchData.UpdatedAt,
-//			matchData.UserID)
-//		return err
-//	}
-//}
-
 // InsertMatchVerifyData inserts the match data
 func (repo *postgresRepository) InsertMatchVerifyData(ctx context.Context, matchData *MatchVerifyData) error {
 	// Insert the match data
 	matchData.CreatedAt = time.Now()
 	matchData.UpdatedAt = time.Now()
-	query := "insert into generatematchcodes(userid, code, expiresat, createdat, updatedat) values($1, $2, $3, $4, $5)" +
-		" on conflict (userid) do update set code = $2, expiresat = $3, updatedat = $5"
+	query := "insert into generatematchcodes(userid, email, code, expiresat, createdat, updatedat) values($1, $2, $3, $4, $5, $6)" +
+		" on conflict (userid) do update set email = $2, code = $3, expiresat = $4, updatedat = $6"
 	_, err := repo.db.ExecContext(ctx, query,
 		matchData.UserID,
+		matchData.Email,
 		matchData.Code,
 		matchData.ExpiresAt,
 		matchData.CreatedAt,
@@ -396,11 +354,11 @@ func (repo *postgresRepository) DeleteMatchVerifyDataByUserID(ctx context.Contex
 
 // GetMatchLoveDataByUserID returns the match love data
 func (repo *postgresRepository) GetMatchLoveDataByUserID(ctx context.Context, userID string) (*MatchLoveData, error) {
-	query := "select * from matchloves where userid = $1"
+	query := "select * from matchloves where userid1 = $1"
 	matchData := &MatchLoveData{}
 	err := repo.db.GetContext(ctx, matchData, query, userID)
 	if err != nil {
-		query = "select * from matchloves where matchid = $1"
+		query = "select * from matchloves where userid2 = $1"
 		err = repo.db.GetContext(ctx, matchData, query, userID)
 	}
 	return matchData, err
@@ -408,12 +366,15 @@ func (repo *postgresRepository) GetMatchLoveDataByUserID(ctx context.Context, us
 
 // InsertMatchLoveData inserts the match love data
 func (repo *postgresRepository) InsertMatchLoveData(ctx context.Context, matchData *MatchLoveData) error {
-	// Insert the match data
-	query := "insert into matchloves(userid, matchid, accept1, accept2, createdat, updatedat) values($1, $2, $3, $4, $5, $6)" +
-		" on conflict (userid, matchid) do update set accept1 = $3, accept2 = $4, updatedat = $6"
+	matchData.CreatedAt = time.Now()
+	matchData.UpdatedAt = time.Now()
+	query := "insert into matchloves(userid1, userid2, email1, email2, accept1, accept2, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7, $8)" +
+		" on conflict (userid1, userid2) do update set email1 = $3, email2 = $4, accept1 = $5, accept2 = $6, updatedat = $8"
 	_, err := repo.db.ExecContext(ctx, query,
-		matchData.UserID,
-		matchData.MatchID,
+		matchData.UserID1,
+		matchData.UserID2,
+		matchData.Email1,
+		matchData.Email2,
 		matchData.Accept1,
 		matchData.Accept2,
 		matchData.CreatedAt,
@@ -423,7 +384,7 @@ func (repo *postgresRepository) InsertMatchLoveData(ctx context.Context, matchDa
 
 // DeleteMatchLoveDataByUserID deletes the match love data
 func (repo *postgresRepository) DeleteMatchLoveDataByUserID(ctx context.Context, userID string) error {
-	query := "delete from matchloves where userid = $1 or matchid = $1"
+	query := "delete from matchloves where userid1 = $1 or userid2 = $1"
 	_, err := repo.db.ExecContext(ctx, query, userID)
 	return err
 }

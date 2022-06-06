@@ -37,6 +37,7 @@ type VerificationData struct {
 // MatchVerifyData represents the type for the data stored for matching.
 type MatchVerifyData struct {
 	UserID    string    `json:"userid" sql:"userid"`
+	Email     string    `json:"email" sql:"email"`
 	Code      string    `json:"code" validate:"required" sql:"code"`
 	ExpiresAt time.Time `json:"expiresat" sql:"expiresat"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
@@ -45,8 +46,10 @@ type MatchVerifyData struct {
 
 // MatchLoveData represents the type for the data stored for matching.
 type MatchLoveData struct {
-	UserID    string    `json:"userid" sql:"userid"`
-	MatchID   string    `json:"matchid" sql:"matchid"`
+	UserID1   string    `json:"userid1" sql:"userid1"`
+	UserID2   string    `json:"userid2" sql:"userid2"`
+	Email1    string    `json:"email1" sql:"email1"`
+	Email2    string    `json:"email2" sql:"email2"`
 	Accept1   int       `json:"accept1" sql:"accept1"`
 	Accept2   int       `json:"accept2" sql:"accept2"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`

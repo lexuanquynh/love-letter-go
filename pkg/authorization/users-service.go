@@ -955,6 +955,7 @@ func (s *userService) GetMatchCode(ctx context.Context) (interface{}, error) {
 	// Store match code to db
 	matchData := &database.MatchVerifyData{
 		UserID:    user.ID,
+		Email:     user.Email,
 		Code:      matchCode,
 		ExpiresAt: time.Now().Add(time.Minute * time.Duration(s.configs.MatchCodeExpiration)),
 	}
@@ -1026,10 +1027,13 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		return cusErr
 	}
 	// Match user with new love
-	matchLove.UserID = user.ID
-	matchLove.MatchID = matchData.UserID
+	matchLove.UserID1 = user.ID
+	matchLove.UserID2 = matchData.UserID
 	matchLove.Accept1 = database.MatchLoverStateAccept
 	matchLove.Accept2 = database.MatchLoverStateNone
+	matchLove.Email1 = user.Email
+	matchLove.Email2 = matchData.Email
+
 	err = s.repo.InsertMatchLoveData(ctx, matchLove)
 	if err != nil {
 		s.logger.Error("Cannot insert or update match love data", "error", err)
@@ -1051,11 +1055,11 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		Vi: &viContent,
 	}
 	data := map[string]interface{}{
-		"userid":  matchLove.UserID,
-		"matchid": matchLove.MatchID,
+		"userid": matchLove.UserID1,
+		"email":  matchLove.Email1,
 	}
 	// get playerData of matched user
-	playerData, err := s.repo.GetPlayerData(ctx, matchLove.MatchID)
+	playerData, err := s.repo.GetPlayerData(ctx, matchLove.UserID2)
 	// if user not enable notification, skip
 	if err != nil {
 		s.logger.Error("Cannot get player data", "error", err)
@@ -1097,7 +1101,7 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
 		return cusErr
 	}
-	if matchLove.MatchID == "" {
+	if matchLove.UserID2 == "" {
 		s.logger.Error("User does not match with someone")
 		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
 		return cusErr
@@ -1142,10 +1146,10 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 	}
 	// Get lover
 	requestID := ""
-	if matchLove.UserID == user.ID {
-		requestID = matchLove.MatchID
+	if matchLove.UserID1 == user.ID {
+		requestID = matchLove.UserID2
 	} else {
-		requestID = matchLove.UserID
+		requestID = matchLove.UserID1
 	}
 	lover, err := s.repo.GetUserByID(ctx, requestID)
 	if err != nil {
@@ -1160,19 +1164,7 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		return nil, cusErr
 	}
 	s.logger.Debug("Successfully get lover")
-	accept := database.MatchLoverStateNone
-	if matchLove.UserID == user.ID {
-		accept = matchLove.Accept2
-	} else {
-		accept = matchLove.Accept1
-	}
-	response := MatchLoverResponse{
-		UserID:   lover.ID,
-		Email:    lover.Email,
-		Username: lover.Username,
-		Accept:   accept,
-	}
-	return response, nil
+	return matchLove, nil
 }
 
 // ConfirmMatchLover accept lover
@@ -1203,7 +1195,7 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 		return cusErr
 	}
 	// Update match love
-	if matchLove.UserID == user.ID {
+	if matchLove.UserID1 == user.ID {
 		matchLove.Accept1 = request.Accept
 	} else {
 		matchLove.Accept2 = request.Accept
@@ -1212,7 +1204,7 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 	// if lover reject match
 	if request.Accept == database.MatchLoverStateReject {
 		// Delete match love
-		err = s.repo.DeleteMatchLoveDataByUserID(ctx, matchLove.UserID)
+		err = s.repo.DeleteMatchLoveDataByUserID(ctx, matchLove.UserID1)
 		if err != nil {
 			s.logger.Error("Cannot delete match love", "error", err)
 			cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1409,26 +1401,57 @@ func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 		feeds = append(feeds, fillMatchComponent)
 	} else {
 		// If user not answer match
-		matchInfo, ok := matchResponse.(MatchLoverResponse)
+		matchInfo, ok := matchResponse.(*database.MatchLoveData)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
-		// Check if user confirm and waiting for response from other user
-		if matchInfo.UserID != userID && matchInfo.Accept == database.MatchLoverStateAccept {
-			confirmComponent := Feed{
-				Type: "ConfirmComponent",
-				Data: nil,
-			}
-			feeds = append(feeds, confirmComponent)
-		}
-		if matchInfo.UserID != userID && matchInfo.Accept == database.MatchLoverStateNone {
+		index := 0
+		// Check if user request confirm and waiting for response from other user
+		if matchInfo.UserID1 == userID && matchInfo.Accept1 == database.MatchLoverStateAccept && matchInfo.Accept2 == database.MatchLoverStateNone {
 			rejectComponent := Feed{
-				Type: "RejectComponent",
-				Data: nil,
+				Index: index,
+				Type:  "RejectComponent",
+				Data:  nil,
 			}
+			index++
 			feeds = append(feeds, rejectComponent)
+		} else if matchInfo.UserID2 == userID && matchInfo.Accept2 == database.MatchLoverStateNone {
+			// if user 2 not accept yet
+			confirmComponent := Feed{
+				Index: index,
+				Type:  "ConfirmComponent",
+				Data:  nil,
+			}
+			index++
+			feeds = append(feeds, confirmComponent)
+		} else {
+			if matchInfo.Accept1 == database.MatchLoverStateAccept && matchInfo.Accept2 == database.MatchLoverStateAccept {
+				// if user 1 and 2 accept, append BeenComponent & LetterComponent && TodayComponent into feeds
+				beenComponent := Feed{
+					Index: index,
+					Type:  "BeenComponent",
+					Data:  nil,
+				}
+				index++
+				letterComponent := Feed{
+					Index: index,
+					Type:  "LetterComponent",
+					Data:  nil,
+				}
+				index++
+				todayComponent := Feed{
+					Index: index,
+					Type:  "TodayComponent",
+					Data:  nil,
+				}
+				index++
+				feeds = append(feeds, beenComponent)
+				feeds = append(feeds, letterComponent)
+				feeds = append(feeds, todayComponent)
+			}
 		}
+
 	}
 
 	response := map[string]interface{}{"components": feeds}
