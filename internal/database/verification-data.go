@@ -53,13 +53,6 @@ type MatchLoveData struct {
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }
 
-// FeedsData represents the type for the data stored for verification.
-type FeedsData struct {
-	ID       int    `json:"id"`
-	Title    string `json:"title" validate:"required" sql:"title"`
-	IsEnable bool   `json:"is_enable" sql:"isenable"`
-}
-
 // PlayerData represents the type for the data stored for send notification.
 type PlayerData struct {
 	UserID    string    `json:"userid" sql:"userid"`

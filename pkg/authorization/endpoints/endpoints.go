@@ -32,12 +32,9 @@ type Set struct {
 	ConfirmMatchLoverEndpoint     endpoint.Endpoint
 	UnMatchLoverEndpoint          endpoint.Endpoint
 	GetMatchedLoverEndpoint       endpoint.Endpoint
-	//CreateLoveLetterEndpoint      endpoint.Endpoint
-	//UpdateLoveLetterEndpoint      endpoint.Endpoint
-	//GetFeedsEndpoint              endpoint.Endpoint
-	InsertPlayerDataEndpoint endpoint.Endpoint
-	GetPlayerDataEndpoint    endpoint.Endpoint
-	GetUserStateDataEndpoint endpoint.Endpoint
+	InsertPlayerDataEndpoint      endpoint.Endpoint
+	GetPlayerDataEndpoint         endpoint.Endpoint
+	GetUserStateDataEndpoint      endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -134,21 +131,6 @@ func NewEndpointSet(svc authorization.Service,
 	getMatchedLoverEndpoint = middleware.ValidateParamRequest(validator, logger)(getMatchedLoverEndpoint)
 	getMatchedLoverEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getMatchedLoverEndpoint)
 
-	//createLoveLetterEndpoint := MakeCreateLoveLetterEndpoint(svc)
-	//createLoveLetterEndpoint = middleware.RateLimitRequest(tb, logger)(createLoveLetterEndpoint)
-	//createLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(createLoveLetterEndpoint)
-	//createLoveLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(createLoveLetterEndpoint)
-
-	//updateLoveLetterEndpoint := MakeUpdateLoveLetterEndpoint(svc)
-	//updateLoveLetterEndpoint = middleware.RateLimitRequest(tb, logger)(updateLoveLetterEndpoint)
-	//updateLoveLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(updateLoveLetterEndpoint)
-	//updateLoveLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateLoveLetterEndpoint)
-
-	//getFeedsEndpoint := MakeGetFeedsEndpoint(svc)
-	//getFeedsEndpoint = middleware.RateLimitRequest(tb, logger)(getFeedsEndpoint)
-	//getFeedsEndpoint = middleware.ValidateParamRequest(validator, logger)(getFeedsEndpoint)
-	//getFeedsEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getFeedsEndpoint)
-
 	insertPlayerDataEndpoint := InsertPlayerDataEndpoint(svc)
 	insertPlayerDataEndpoint = middleware.RateLimitRequest(tb, logger)(insertPlayerDataEndpoint)
 	insertPlayerDataEndpoint = middleware.ValidateParamRequest(validator, logger)(insertPlayerDataEndpoint)
@@ -184,11 +166,9 @@ func NewEndpointSet(svc authorization.Service,
 		ConfirmMatchLoverEndpoint:     confirmMatchLoverEndpoint,
 		UnMatchLoverEndpoint:          unMatchLoverEndpoint,
 		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
-		//CreateLoveLetterEndpoint:      createLoveLetterEndpoint,
-		//GetFeedsEndpoint:              getFeedsEndpoint,
-		InsertPlayerDataEndpoint: insertPlayerDataEndpoint,
-		GetPlayerDataEndpoint:    getPlayerDataEndpoint,
-		GetUserStateDataEndpoint: getUserStateDataEndpoint,
+		InsertPlayerDataEndpoint:      insertPlayerDataEndpoint,
+		GetPlayerDataEndpoint:         getPlayerDataEndpoint,
+		GetUserStateDataEndpoint:      getUserStateDataEndpoint,
 	}
 }
 
@@ -510,54 +490,6 @@ func MakeGetMatchedLoverEndpoint(svc authorization.Service) endpoint.Endpoint {
 		return matchLover, nil
 	}
 }
-
-// MakeCreateLoveLetterEndpoint returns an endpoint that invokes CreateLoveLetter on the service.
-//func MakeCreateLoveLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
-//	return func(ctx context.Context, request interface{}) (interface{}, error) {
-//		req, ok := request.(authorization.CreateLoveLetterRequest)
-//		if !ok {
-//			cusErr := utils.NewErrorResponse(utils.BadRequest)
-//			return nil, cusErr
-//		}
-//		err := svc.CreateLoveLetter(ctx, &req)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return "successfully created love letter", nil
-//	}
-//}
-
-// MakeUpdateLoveLetterEndpoint returns an endpoint that invokes UpdateLoveLetter on the service.
-//func MakeUpdateLoveLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
-//	return func(ctx context.Context, request interface{}) (interface{}, error) {
-//		req, ok := request.(authorization.UpdateLoveLetterRequest)
-//		if !ok {
-//			cusErr := utils.NewErrorResponse(utils.BadRequest)
-//			return nil, cusErr
-//		}
-//		err := svc.UpdateLoveLetter(ctx, &req)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return "successfully updated love letter", nil
-//	}
-//}
-
-// MakeGetFeedsEndpoint returns an endpoint that invokes GetFeeds on the service.
-//func MakeGetFeedsEndpoint(svc authorization.Service) endpoint.Endpoint {
-//	return func(ctx context.Context, request interface{}) (interface{}, error) {
-//		_, ok := request.(authorization.CommonAuthorizationRequest)
-//		if !ok {
-//			cusErr := utils.NewErrorResponse(utils.BadRequest)
-//			return nil, cusErr
-//		}
-//		feeds, err := svc.GetFeeds(ctx)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return feeds, nil
-//	}
-//}
 
 // InsertPlayerDataEndpoint returns an endpoint that invokes SavePlayerId on the service.
 func InsertPlayerDataEndpoint(svc authorization.Service) endpoint.Endpoint {

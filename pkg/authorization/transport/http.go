@@ -133,19 +133,6 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
-	//m.Handle("/create-love-letter", httptransport.NewServer(
-	//	ep.CreateLoveLetterEndpoint,
-	//	decodeHTTPCreateLoveLetterRequest,
-	//	encodeResponse,
-	//	options...,
-	//))
-
-	//m.Handle("/get-feeds", httptransport.NewServer(
-	//	ep.GetFeedsEndpoint,
-	//	decodeHTTPGetFeedsRequest,
-	//	encodeResponse,
-	//	options...,
-	//))
 
 	m.Handle("/insert-player-data", httptransport.NewServer(
 		ep.InsertPlayerDataEndpoint,
@@ -575,24 +562,6 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	}
 	return json.NewEncoder(w).Encode(res)
 }
-
-// decodeHTTPGetFeedsRequest decode request
-//func decodeHTTPGetFeedsRequest(_ context.Context, r *http.Request) (interface{}, error) {
-//	if r.Method == "POST" {
-//		var req authorization.CommonAuthorizationRequest
-//		err := json.NewDecoder(r.Body).Decode(&req)
-//		if err != nil {
-//			return nil, utils.NewErrorResponse(utils.BadRequest)
-//		}
-//		if req.AccessToken == "" {
-//			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
-//		}
-//		return req, nil
-//	} else {
-//		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
-//		return nil, cusErr
-//	}
-//}
 
 // decodeHTTPInsertPlayerDataRequest decode request
 func decodeHTTPInsertPlayerDataRequest(_ context.Context, r *http.Request) (interface{}, error) {

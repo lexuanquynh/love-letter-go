@@ -189,11 +189,6 @@ type UpdateLoveLetterRequest struct {
 	TimeOpen    time.Time `json:"time_open" sql:"timeopen"`
 }
 
-// GetFeedsResponse is the response for get feeds
-//type GetFeedsResponse struct {
-//	Feeds []*database.FeedsData `json:"components"`
-//}
-
 // InsertPlayerDataRequest is used to save player id
 type InsertPlayerDataRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
