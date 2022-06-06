@@ -155,6 +155,14 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	// Get feeds
+	m.Handle("/get-feeds", httptransport.NewServer(
+		ep.GetFeedsEndpoint,
+		decodeHTTPGetFeedsRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -521,30 +529,6 @@ func decodeHTTPGetMatchedLoverRequest(_ context.Context, r *http.Request) (inter
 	}
 }
 
-// decodeHTTPCreateLoveLetterRequest decode request
-//func decodeHTTPCreateLoveLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
-//	if r.Method == "POST" {
-//		var req authorization.CreateLoveLetterRequest
-//		err := json.NewDecoder(r.Body).Decode(&req)
-//		if err != nil {
-//			return nil, utils.NewErrorResponse(utils.BadRequest)
-//		}
-//		if req.AccessToken == "" {
-//			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
-//		}
-//		if req.Title == "" {
-//			return nil, utils.NewErrorResponse(utils.TitleRequired)
-//		}
-//		if req.Body == "" {
-//			return nil, utils.NewErrorResponse(utils.BodyRequired)
-//		}
-//		return req, nil
-//	} else {
-//		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
-//		return nil, cusErr
-//	}
-//}
-
 // encodeResponse encode response
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -597,6 +581,24 @@ func decodeHTTPGetUserStateDataRequest(_ context.Context, r *http.Request) (inte
 		}
 		if req.KeyString == "" {
 			return nil, utils.NewErrorResponse(utils.KeyStringRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetFeedsRequest decode request
+func decodeHTTPGetFeedsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.CommonAuthorizationRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {

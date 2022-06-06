@@ -35,6 +35,7 @@ type Set struct {
 	InsertPlayerDataEndpoint      endpoint.Endpoint
 	GetPlayerDataEndpoint         endpoint.Endpoint
 	GetUserStateDataEndpoint      endpoint.Endpoint
+	GetFeedsEndpoint              endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -146,6 +147,11 @@ func NewEndpointSet(svc authorization.Service,
 	getUserStateDataEndpoint = middleware.ValidateParamRequest(validator, logger)(getUserStateDataEndpoint)
 	getUserStateDataEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getUserStateDataEndpoint)
 
+	getFeedsEndpoint := MakeGetFeedsEndpoint(svc)
+	getFeedsEndpoint = middleware.RateLimitRequest(tb, logger)(getFeedsEndpoint)
+	getFeedsEndpoint = middleware.ValidateParamRequest(validator, logger)(getFeedsEndpoint)
+	getFeedsEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getFeedsEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -169,6 +175,7 @@ func NewEndpointSet(svc authorization.Service,
 		InsertPlayerDataEndpoint:      insertPlayerDataEndpoint,
 		GetPlayerDataEndpoint:         getPlayerDataEndpoint,
 		GetUserStateDataEndpoint:      getUserStateDataEndpoint,
+		GetFeedsEndpoint:              getFeedsEndpoint,
 	}
 }
 
@@ -536,5 +543,21 @@ func GetUserStateDataEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return userStateData, nil
+	}
+}
+
+// MakeGetFeedsEndpoint returns an endpoint that invokes GetFeed on the service.
+func MakeGetFeedsEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_, ok := request.(authorization.CommonAuthorizationRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		feeds, err := svc.GetFeeds(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return feeds, nil
 	}
 }

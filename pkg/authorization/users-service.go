@@ -1029,6 +1029,7 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 	matchLove.UserID = user.ID
 	matchLove.MatchID = matchData.UserID
 	matchLove.Accept1 = database.MatchLoverStateAccept
+	matchLove.Accept2 = database.MatchLoverStateNone
 	err = s.repo.InsertMatchLoveData(ctx, matchLove)
 	if err != nil {
 		s.logger.Error("Cannot insert or update match love data", "error", err)
@@ -1139,13 +1140,14 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
 		return nil, cusErr
 	}
-	if matchLove.MatchID == "" {
-		s.logger.Error("User does not match with someone")
-		cusErr := utils.NewErrorResponse(utils.UserNotMatch)
-		return nil, cusErr
-	}
 	// Get lover
-	lover, err := s.repo.GetUserByID(ctx, matchLove.MatchID)
+	requestID := ""
+	if matchLove.UserID == user.ID {
+		requestID = matchLove.MatchID
+	} else {
+		requestID = matchLove.UserID
+	}
+	lover, err := s.repo.GetUserByID(ctx, requestID)
 	if err != nil {
 		s.logger.Error("Cannot get lover", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1158,12 +1160,17 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		return nil, cusErr
 	}
 	s.logger.Debug("Successfully get lover")
-	response := GetLoverResponse{
+	accept := database.MatchLoverStateNone
+	if matchLove.UserID == user.ID {
+		accept = matchLove.Accept2
+	} else {
+		accept = matchLove.Accept1
+	}
+	response := MatchLoverResponse{
 		UserID:   lover.ID,
 		Email:    lover.Email,
 		Username: lover.Username,
-		Accept1:  matchLove.Accept1,
-		Accept2:  matchLove.Accept2,
+		Accept:   accept,
 	}
 	return response, nil
 }
@@ -1359,5 +1366,71 @@ func (s *userService) GetUserStateData(ctx context.Context, request *GetUserStat
 		BoolValue:   userStateData.BoolValue,
 		TimeValue:   userStateData.TimeValue,
 	}
+	return response, nil
+}
+
+// GetFeeds get feeds
+func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	//Get feeds
+	//Create slice for feeds
+	var feeds []Feed
+	// Build 1: Build CodeComponent & FillMatchComponent show when user not match with other user
+	// Check user is in relationship
+	matchResponse, _ := s.GetMatchLover(ctx)
+	if matchResponse == nil {
+		// If user not in relationship, append codeComponent & FillMatchComponent into feeds
+		codeComponent := Feed{
+			Type: "CodeComponent",
+			Data: "",
+		}
+		fillMatchComponent := Feed{
+			Type: "FillMatchComponent",
+			Data: "",
+		}
+		feeds = append(feeds, codeComponent)
+		feeds = append(feeds, fillMatchComponent)
+	} else {
+		// If user not answer match
+		matchInfo, ok := matchResponse.(MatchLoverResponse)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return nil, cusErr
+		}
+		// Check if user confirm and waiting for response from other user
+		if matchInfo.UserID != userID && matchInfo.Accept == database.MatchLoverStateAccept {
+			confirmComponent := Feed{
+				Type: "ConfirmComponent",
+				Data: nil,
+			}
+			feeds = append(feeds, confirmComponent)
+		}
+		if matchInfo.UserID != userID && matchInfo.Accept == database.MatchLoverStateNone {
+			rejectComponent := Feed{
+				Type: "RejectComponent",
+				Data: nil,
+			}
+			feeds = append(feeds, rejectComponent)
+		}
+	}
+
+	response := map[string]interface{}{"components": feeds}
 	return response, nil
 }

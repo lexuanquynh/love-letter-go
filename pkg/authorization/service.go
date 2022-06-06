@@ -26,4 +26,5 @@ type Service interface {
 	InsertPlayerData(ctx context.Context, request *InsertPlayerDataRequest) error
 	GetPlayerData(ctx context.Context) (interface{}, error)
 	GetUserStateData(ctx context.Context, request *GetUserStateDataRequest) (interface{}, error)
+	GetFeeds(ctx context.Context) (interface{}, error)
 }

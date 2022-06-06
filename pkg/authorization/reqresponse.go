@@ -79,6 +79,14 @@ type GetLoverResponse struct {
 	Accept2  int    `json:"accept2"`
 }
 
+// MatchLoverResponse is the response for match lover info
+type MatchLoverResponse struct {
+	UserID   string `json:"user_id"`
+	Email    string `json:"email"`
+	Username string `json:"username,omitempty"`
+	Accept   int    `json:"accept"`
+}
+
 // GetProfileResponse is the response for get user profile
 type GetProfileResponse struct {
 	Email     string `json:"email"`
@@ -235,4 +243,10 @@ type GetUserStateDataResponse struct {
 	BoolValue   bool      `json:"bool_value"`
 	FloatValue  float64   `json:"float_value"`
 	TimeValue   time.Time `json:"time_value"`
+}
+
+// Feed is response for feeds API
+type Feed struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data,omitempty"`
 }
