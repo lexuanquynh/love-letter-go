@@ -1,7 +1,6 @@
 package authorization
 
 import (
-	"LoveLetterProject/internal/database"
 	"time"
 )
 
@@ -172,11 +171,11 @@ type AcceptMatchLoverResponse struct {
 }
 
 // CreateLoveLetterRequest is used to create love letter
-type CreateLoveLetterRequest struct {
-	AccessToken string `json:"access_token" validate:"required"`
-	Title       string `json:"title" validate:"required"`
-	Body        string `json:"body" validate:"required"`
-}
+//type CreateLoveLetterRequest struct {
+//	AccessToken string `json:"access_token" validate:"required"`
+//	Title       string `json:"title" validate:"required"`
+//	Body        string `json:"body" validate:"required"`
+//}
 
 // UpdateLoveLetterRequest is used to update love letter
 type UpdateLoveLetterRequest struct {
@@ -189,9 +188,9 @@ type UpdateLoveLetterRequest struct {
 }
 
 // GetFeedsResponse is the response for get feeds
-type GetFeedsResponse struct {
-	Feeds []*database.FeedsData `json:"feed_list"`
-}
+//type GetFeedsResponse struct {
+//	Feeds []*database.FeedsData `json:"components"`
+//}
 
 // InsertPlayerDataRequest is used to save player id
 type InsertPlayerDataRequest struct {

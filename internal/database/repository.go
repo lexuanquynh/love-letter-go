@@ -53,13 +53,7 @@ type UserRepository interface {
 	InsertMatchLoveData(ctx context.Context, matchData *MatchLoveData) error
 	// DeleteMatchLoveDataByUserID Delete match love data
 	DeleteMatchLoveDataByUserID(ctx context.Context, userID string) error
-	// CreateLoveLetter Create love letter
-	CreateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error
-	// UpdateLoveLetter Update love letter
-	UpdateLoveLetter(ctx context.Context, loveLetter *LoveLetter) error
-	// GetFeeds Get feeds
-	GetFeeds(ctx context.Context) ([]*FeedsData, error)
-	// InsertPlayerData Insert player data
+	// InsertPlayerData insert id for push notifications
 	InsertPlayerData(ctx context.Context, playerData *PlayerData) error
 	// GetPlayerData Get player data
 	GetPlayerData(ctx context.Context, userID string) (*PlayerData, error)
