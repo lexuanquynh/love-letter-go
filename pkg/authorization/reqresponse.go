@@ -75,7 +75,8 @@ type GetLoverResponse struct {
 	UserID   string `json:"user_id"`
 	Email    string `json:"email"`
 	Username string `json:"username,omitempty"`
-	Accept   int    `json:"accept"`
+	Accept1  int    `json:"accept1"`
+	Accept2  int    `json:"accept2"`
 }
 
 // GetProfileResponse is the response for get user profile
@@ -150,6 +151,7 @@ type GenerateAccessResponse struct {
 type GetMatchCodeResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+	Minutes int    `json:"minutes"`
 }
 
 // MatchLoverRequest is used to match love

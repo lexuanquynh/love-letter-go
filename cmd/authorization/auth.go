@@ -110,12 +110,11 @@ const matchLoveSchema = `
 		create table if not exists matchloves (		
 			userid 	Varchar(36) not null,
 			matchid 	Varchar(36) not null,
-		    accept     int default 0,
+		    accept1     int default -1,
+		    accept2     int default -1,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
-			Primary Key (userid),
-			Constraint fk_user_id Foreign Key(userid) References users(id)
-				On Delete Cascade On Update Cascade
+			unique(userid, matchid)
 			
 		)
 `
@@ -134,25 +133,6 @@ const generateMatchCodeSchema = `
 		)
 `
 
-// schema for love letter table
-//const loveLetterSchema = `
-//		create table if not exists loveletter (
-//			id 		   Varchar(36) not null,
-//			userid 		Varchar(36) not null,
-//			matchid 	Varchar(36) null,
-//			title		Varchar(255) not null,
-//			body		Varchar(32000) not null,
-//		    isread 		Boolean default false,
-//		    isdelete 	Boolean default false,
-//			timeopen 	Timestamp not null,
-//			createdat   Timestamp not null,
-//			updatedat   Timestamp not null,
-//			Primary Key (id),
-//			Constraint fk_user_id Foreign Key(userid) References users(id)
-//				On Delete Cascade On Update Cascade
-//		)
-//`
-
 // schema for user state table
 const userStateSchema = `
 		create table if not exists userstates (	
@@ -168,60 +148,6 @@ const userStateSchema = `
 		    unique(userid, keystring)			
 		)
 `
-
-// schema for feed table
-//const feedSchema = `
-//		create table if not exists feeds (
-//			id 		    Int default 0,
-//			title		Varchar(255) not null,
-//		    isenable 		Boolean default false,
-//			Primary Key (id)
-//		)
-//`
-
-// schema for feed data
-//const feedDataSchema = `
-//INSERT INTO feeds
-//    (id, title, isenable)
-//SELECT 0, 'day_counter', false
-//WHERE
-//    NOT EXISTS (
-//        SELECT id FROM feeds WHERE id = 0
-//    );
-//
-//INSERT INTO feeds
-//    (id, title, isenable)
-//SELECT 1, 'match_lover', true
-//WHERE
-//    NOT EXISTS (
-//        SELECT id FROM feeds WHERE id = 1
-//    );
-//
-//INSERT INTO feeds
-//    (id, title, isenable)
-//SELECT 2, 'letter_list', false
-//WHERE
-//    NOT EXISTS (
-//        SELECT id FROM feeds WHERE id = 2
-//    );
-//
-//INSERT INTO feeds
-//    (id, title, isenable)
-//SELECT 3, 'question_lover', false
-//WHERE
-//    NOT EXISTS (
-//        SELECT id FROM feeds WHERE id = 3
-//    );
-//
-//INSERT INTO feeds
-//    (id, title, isenable)
-//SELECT 4, 'quick_lover', false
-//WHERE
-//    NOT EXISTS (
-//        SELECT id FROM feeds WHERE id = 4
-//    );
-//
-//`
 
 // Schema for save uuid, we will use this for send notification after
 const playerSchema = `
@@ -262,9 +188,6 @@ func main() {
 	db.MustExec(limitSchema)
 	db.MustExec(matchLoveSchema)
 	db.MustExec(generateMatchCodeSchema)
-	//db.MustExec(loveLetterSchema)
-	//db.MustExec(feedSchema)
-	//db.MustExec(feedDataSchema)
 	db.MustExec(playerSchema)
 	db.MustExec(userStateSchema)
 

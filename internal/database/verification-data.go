@@ -47,7 +47,8 @@ type MatchVerifyData struct {
 type MatchLoveData struct {
 	UserID    string    `json:"userid" sql:"userid"`
 	MatchID   string    `json:"matchid" sql:"matchid"`
-	Accept    int       `json:"accept" sql:"accept"`
+	Accept1   int       `json:"accept1" sql:"accept1"`
+	Accept2   int       `json:"accept2" sql:"accept2"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }
@@ -83,7 +84,7 @@ type UserStateData struct {
 const MatchLoverStateKey = "state"
 
 const (
-	MatchLoverStateNone   = -1
-	MatchLoverStateAccept = 1
-	MatchLoverStateReject = 2
+	MatchLoverStateNone   = -1 // User no response answer
+	MatchLoverStateAccept = 1  // User accept matched
+	MatchLoverStateReject = 2  // user reject matched
 )

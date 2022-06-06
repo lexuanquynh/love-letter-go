@@ -402,30 +402,20 @@ func (repo *postgresRepository) GetMatchLoveDataByUserID(ctx context.Context, us
 	if err != nil {
 		query = "select * from matchloves where matchid = $1"
 		err = repo.db.GetContext(ctx, matchData, query, userID)
-		if err == nil {
-			temp := matchData.MatchID
-			matchData.MatchID = matchData.UserID
-			matchData.UserID = temp
-		}
 	}
 	return matchData, err
 }
 
-//userid 	Varchar(36) not null,
-//matchid 	Varchar(36) not null,
-//accept     int default 0,
-//createdat  Timestamp not null,
-//updatedat  Timestamp not null,
-
 // InsertMatchLoveData inserts the match love data
 func (repo *postgresRepository) InsertMatchLoveData(ctx context.Context, matchData *MatchLoveData) error {
 	// Insert the match data
-	query := "insert into matchloves(userid, matchid, accept, createdat, updatedat) values($1, $2, $3, $4, $5)" +
-		" on conflict (userid) do update set matchid = $2, accept = $3, updatedat = $5"
+	query := "insert into matchloves(userid, matchid, accept1, accept2, createdat, updatedat) values($1, $2, $3, $4, $5, $6)" +
+		" on conflict (userid, matchid) do update set accept1 = $3, accept2 = $4, updatedat = $6"
 	_, err := repo.db.ExecContext(ctx, query,
 		matchData.UserID,
 		matchData.MatchID,
-		matchData.Accept,
+		matchData.Accept1,
+		matchData.Accept2,
 		matchData.CreatedAt,
 		matchData.UpdatedAt)
 	return err
