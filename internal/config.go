@@ -39,10 +39,8 @@ type Configurations struct {
 }
 
 // NewConfigurations returns a new Configuration object
-func NewConfigurations(logger hclog.Logger) *Configurations {
-	configs, err := LoadConfig("./") // quynhlx for local development
-	//configs, err := LoadConfig("/usr/local/src/love_letter") //  for pre-production
-	//configs, err := LoadConfig("/usr/local/src/love_letter_product") // for production
+func NewConfigurations(logger hclog.Logger, deployType int) *Configurations {
+	configs, err := LoadConfig(deployType)
 	if err != nil {
 		log.Fatal("cannot load config: ", err)
 	}
@@ -56,14 +54,18 @@ func NewConfigurations(logger hclog.Logger) *Configurations {
 }
 
 // LoadConfig reads configuration from file or environment variables.
-func LoadConfig(path string) (config *Configurations, err error) {
-	viper.AddConfigPath(path)
-	viper.SetConfigName("app") // quynhlx: for development
-	//viper.SetConfigName("app-product") // : for production
-	viper.SetConfigType("env")
-
+func LoadConfig(deployType int) (config *Configurations, err error) {
+	if deployType == DeployLocal {
+		viper.AddConfigPath("./")
+		viper.SetConfigName("app")
+	} else if deployType == DeployStage {
+		viper.AddConfigPath("/usr/local/src/love_letter")
+		viper.SetConfigName("app-dev")
+	} else if deployType == DeployProd {
+		viper.AddConfigPath("/usr/local/src/love_letter_product")
+		viper.SetConfigType("env")
+	}
 	viper.AutomaticEnv()
-
 	err = viper.ReadInConfig()
 	if err != nil {
 		return
@@ -72,3 +74,9 @@ func LoadConfig(path string) (config *Configurations, err error) {
 	err = viper.Unmarshal(&config)
 	return
 }
+
+const (
+	DeployLocal = 1
+	DeployStage = 2
+	DeployProd  = 3
+)
