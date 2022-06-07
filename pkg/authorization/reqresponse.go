@@ -209,7 +209,8 @@ type UpdateLoveLetterRequest struct {
 // InsertPlayerDataRequest is used to save player id
 type InsertPlayerDataRequest struct {
 	AccessToken    string `json:"access_token" validate:"required"`
-	PlayerID       string `json:"player_id" validate:"required"`
+	UUID           string `json:"uuid" validate:"required"`
+	PlayerID       string `json:"player_id"`
 	DeviceName     string `json:"device_name"`
 	DeviceVersion  string `json:"device_version"`
 	DeviceModel    string `json:"device_model"`

@@ -393,11 +393,12 @@ func (repo *postgresRepository) DeleteMatchLoveDataByUserID(ctx context.Context,
 func (repo *postgresRepository) InsertPlayerData(ctx context.Context, playerData *PlayerData) error {
 	playerData.CreatedAt = time.Now()
 	playerData.UpdatedAt = time.Now()
-	query := "insert into players(userid, uuid, devicename, deviceversion, devicemodel, deviceos, devicelocalize, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7, $8, $9)" +
-		" on conflict (userid) do update set uuid = $2, devicename = $3, deviceversion = $4, devicemodel = $5, deviceos = $6, devicelocalize = $7, updatedat = $9"
+	query := "insert into players(userid, uuid, playerid, devicename, deviceversion, devicemodel, deviceos, devicelocalize, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)" +
+		" on conflict (userid) do update set uuid = $2, playerid = $3, devicename = $4, deviceversion = $5, devicemodel = $6, deviceos = $7, devicelocalize = $8, updatedat = $10"
 	_, err := repo.db.ExecContext(ctx, query,
 		playerData.UserID,
 		playerData.UUID,
+		playerData.PlayerId,
 		playerData.DeviceName,
 		playerData.DeviceVersion,
 		playerData.DeviceModel,

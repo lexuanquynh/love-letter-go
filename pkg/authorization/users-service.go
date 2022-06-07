@@ -1253,7 +1253,8 @@ func (s *userService) InsertPlayerData(ctx context.Context, request *InsertPlaye
 	// Create player data for insert
 	insertPlayerData := database.PlayerData{
 		UserID:         user.ID,
-		UUID:           request.PlayerID,
+		UUID:           request.UUID,
+		PlayerId:       request.PlayerID,
 		DeviceName:     request.DeviceName,
 		DeviceVersion:  request.DeviceVersion,
 		DeviceModel:    request.DeviceModel,
@@ -1387,15 +1388,19 @@ func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 	// Build 1: Build CodeComponent & FillMatchComponent show when user not match with other user
 	// Check user is in relationship
 	matchResponse, _ := s.GetMatchLover(ctx)
+	index := 0
 	if matchResponse == nil {
 		// If user not in relationship, append codeComponent & FillMatchComponent into feeds
 		codeComponent := Feed{
-			Type: "CodeComponent",
-			Data: "",
+			Index: index,
+			Type:  "CodeComponent",
+			Data:  "",
 		}
+		index++
 		fillMatchComponent := Feed{
-			Type: "FillMatchComponent",
-			Data: "",
+			Index: index,
+			Type:  "FillMatchComponent",
+			Data:  "",
 		}
 		feeds = append(feeds, codeComponent)
 		feeds = append(feeds, fillMatchComponent)
@@ -1406,7 +1411,6 @@ func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
 		}
-		index := 0
 		// Check if user request confirm and waiting for response from other user
 		if matchInfo.UserID1 == userID && matchInfo.Accept1 == database.MatchLoverStateAccept && matchInfo.Accept2 == database.MatchLoverStateNone {
 			rejectComponent := Feed{

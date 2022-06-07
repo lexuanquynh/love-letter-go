@@ -60,6 +60,7 @@ type MatchLoveData struct {
 type PlayerData struct {
 	UserID         string    `json:"userid" sql:"userid"`
 	UUID           string    `json:"uuid" sql:"uuid"`
+	PlayerId       string    `json:"playerid" sql:"playerid"`
 	DeviceName     string    `json:"device_name" sql:"devicename"`
 	DeviceVersion  string    `json:"device_version" sql:"deviceversion"`
 	DeviceModel    string    `json:"device_model" sql:"devicemodel"`

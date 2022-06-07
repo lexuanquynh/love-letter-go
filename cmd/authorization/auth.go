@@ -157,6 +157,7 @@ const playerSchema = `
 		create table if not exists players (			
 			userid 				Varchar(36) not null,
 			uuid 				Varchar(100) not null,
+		    playerid 			Varchar(100)  null,
 		    devicename 			Varchar(100)  null,
 		    deviceversion 		Varchar(10)  null,
 		    devicemodel 		Varchar(20)  null,
