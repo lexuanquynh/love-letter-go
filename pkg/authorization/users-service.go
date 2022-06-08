@@ -1066,10 +1066,11 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		return nil
 	}
 	notificationData := NotificationData{
-		PlayerID: playerData.UUID,
+		PlayerID: playerData.PlayerId,
 		Message:  contents,
 		Data:     data,
 	}
+	s.logger.Info("Sending notification to user")
 	s.notificationService.SendNotification(ctx, &notificationData)
 	return nil
 }
