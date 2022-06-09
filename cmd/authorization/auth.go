@@ -173,7 +173,7 @@ const playerSchema = `
 
 func main() {
 	logger := utils.NewLogger()
-	// quynhlx
+	// quynhlx change config with multi environments
 	configs := utils.NewConfigurations(logger, utils.DeployLocal)
 	//configs := utils.NewConfigurations(logger, utils.DeployStage)
 	//configs := utils.NewConfigurations(logger, utils.DeployProd)

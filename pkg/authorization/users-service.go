@@ -1115,6 +1115,32 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		return cusErr
 	}
 	s.logger.Debug("Successfully unmatched lover")
+	// Send notification to matched user
+	var viContent = "Rất tiếc! Người ấy đã từ chối kết nối với bạn😔"
+	var enContent = "Sorry! Someone declined connect with you😔"
+
+	contents := onesignal.StringMap{
+		En: enContent,
+		Vi: &viContent,
+	}
+	data := map[string]interface{}{
+		"userid": matchLove.UserID1,
+		"email":  matchLove.Email1,
+	}
+	// get playerData of matched user
+	playerData, err := s.repo.GetPlayerData(ctx, matchLove.UserID2)
+	// if user not enable notification, skip
+	if err != nil {
+		s.logger.Error("Cannot get player data", "error", err)
+		return nil
+	}
+	notificationData := NotificationData{
+		PlayerID: playerData.PlayerId,
+		Message:  contents,
+		Data:     data,
+	}
+	s.logger.Info("Sending notification to user")
+	s.notificationService.SendNotification(ctx, &notificationData)
 	return nil
 }
 

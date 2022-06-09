@@ -63,8 +63,9 @@ func LoadConfig(deployType int) (config *Configurations, err error) {
 		viper.SetConfigName("app-dev")
 	} else if deployType == DeployProd {
 		viper.AddConfigPath("/usr/local/src/love_letter_product")
-		viper.SetConfigType("env")
+		viper.SetConfigName("app-product")
 	}
+	viper.SetConfigType("env")
 	viper.AutomaticEnv()
 	err = viper.ReadInConfig()
 	if err != nil {
