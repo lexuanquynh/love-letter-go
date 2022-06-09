@@ -1228,6 +1228,40 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 			return cusErr
 		}
 	}
+	s.logger.Info("Successfully accept lover")
+	// Send notification to lover
+	var viContent = "💌 💕Có một người đã phải lòng bạn❤😘"
+	var enContent = "💌 💕Someone has a crush on you❤😘"
+	if request.Accept == database.MatchLoverStateReject {
+		viContent = "Rất tiếc! Người ấy đã từ chối lời đề nghị kết nối với bạn😔"
+		enContent = "Sorry! Someone declined your offer to connect with you😔"
+	} else if request.Accept == database.MatchLoverStateAccept {
+		viContent = "Xin chúc mừng! Hai bạn đã kết nối thành công!❤😘"
+		enContent = "Congratulations! You are now connected!❤😘"
+	}
+	contents := onesignal.StringMap{
+		En: enContent,
+		Vi: &viContent,
+	}
+	data := map[string]interface{}{
+		"userid": matchLove.UserID1,
+		"email":  matchLove.Email1,
+	}
+	// get playerData of matched user
+	playerData, err := s.repo.GetPlayerData(ctx, matchLove.UserID1)
+	// if user not enable notification, skip
+	if err != nil {
+		s.logger.Error("Cannot get player data", "error", err)
+		return nil
+	}
+	notificationData := NotificationData{
+		PlayerID: playerData.PlayerId,
+		Message:  contents,
+		Data:     data,
+	}
+	s.logger.Info("Sending notification to user")
+	s.notificationService.SendNotification(ctx, &notificationData)
+
 	return nil
 }
 
