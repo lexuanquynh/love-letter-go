@@ -187,6 +187,8 @@ func MakeRegisterEndpoint(svc authorization.Service) endpoint.Endpoint {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
 		message, err := svc.SignUp(ctx, &req)
 
 		if err != nil {
@@ -208,6 +210,8 @@ func MakeVerifyMailEndpoint(svc authorization.Service) endpoint.Endpoint {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
 		message, err := svc.VerifyMail(ctx, &req)
 
 		if err != nil {
@@ -225,6 +229,8 @@ func MakeLoginEndpoint(svc authorization.Service) endpoint.Endpoint {
 			err := utils.NewErrorResponse(utils.BadRequest)
 			return nil, err
 		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
 		user, err := svc.Login(ctx, &req)
 
 		if err != nil {
@@ -254,6 +260,8 @@ func MakeLogoutEndpoint(svc authorization.Service) endpoint.Endpoint {
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
 		err := svc.Logout(ctx, &req)
 
 		if err != nil {
@@ -355,6 +363,8 @@ func MakeGetForgetPasswordCodeEndpoint(svc authorization.Service) endpoint.Endpo
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
 		err := svc.GetForgetPasswordCode(ctx, req.Email)
 		if err != nil {
 			if strings.Contains(err.Error(), "successfully mailed password reset code") {
@@ -374,6 +384,8 @@ func MakeCreateNewPasswordWithCodeEndpoint(svc authorization.Service) endpoint.E
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
 		err := svc.ResetPassword(ctx, &req)
 		if err != nil {
 			return nil, err
