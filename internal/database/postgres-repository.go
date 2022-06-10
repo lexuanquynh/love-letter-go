@@ -131,9 +131,26 @@ func (repo *postgresRepository) GetProfileByID(ctx context.Context, userId strin
 func (repo *postgresRepository) InsertProfile(ctx context.Context, profile *ProfileData) error {
 	profile.CreatedAt = time.Now()
 	profile.UpdatedAt = time.Now()
-	query := "insert into profiles (userid, email, birthday, firstname, lastname, avatarurl, phone, street, city, state, zipcode, country, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)" +
-		"on conflict (userid) do update set email = $2, birthday = $3, firstname = $4, lastname = $5, avatarurl = $6, phone = $7, street = $8, city = $9, state = $10, zipcode = $11, country = $12, updatedat = $13"
-	_, err := repo.db.ExecContext(ctx, query, profile.UserID, profile.Email, profile.Birthday, profile.FirstName, profile.LastName, profile.AvatarURL, profile.Phone, profile.Street, profile.City, profile.State, profile.ZipCode, profile.Country, profile.CreatedAt, profile.UpdatedAt)
+	query := "insert into profiles (userid, email, gender, birthday, firstname, lastname, avatarurl, phone, street, city, state, zipcode, country, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)" +
+		"on conflict (userid) do update set email = $2, gender = $3, birthday = $4, firstname = $5, lastname = $6, avatarurl = $7, phone = $8, street = $9, city = $10, state = $11, zipcode = $12, country = $13, updatedat = $15"
+	_, err := repo.db.ExecContext(
+		ctx,
+		query,
+		profile.UserID,
+		profile.Email,
+		profile.Gender,
+		profile.Birthday,
+		profile.FirstName,
+		profile.LastName,
+		profile.AvatarURL,
+		profile.Phone,
+		profile.Street,
+		profile.City,
+		profile.State,
+		profile.ZipCode,
+		profile.Country,
+		profile.CreatedAt,
+		profile.UpdatedAt)
 	return err
 }
 

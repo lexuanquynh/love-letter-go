@@ -57,6 +57,7 @@ const profileSchema = `
 			userid 	Varchar(36) not null,
 		    email 	   Varchar(100) not null,
 		    birthday  Date null,
+		    gender 		int null,
 			firstname   Varchar(225) default '',
 			lastname    Varchar(225) default '',
 			avatarurl  Varchar(255) default '',
@@ -174,9 +175,9 @@ const playerSchema = `
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
-	//configs := utils.NewConfigurations(logger, utils.DeployLocal)
+	configs := utils.NewConfigurations(logger, utils.DeployLocal)
 	//configs := utils.NewConfigurations(logger, utils.DeployStage)
-	configs := utils.NewConfigurations(logger, utils.DeployProd)
+	//configs := utils.NewConfigurations(logger, utils.DeployProd)
 	// validator contains all the methods that are need to validate the user json in request
 	validator := database.NewValidation()
 	// create a new connection to the postgres db store

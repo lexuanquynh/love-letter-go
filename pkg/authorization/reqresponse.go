@@ -53,6 +53,7 @@ type UpdateUserNameRequest struct {
 type UpdateProfileRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	Birthday    string `json:"birthday"`
+	Gender      int    `json:"gender"`
 	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
 	AvatarURL   string `json:"avatar_url"`
@@ -92,6 +93,7 @@ type GetLoverResponse struct {
 type GetProfileResponse struct {
 	Email     string `json:"email"`
 	Birthday  string `json:"birthday"`
+	Gender    int    `json:"gender"`
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 	AvatarURL string `json:"avatar_url,omitempty"`

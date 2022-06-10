@@ -6,6 +6,7 @@ import "time"
 type ProfileData struct {
 	UserID    string    `json:"user_id" sql:"userid"`
 	Email     string    `json:"email" validate:"required,email" sql:"email"`
+	Gender    int       `json:"gender" sql:"gender"`
 	Birthday  time.Time `json:"birthday" sql:"birthday"`
 	FirstName string    `json:"firstname" sql:"firstname"`
 	LastName  string    `json:"lastname" sql:"lastname"`

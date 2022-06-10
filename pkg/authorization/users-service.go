@@ -388,6 +388,7 @@ func (s *userService) GetProfile(ctx context.Context) (interface{}, error) {
 	// Make response data
 	profileResponse := GetProfileResponse{
 		Email:     profile.Email,
+		Gender:    profile.Gender,
 		Birthday:  profile.Birthday.String(),
 		FirstName: profile.FirstName,
 		LastName:  profile.LastName,
@@ -489,6 +490,7 @@ func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileR
 		}
 		profile.Birthday = birthday
 	}
+	profile.Gender = request.Gender
 
 	if request.FirstName != "" {
 		profile.FirstName = request.FirstName
@@ -529,6 +531,7 @@ func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileR
 	profileResponse := GetProfileResponse{
 		Email:     profile.Email,
 		Birthday:  profile.Birthday.String(),
+		Gender:    profile.Gender,
 		FirstName: profile.FirstName,
 		LastName:  profile.LastName,
 		AvatarURL: profile.AvatarURL,
