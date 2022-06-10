@@ -52,6 +52,7 @@ type MatchLoveData struct {
 	Email2    string    `json:"email2" sql:"email2"`
 	Accept1   int       `json:"accept1" sql:"accept1"`
 	Accept2   int       `json:"accept2" sql:"accept2"`
+	StartDate time.Time `json:"startdate" sql:"startdate"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }

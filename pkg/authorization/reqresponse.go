@@ -226,6 +226,21 @@ type GetPlayerDataResponse struct {
 	DeviceLocalize string `json:"device_localize,omitempty"`
 }
 
+// GetMatchLoverResponse response is the response for get match lover
+type GetMatchLoverResponse struct {
+	Email1    string `json:"email1"`
+	Email2    string `json:"email2"`
+	Accept1   int    `json:"accept1"`
+	Accept2   int    `json:"accept2"`
+	FullName1 string `json:"full_name1"`
+	FullName2 string `json:"full_name2"`
+	Birthday1 string `json:"birthday1"`
+	Birthday2 string `json:"birthday2"`
+	Gender1   int    `json:"gender1"`
+	Gender2   int    `json:"gender2"`
+	StartDate string `json:"start_date"`
+}
+
 // GetUserStateDataRequest is used to get user state data
 type GetUserStateDataRequest struct {
 	KeyString   string `json:"key" validate:"required"`

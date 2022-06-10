@@ -342,8 +342,8 @@ func (repo *postgresRepository) GetMatchLoveDataByUserID(ctx context.Context, us
 func (repo *postgresRepository) InsertMatchLoveData(ctx context.Context, matchData *MatchLoveData) error {
 	matchData.CreatedAt = time.Now()
 	matchData.UpdatedAt = time.Now()
-	query := "insert into matchloves(userid1, userid2, email1, email2, accept1, accept2, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7, $8)" +
-		" on conflict (userid1, userid2) do update set email1 = $3, email2 = $4, accept1 = $5, accept2 = $6, updatedat = $8"
+	query := "insert into matchloves(userid1, userid2, email1, email2, accept1, accept2, startdate, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7, $8, $9)" +
+		" on conflict (userid1, userid2) do update set email1 = $3, email2 = $4, accept1 = $5, accept2 = $6, startdate = $7, updatedat = $9"
 	_, err := repo.db.ExecContext(ctx, query,
 		matchData.UserID1,
 		matchData.UserID2,
@@ -351,6 +351,7 @@ func (repo *postgresRepository) InsertMatchLoveData(ctx context.Context, matchDa
 		matchData.Email2,
 		matchData.Accept1,
 		matchData.Accept2,
+		matchData.StartDate,
 		matchData.CreatedAt,
 		matchData.UpdatedAt)
 	return err

@@ -115,6 +115,7 @@ const matchLoveSchema = `
 			email2 	   Varchar(100) not null,
 		    accept1     int default -1,
 		    accept2     int default -1,
+		    startdate   Timestamp not null,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
 			unique(userid1, userid2)

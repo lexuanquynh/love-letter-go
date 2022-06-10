@@ -1056,6 +1056,7 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 	matchLove.Accept2 = database.MatchLoverStateNone
 	matchLove.Email1 = user.Email
 	matchLove.Email2 = matchData.Email
+	matchLove.StartDate = time.Now()
 
 	err = s.repo.InsertMatchLoveData(ctx, matchLove)
 	if err != nil {
@@ -1214,7 +1215,40 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		return nil, cusErr
 	}
 	s.logger.Debug("Successfully get lover")
-	return matchLove, nil
+	// Get user1's profile
+	userInfor1, err := s.repo.GetProfileByID(ctx, matchLove.UserID1)
+	if err != nil {
+		s.logger.Error("Cannot get lover's profile", "error", err)
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, utils.PgNoRowsMsg) {
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return nil, cusErr
+		}
+	}
+	// Get user2's profile
+	userInfor2, err := s.repo.GetProfileByID(ctx, matchLove.UserID2)
+	if err != nil {
+		s.logger.Error("Cannot get user's profile", "error", err)
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, utils.PgNoRowsMsg) {
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return nil, cusErr
+		}
+	}
+	response := GetMatchLoverResponse{
+		Email1:    matchLove.Email1,
+		Email2:    matchLove.Email2,
+		Accept1:   matchLove.Accept1,
+		Accept2:   matchLove.Accept2,
+		FullName1: userInfor1.FirstName + " " + userInfor1.LastName,
+		FullName2: userInfor2.FirstName + " " + userInfor2.LastName,
+		Birthday1: userInfor1.Birthday.String(),
+		Birthday2: userInfor2.Birthday.String(),
+		Gender1:   userInfor1.Gender,
+		Gender2:   userInfor2.Gender,
+		StartDate: matchLove.StartDate.String(),
+	}
+	return response, nil
 }
 
 // ConfirmMatchLover accept lover
