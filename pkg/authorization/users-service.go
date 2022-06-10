@@ -107,7 +107,7 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 		UserID: user.ID,
 		Email:  user.Email,
 	}
-	err = s.repo.StoreProfileData(ctx, &profile)
+	err = s.repo.InsertProfile(ctx, &profile)
 	if err != nil {
 		s.logger.Error("Error storing profile data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -379,13 +379,16 @@ func (s *userService) GetProfile(ctx context.Context) (interface{}, error) {
 	}
 	profile, err := s.repo.GetProfileByID(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get profile", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr.Error(), cusErr
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, utils.PgNoRowsMsg) {
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr.Error(), cusErr
+		}
 	}
 	// Make response data
 	profileResponse := GetProfileResponse{
 		Email:     profile.Email,
+		Birthday:  profile.Birthday.String(),
 		FirstName: profile.FirstName,
 		LastName:  profile.LastName,
 		AvatarURL: profile.AvatarURL,
@@ -467,14 +470,30 @@ func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileR
 	// Get profile by id
 	profile, err := s.repo.GetProfileByID(ctx, userID)
 	if err != nil {
+		errMsg := err.Error()
 		s.logger.Error("Cannot get profile", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr.Error(), cusErr
+		if !strings.Contains(errMsg, utils.PgNoRowsMsg) {
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr.Error(), cusErr
+		}
 	}
 	// Update profile profile
+	profile.UserID = user.ID
+	profile.Email = user.Email
+	if request.Birthday != "" {
+		birthday, error := time.Parse("2006-01-02", request.Birthday)
+
+		if error != nil {
+			s.logger.Error("Cannot parse birthday", "error", error)
+			return nil, error
+		}
+		profile.Birthday = birthday
+	}
+
 	if request.FirstName != "" {
 		profile.FirstName = request.FirstName
 	}
+
 	if request.LastName != "" {
 		profile.LastName = request.LastName
 	}
@@ -500,7 +519,7 @@ func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileR
 		profile.Country = request.Country
 	}
 	// Update profile
-	err = s.repo.UpdateProfile(ctx, profile)
+	err = s.repo.InsertProfile(ctx, profile)
 	if err != nil {
 		s.logger.Error("Cannot update profile", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -509,6 +528,7 @@ func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileR
 	// Make response data
 	profileResponse := GetProfileResponse{
 		Email:     profile.Email,
+		Birthday:  profile.Birthday.String(),
 		FirstName: profile.FirstName,
 		LastName:  profile.LastName,
 		AvatarURL: profile.AvatarURL,

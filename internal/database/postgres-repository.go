@@ -119,40 +119,6 @@ func (repo *postgresRepository) UpdateUser(ctx context.Context, user *User) erro
 	return err
 }
 
-// StoreProfileData stores the profile data in the database
-func (repo *postgresRepository) StoreProfileData(ctx context.Context, profileData *ProfileData) error {
-	profileData.ID = uuid.NewV4().String()
-	profileData.CreatedAt = time.Now()
-	profileData.UpdatedAt = time.Now()
-	query := "insert into profiles(id, userid, email, createdat, updatedat) values($1, $2, $3, $4, $5)"
-	_, err := repo.db.ExecContext(ctx, query,
-		profileData.ID,
-		profileData.UserID,
-		profileData.Email,
-		profileData.CreatedAt,
-		profileData.UpdatedAt)
-	return err
-}
-
-// UpdateProfileData updates the profile data in the database
-func (repo *postgresRepository) UpdateProfileData(ctx context.Context, profileData *ProfileData) error {
-	profileData.UpdatedAt = time.Now()
-	query := "update profiles set  firstname = $1, lastname = $2, avatar_url = $3, phone = $4, street = $5, city = $6, state = $7, zip_code = $8, country = $9, updatedat = $10 where id = $11"
-	_, err := repo.db.ExecContext(ctx, query,
-		profileData.FirstName,
-		profileData.LastName,
-		profileData.AvatarURL,
-		profileData.Phone,
-		profileData.Street,
-		profileData.City,
-		profileData.State,
-		profileData.ZipCode,
-		profileData.Country,
-		profileData.UpdatedAt,
-		profileData.ID)
-	return err
-}
-
 // GetProfileByID returns the profile with the given user id.
 func (repo *postgresRepository) GetProfileByID(ctx context.Context, userId string) (*ProfileData, error) {
 	query := "select * from profiles where userid = $1"
@@ -161,22 +127,13 @@ func (repo *postgresRepository) GetProfileByID(ctx context.Context, userId strin
 	return profile, err
 }
 
-// UpdateProfile updates the profile data.
-func (repo *postgresRepository) UpdateProfile(ctx context.Context, profile *ProfileData) error {
+// InsertProfile insert profile data into db
+func (repo *postgresRepository) InsertProfile(ctx context.Context, profile *ProfileData) error {
+	profile.CreatedAt = time.Now()
 	profile.UpdatedAt = time.Now()
-	query := "update profiles set firstname = $1, lastname = $2, avatarurl = $3, phone = $4, street = $5, city = $6, state = $7, zipcode = $8, country = $9, updatedat = $10 where userid = $11"
-	_, err := repo.db.ExecContext(ctx, query,
-		profile.FirstName,
-		profile.LastName,
-		profile.AvatarURL,
-		profile.Phone,
-		profile.Street,
-		profile.City,
-		profile.State,
-		profile.ZipCode,
-		profile.Country,
-		profile.UpdatedAt,
-		profile.UserID)
+	query := "insert into profiles (userid, email, birthday, firstname, lastname, avatarurl, phone, street, city, state, zipcode, country, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)" +
+		"on conflict (userid) do update set email = $2, birthday = $3, firstname = $4, lastname = $5, avatarurl = $6, phone = $7, street = $8, city = $9, state = $10, zipcode = $11, country = $12, updatedat = $13"
+	_, err := repo.db.ExecContext(ctx, query, profile.UserID, profile.Email, profile.Birthday, profile.FirstName, profile.LastName, profile.AvatarURL, profile.Phone, profile.Street, profile.City, profile.State, profile.ZipCode, profile.Country, profile.CreatedAt, profile.UpdatedAt)
 	return err
 }
 

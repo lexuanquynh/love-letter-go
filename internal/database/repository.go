@@ -9,14 +9,10 @@ type UserRepository interface {
 	UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error
 	// StoreVerificationData Save verification data into database
 	StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error
-	// StoreProfileData Save profile data into database
-	StoreProfileData(ctx context.Context, profileData *ProfileData) error
 	// GetVerificationData Get verification data from database
 	GetVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) (*VerificationData, error)
 	//DeleteVerificationData Delete verification data from database
 	DeleteVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) error
-	// UpdateProfileData Update profile data into database
-	UpdateProfileData(ctx context.Context, profileData *ProfileData) error
 	// GetUserByEmail Get user by email
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	// GetUserByID Get user by id
@@ -27,8 +23,8 @@ type UserRepository interface {
 	CheckUsernameExists(ctx context.Context, username string) (bool, error)
 	// GetProfileByID Get profile by user id
 	GetProfileByID(ctx context.Context, userId string) (*ProfileData, error)
-	// UpdateProfile Update profile
-	UpdateProfile(ctx context.Context, profile *ProfileData) error
+	// InsertProfile Insert profile
+	InsertProfile(ctx context.Context, profile *ProfileData) error
 	// UpdatePassword Update password
 	UpdatePassword(ctx context.Context, userID string, password string, tokenHash string) error
 	// GetListOfPasswords Get list of passwords

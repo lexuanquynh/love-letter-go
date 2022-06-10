@@ -53,10 +53,10 @@ const verificationSchema = `
 
 // schema for profile table
 const profileSchema = `
-		create table if not exists profiles (
-			id 		   Varchar(36) not null,
+		create table if not exists profiles (		
 			userid 	Varchar(36) not null,
 		    email 	   Varchar(100) not null,
+		    birthday  Date null,
 			firstname   Varchar(225) default '',
 			lastname    Varchar(225) default '',
 			avatarurl  Varchar(255) default '',
@@ -68,7 +68,7 @@ const profileSchema = `
 			country    Varchar(255) default '',
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
-			Primary Key (id),
+			Primary Key (userid),
 			Constraint fk_user_id Foreign Key(userid) References users(id)
 				On Delete Cascade On Update Cascade
 		)
@@ -174,9 +174,9 @@ const playerSchema = `
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
-	configs := utils.NewConfigurations(logger, utils.DeployLocal)
+	//configs := utils.NewConfigurations(logger, utils.DeployLocal)
 	//configs := utils.NewConfigurations(logger, utils.DeployStage)
-	//configs := utils.NewConfigurations(logger, utils.DeployProd)
+	configs := utils.NewConfigurations(logger, utils.DeployProd)
 	// validator contains all the methods that are need to validate the user json in request
 	validator := database.NewValidation()
 	// create a new connection to the postgres db store

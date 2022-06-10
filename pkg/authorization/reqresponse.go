@@ -52,6 +52,7 @@ type UpdateUserNameRequest struct {
 // UpdateProfileRequest is used to update user profile
 type UpdateProfileRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
+	Birthday    string `json:"birthday"`
 	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
 	AvatarURL   string `json:"avatar_url"`
@@ -90,6 +91,7 @@ type GetLoverResponse struct {
 // GetProfileResponse is the response for get user profile
 type GetProfileResponse struct {
 	Email     string `json:"email"`
+	Birthday  string `json:"birthday"`
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 	AvatarURL string `json:"avatar_url,omitempty"`
@@ -179,13 +181,6 @@ type AcceptMatchLoverResponse struct {
 	Accept  int    `json:"accept"`
 	Message string `json:"message"`
 }
-
-// CreateLoveLetterRequest is used to create love letter
-//type CreateLoveLetterRequest struct {
-//	AccessToken string `json:"access_token" validate:"required"`
-//	Title       string `json:"title" validate:"required"`
-//	Body        string `json:"body" validate:"required"`
-//}
 
 // UpdateLoveLetterRequest is used to update love letter
 type UpdateLoveLetterRequest struct {
