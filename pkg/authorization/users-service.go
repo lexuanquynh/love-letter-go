@@ -1236,6 +1236,8 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		}
 	}
 	response := GetMatchLoverResponse{
+		userid1:   matchLove.UserID1,
+		userid2:   matchLove.UserID2,
 		Email1:    matchLove.Email1,
 		Email2:    matchLove.Email2,
 		Accept1:   matchLove.Accept1,
@@ -1524,10 +1526,19 @@ func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 		feeds = append(feeds, fillMatchComponent)
 	} else {
 		// If user not answer match
-		matchInfo, ok := matchResponse.(*database.MatchLoveData)
+		matchloveResponse, ok := matchResponse.(GetMatchLoverResponse)
 		if !ok {
 			cusErr := utils.NewErrorResponse(utils.InternalServerError)
 			return nil, cusErr
+		}
+		// Map data from GetMatchLoverResponse
+		matchInfo := database.MatchLoveData{
+			UserID1: matchloveResponse.userid1,
+			UserID2: matchloveResponse.userid2,
+			Email1:  matchloveResponse.Email1,
+			Email2:  matchloveResponse.Email2,
+			Accept1: matchloveResponse.Accept1,
+			Accept2: matchloveResponse.Accept2,
 		}
 		// Check if user request confirm and waiting for response from other user
 		if matchInfo.UserID1 == userID && matchInfo.Accept1 == database.MatchLoverStateAccept && matchInfo.Accept2 == database.MatchLoverStateNone {

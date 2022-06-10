@@ -228,6 +228,8 @@ type GetPlayerDataResponse struct {
 
 // GetMatchLoverResponse response is the response for get match lover
 type GetMatchLoverResponse struct {
+	userid1   string `json:"userid1"`
+	userid2   string `json:"userid2"`
 	Email1    string `json:"email1"`
 	Email2    string `json:"email2"`
 	Accept1   int    `json:"accept1"`
