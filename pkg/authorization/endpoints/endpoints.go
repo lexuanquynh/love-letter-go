@@ -36,6 +36,7 @@ type Set struct {
 	GetPlayerDataEndpoint         endpoint.Endpoint
 	GetUserStateDataEndpoint      endpoint.Endpoint
 	GetFeedsEndpoint              endpoint.Endpoint
+	UpdateBeenLoveEndpoint        endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -152,6 +153,11 @@ func NewEndpointSet(svc authorization.Service,
 	getFeedsEndpoint = middleware.ValidateParamRequest(validator, logger)(getFeedsEndpoint)
 	getFeedsEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getFeedsEndpoint)
 
+	updateBeenLoveEndpoint := MakeUpdateBeenLoveEndpoint(svc)
+	updateBeenLoveEndpoint = middleware.RateLimitRequest(tb, logger)(updateBeenLoveEndpoint)
+	updateBeenLoveEndpoint = middleware.ValidateParamRequest(validator, logger)(updateBeenLoveEndpoint)
+	updateBeenLoveEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateBeenLoveEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:           healthCheckEndpoint,
 		RegisterEndpoint:              registerEndpoint,
@@ -176,6 +182,7 @@ func NewEndpointSet(svc authorization.Service,
 		GetPlayerDataEndpoint:         getPlayerDataEndpoint,
 		GetUserStateDataEndpoint:      getUserStateDataEndpoint,
 		GetFeedsEndpoint:              getFeedsEndpoint,
+		UpdateBeenLoveEndpoint:        updateBeenLoveEndpoint,
 	}
 }
 
@@ -571,5 +578,21 @@ func MakeGetFeedsEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, err
 		}
 		return feeds, nil
+	}
+}
+
+// MakeUpdateBeenLoveEndpoint returns an endpoint that invokes UpdateBeenLove on the service.
+func MakeUpdateBeenLoveEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.UpdateBeenLoveRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.UpdateBeenLove(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
 	}
 }

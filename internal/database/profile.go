@@ -3,6 +3,7 @@ package database
 import "time"
 
 // ProfileData represents a user profile
+// gender: 1 - male. 0 - female. 3 - gay. 4 -lesbian
 type ProfileData struct {
 	UserID    string    `json:"user_id" sql:"userid"`
 	Email     string    `json:"email" validate:"required,email" sql:"email"`

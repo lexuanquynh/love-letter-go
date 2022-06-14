@@ -1242,13 +1242,14 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		Email2:    matchLove.Email2,
 		Accept1:   matchLove.Accept1,
 		Accept2:   matchLove.Accept2,
-		FullName1: userInfor1.FirstName + " " + userInfor1.LastName,
-		FullName2: userInfor2.FirstName + " " + userInfor2.LastName,
-		Birthday1: userInfor1.Birthday.String(),
-		Birthday2: userInfor2.Birthday.String(),
+		FullName1: userInfor1.FirstName,
+		FullName2: userInfor2.FirstName,
+		Birthday1: userInfor1.Birthday.Format("2006-01-02"),
+
+		Birthday2: userInfor2.Birthday.Format("2006-01-02"),
 		Gender1:   userInfor1.Gender,
 		Gender2:   userInfor2.Gender,
-		StartDate: matchLove.StartDate.String(),
+		StartDate: matchLove.StartDate.Format("2006-01-02"),
 	}
 	return response, nil
 }
@@ -1589,4 +1590,86 @@ func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 
 	response := map[string]interface{}{"components": feeds}
 	return response, nil
+}
+
+// UpdateBeenLove update been love
+func (s *userService) UpdateBeenLove(ctx context.Context, request *UpdateBeenLoveRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	// Check if user is in relationship
+	matchResponse, _ := s.GetMatchLover(ctx)
+	if matchResponse == nil {
+		// If user not in relationship, return error
+		cusErr := utils.NewErrorResponse(utils.BadRequest)
+		return nil, cusErr
+	}
+	// Get profile of user
+	profile, err := s.repo.GetProfileByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get profile", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Fill profile
+	profile.FirstName = request.FirstName
+	profile.LastName = request.LastName
+	profile.Gender = request.Gender
+	// convert birthday string to time
+	if request.Birthday != "" {
+		birthday, error := time.Parse("2006-01-02", request.Birthday)
+		if error != nil {
+			s.logger.Error("Cannot parse birthday", "error", error)
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		profile.Birthday = birthday
+	}
+	// Update first name, last name, gender and birthday by InsertProfile API
+	err = s.repo.InsertProfile(ctx, profile)
+	if err != nil {
+		s.logger.Error("Cannot update profile", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Confirm if user has already matched
+	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Cannot get match love data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Convert start date string to time
+	startDate, error := time.Parse("2006-01-02", request.StartDate)
+	if error != nil {
+		s.logger.Error("Cannot parse start day", "error", error)
+		cusErr := utils.NewErrorResponse(utils.BadRequest)
+		return nil, cusErr
+	}
+	// Update start date by InsertMatchLoveData API
+	matchLove.StartDate = startDate
+	err = s.repo.InsertMatchLoveData(ctx, matchLove)
+	if err != nil {
+		s.logger.Error("Cannot update match love data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Update been love success
+	s.logger.Info("Update been love success")
+	return matchLove, nil
 }

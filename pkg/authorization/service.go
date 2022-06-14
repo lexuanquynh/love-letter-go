@@ -27,4 +27,5 @@ type Service interface {
 	GetPlayerData(ctx context.Context) (interface{}, error)
 	GetUserStateData(ctx context.Context, request *GetUserStateDataRequest) (interface{}, error)
 	GetFeeds(ctx context.Context) (interface{}, error)
+	UpdateBeenLove(ctx context.Context, request *UpdateBeenLoveRequest) (interface{}, error)
 }

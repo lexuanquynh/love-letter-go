@@ -266,3 +266,13 @@ type Feed struct {
 	Type  string      `json:"type"`
 	Data  interface{} `json:"data,omitempty"`
 }
+
+// UpdateBeenLoveRequest is used to update been love API
+type UpdateBeenLoveRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	FirstName   string `json:"first_name" validate:"required"`
+	LastName    string `json:"last_name" validate:"required"`
+	Gender      int    `json:"gender" validate:"required"`
+	Birthday    string `json:"birthday" validate:"required"`
+	StartDate   string `json:"start_date" validate:"required"`
+}
