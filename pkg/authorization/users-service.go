@@ -71,7 +71,7 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 		return cusErr.Error(), cusErr
 	}
 	// Generate authentication code
-	authedCode := utils.GenerateRandomString(8)
+	authedCode := utils.GenerateRandomNumberString(6)
 	// Saving the code authentication into database
 	verificationData := database.VerificationData{
 		Email:     request.Email,
@@ -689,7 +689,7 @@ func (s *userService) GetForgetPasswordCode(ctx context.Context, email string) e
 		return cusErr
 	}
 	// Generate forget password code
-	forgetPasswordCode := utils.GenerateRandomString(8)
+	forgetPasswordCode := utils.GenerateRandomNumberString(6)
 
 	// store the password reset code to db
 	verificationData := &database.VerificationData{
@@ -903,7 +903,7 @@ func (s *userService) GetVerifyMailCode(ctx context.Context) error {
 		return cusErr
 	}
 	// Generate forget password code
-	forgetPasswordCode := utils.GenerateRandomString(8)
+	forgetPasswordCode := utils.GenerateRandomNumberString(6)
 
 	// store the password reset code to db
 	verificationData := &database.VerificationData{
