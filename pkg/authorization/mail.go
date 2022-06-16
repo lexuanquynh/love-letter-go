@@ -19,6 +19,7 @@ type MailType int
 const (
 	MailConfirmation MailType = iota + 1
 	PassReset
+	CancelDeleteUser
 )
 
 // MailData represents the data to be sent to the template of the mail.
@@ -59,6 +60,8 @@ func (ms *SGMailService) CreateMail(mailReq *Mail) []byte {
 		m.SetTemplateID(ms.configs.MailVerifTemplateID)
 	} else if mailReq.mtype == PassReset {
 		m.SetTemplateID(ms.configs.PassResetTemplateID)
+	} else if mailReq.mtype == CancelDeleteUser {
+		m.SetTemplateID(ms.configs.CancelDeleteUserTemplateID)
 	}
 
 	p := mail.NewPersonalization()

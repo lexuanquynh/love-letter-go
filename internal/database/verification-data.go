@@ -7,6 +7,7 @@ type VerificationDataType int
 const (
 	MailConfirmation VerificationDataType = iota + 1
 	PassReset
+	CancelDeleteUser
 )
 
 type LimitType int
@@ -17,6 +18,7 @@ const (
 	LimitTypeSendVerifyMail
 	LimitTypeSendPassResetMail
 	LimitTypeChangePassword
+	LimitTypeCancelDeleteUser
 )
 
 // Type of verification data
@@ -27,11 +29,12 @@ const (
 
 // VerificationData represents the type for the data stored for verification.
 type VerificationData struct {
-	ID        string               `json:"id"`
 	Email     string               `json:"email" validate:"required,email" sql:"email"`
 	Code      string               `json:"code" validate:"required" sql:"code"`
 	ExpiresAt time.Time            `json:"expiresat" sql:"expiresat"`
 	Type      VerificationDataType `json:"type" sql:"type"`
+	CreatedAt time.Time            `json:"createdat" sql:"createdat"`
+	UpdatedAt time.Time            `json:"updatedat" sql:"updatedat"`
 }
 
 // MatchVerifyData represents the type for the data stored for matching.
@@ -84,10 +87,38 @@ type UserStateData struct {
 	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
 }
 
+// Schedule represents the type for the data stored for schedule.
+type Schedule struct {
+	ID             string    `json:"id" sql:"id"`
+	UserID         string    `json:"userid" sql:"userid"`
+	Name           string    `json:"name" sql:"name"`
+	ScheduleType   string    `json:"schedule_type" sql:"schedule_type"`
+	Description    string    `json:"description" sql:"description"`
+	Parameter      string    `json:"parameter" sql:"parameter"`
+	TimeExecute    time.Time `json:"timeexecute" sql:"timeexecute"`
+	RemoveAfterRun bool      `json:"remove_after_run" sql:"removeafterrun"`
+	CreatedAt      time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt      time.Time `json:"updatedat" sql:"updatedat"`
+}
+
 const MatchLoverStateKey = "state"
 
 const (
 	MatchLoverStateNone   = -1 // User no response answer
 	MatchLoverStateAccept = 1  // User accept matched
 	MatchLoverStateReject = 2  // user reject matched
+)
+
+const (
+	ScheduleTypeOneTime  = "onetime"
+	ScheduleTypeAnnually = "annually"
+	ScheduleTypeMonthly  = "monthly"
+	ScheduleTypeWeekly   = "weekly"
+	ScheduleTypeDaily    = "daily"
+	ScheduleTypeHourly   = "hourly"
+	ScheduleTypeMinutely = "minutely"
+)
+
+const (
+	ScheduleActionTypeDeleteUser = "deleteuser"
 )

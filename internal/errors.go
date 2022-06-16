@@ -18,41 +18,42 @@ const (
 	MethodNotAllowed              = 405
 
 	// Custom errors
-	MailRequired               = 1
-	PasswordRequired           = 2
-	PasswordNotMatch           = 3
-	CodeRequired               = 4
-	RefreshTokenRequired       = 5
-	AccessTokenRequired        = 6
-	OldPasswordRequired        = 7
-	NewPasswordRequired        = 8
-	ConfirmPasswordRequired    = 9
-	InvalidCode                = 10
-	ExpiredCode                = 11
-	TooManyRequests            = 12
-	PasswordIncorrect          = 13
-	ChoiceOtherPassword        = 14
-	EmailNotRegistered         = 15
-	QuicklyRequest             = 16
-	ValidationJSONFailure      = 17
-	ValidationTokenFailure     = 18
-	ExistUser                  = 19
-	CodeInvalid                = 20
-	UsernameRequired           = 21
-	ExistUserName              = 22
-	MatchCodeIsExpired         = 23
-	MatchCodeIsIncorrect       = 24
-	UserAlreadyMatched         = 25
-	MatchCodeIsNotExactly      = 26
-	UserNotMatch               = 27
-	TitleRequired              = 28
-	BodyRequired               = 29
-	ValueTooLong               = 30
-	UserInRelationship         = 31
-	PlayerIdRequired           = 32
-	UserCannotMatchWithHimself = 33
-	KeyStringRequired          = 34
-	UserIDRequired             = 35
+	MailRequired                   = 1
+	PasswordRequired               = 2
+	PasswordNotMatch               = 3
+	CodeRequired                   = 4
+	RefreshTokenRequired           = 5
+	AccessTokenRequired            = 6
+	OldPasswordRequired            = 7
+	NewPasswordRequired            = 8
+	ConfirmPasswordRequired        = 9
+	InvalidCode                    = 10
+	ExpiredCode                    = 11
+	TooManyRequests                = 12
+	PasswordIncorrect              = 13
+	ChoiceOtherPassword            = 14
+	EmailNotRegistered             = 15
+	QuicklyRequest                 = 16
+	ValidationJSONFailure          = 17
+	ValidationTokenFailure         = 18
+	ExistUser                      = 19
+	CodeInvalid                    = 20
+	UsernameRequired               = 21
+	ExistUserName                  = 22
+	MatchCodeIsExpired             = 23
+	MatchCodeIsIncorrect           = 24
+	UserAlreadyMatched             = 25
+	MatchCodeIsNotExactly          = 26
+	UserNotMatch                   = 27
+	TitleRequired                  = 28
+	BodyRequired                   = 29
+	ValueTooLong                   = 30
+	UserInRelationship             = 31
+	PlayerIdRequired               = 32
+	UserCannotMatchWithHimself     = 33
+	KeyStringRequired              = 34
+	UserIDRequired                 = 35
+	AccountIsNotNeedToCancelDelete = 36
 )
 
 func (e ErrorResponse) Error() string {
@@ -145,6 +146,8 @@ func (e ErrorResponse) Error() string {
 		return "key string required"
 	case UserIDRequired:
 		return "user id required"
+	case AccountIsNotNeedToCancelDelete:
+		return "account is not need to cancel delete"
 	default:
 		return "Unknown Error"
 	}

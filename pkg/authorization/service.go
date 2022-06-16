@@ -9,6 +9,9 @@ type Service interface {
 	VerifyMail(ctx context.Context, request *VerifyMailRequest) (string, error)
 	Login(ctx context.Context, request *LoginRequest) (interface{}, error)
 	Logout(ctx context.Context, request *LogoutRequest) error
+	DeleteUser(ctx context.Context, request *DeleteUserRequest) error
+	CancelDeleteUser(ctx context.Context, request *CancelDeleteUserRequest) error
+	ConfirmCancelDeleteUser(ctx context.Context, request *ConfirmCancelDeleteUserRequest) error
 	GetUser(ctx context.Context) (interface{}, error)
 	UpdateUserName(ctx context.Context, request *UpdateUserNameRequest) (interface{}, error)
 	GetProfile(ctx context.Context) (interface{}, error)

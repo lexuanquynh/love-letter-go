@@ -38,6 +38,12 @@ type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
+// DeleteUserRequest is the request for deleting a user
+type DeleteUserRequest struct {
+	Email        string `json:"email" validate:"required,email"`
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
 // CommonAuthorizationRequest is used to get user info
 type CommonAuthorizationRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
@@ -80,14 +86,6 @@ type GetLoverResponse struct {
 	Accept1  int    `json:"accept1"`
 	Accept2  int    `json:"accept2"`
 }
-
-// MatchLoverResponse is the response for match lover info
-//type MatchLoverResponse struct {
-//	UserID   string `json:"user_id"`
-//	Email    string `json:"email"`
-//	Username string `json:"username,omitempty"`
-//	Accept   int    `json:"accept"`
-//}
 
 // GetProfileResponse is the response for get user profile
 type GetProfileResponse struct {
@@ -138,6 +136,15 @@ type PasswordResetResponse struct {
 }
 
 type GetForgetPasswordCodeRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type CancelDeleteUserRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ConfirmCancelDeleteUserRequest struct {
+	Code  string `json:"code" validate:"required"`
 	Email string `json:"email" validate:"required,email"`
 }
 

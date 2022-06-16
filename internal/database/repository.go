@@ -7,8 +7,8 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *User) error
 	// UpdateUserVerificationStatus Update user verification status
 	UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error
-	// StoreVerificationData Save verification data into database
-	StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error
+	// InsertVerificationData Save verification data into database
+	InsertVerificationData(ctx context.Context, verificationData *VerificationData) error
 	// GetVerificationData Get verification data from database
 	GetVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) (*VerificationData, error)
 	//DeleteVerificationData Delete verification data from database
@@ -19,6 +19,7 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, id string) (*User, error)
 	// UpdateUser Update user
 	UpdateUser(ctx context.Context, user *User) error
+	DeleteUser(ctx context.Context, id string) error
 	// CheckUsernameExists Check if username exists
 	CheckUsernameExists(ctx context.Context, username string) (bool, error)
 	// GetProfileByID Get profile by user id
@@ -33,10 +34,10 @@ type UserRepository interface {
 	InsertListOfPasswords(ctx context.Context, passwordUsers *PassworUsers) error
 	// GetLimitData Get limit table data
 	GetLimitData(ctx context.Context, userID string, limitType LimitType) (*LimitData, error)
-	// InsertOrUpdateLimitData Insert or update limit data
-	InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, limitType LimitType) error
-	// ClearLimitData Clear limit data
-	ClearLimitData(ctx context.Context, limitType LimitType) error
+	// InsertLimitData Insert or update limit data
+	InsertLimitData(ctx context.Context, limitData *LimitData) error
+	// ResetLimitData Clear limit data
+	ResetLimitData(ctx context.Context, limitType LimitType) error
 	// InsertMatchVerifyData Insert match verify data
 	InsertMatchVerifyData(ctx context.Context, matchData *MatchVerifyData) error
 	// GetMatchVerifyDataByCode Get match data
@@ -59,4 +60,12 @@ type UserRepository interface {
 	DeleteUserStateData(ctx context.Context, userID string, keyString string) error
 	// GetUserStateData Get user state data
 	GetUserStateData(ctx context.Context, userID string, keyString string) (*UserStateData, error)
+	// RunSchedule Run schedule
+	RunSchedule(ctx context.Context) error
+	// InsertSchedule Set schedule
+	InsertSchedule(ctx context.Context, schedule *Schedule) error
+	// DeleteSchedule Delete schedule
+	DeleteSchedule(ctx context.Context, userID string, name string) error
+	// GetSchedule Get schedule
+	GetSchedule(ctx context.Context, userID string, name string) (*Schedule, error)
 }

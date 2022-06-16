@@ -26,6 +26,7 @@ type Configurations struct {
 	MatchCodeExpiration        int    `mapstructure:"MATCH_CODE_EXPIRATION"`             // in minutes
 	MailVerifTemplateID        string `mapstructure:"MAIL_VERIFICATION_TEMPLATE_ID"`
 	PassResetTemplateID        string `mapstructure:"PASSWORD_RESET_TEMPLATE_ID"`
+	CancelDeleteUserTemplateID string `mapstructure:"CANCEL_DELETE_USER_TEMPLATE_ID"`
 	MailSender                 string `mapstructure:"MAIL_SENDER"`
 	Issuer                     string `mapstructure:"ISSUER"`
 	HttpPort                   string `mapstructure:"HTTP_PORT"`
@@ -33,6 +34,7 @@ type Configurations struct {
 	ChangePasswordLimit        int    `mapstructure:"CHANGE_PASSWORD_LIMIT"`
 	SendMailVerifyLimit        int    `mapstructure:"SEND_MAIL_VERIFY_LIMIT"`
 	SendMailResetPasswordLimit int    `mapstructure:"SEND_MAIL_RESET_PASSWORD_LIMIT"`
+	SendMailCancelDeleteLimit  int    `mapstructure:"SEND_MAIL_CANCEL_DELETE_LIMIT"`
 	LoginLimit                 int    `mapstructure:"LOGIN_LIMIT"`
 	OneSignalAppId             string `mapstructure:"ONE_SIGNAL_APP_ID"`
 	OneSignalAPIKey            string `mapstructure:"ONE_SIGNAL_API_KEY"`

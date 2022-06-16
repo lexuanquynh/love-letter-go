@@ -13,30 +13,33 @@ import (
 )
 
 type Set struct {
-	HealthCheckEndpoint           endpoint.Endpoint
-	RegisterEndpoint              endpoint.Endpoint
-	VerifyMailEndpoint            endpoint.Endpoint
-	LoginEndpoint                 endpoint.Endpoint
-	LogoutEndpoint                endpoint.Endpoint
-	GetUserEndpoint               endpoint.Endpoint
-	UpdateUserNameEndpoint        endpoint.Endpoint
-	GetProfileEndpoint            endpoint.Endpoint
-	UpdateProfileEndpoint         endpoint.Endpoint
-	UpdatePasswordEndpoint        endpoint.Endpoint
-	GetForgetPasswordCodeEndpoint endpoint.Endpoint
-	ResetPasswordEndpoint         endpoint.Endpoint
-	GenerateAccessTokenEndpoint   endpoint.Endpoint
-	GetVerifyMailCodeEndpoint     endpoint.Endpoint
-	GetMatchCodeEndpoint          endpoint.Endpoint
-	MatchLoverEndpoint            endpoint.Endpoint
-	ConfirmMatchLoverEndpoint     endpoint.Endpoint
-	UnMatchLoverEndpoint          endpoint.Endpoint
-	GetMatchedLoverEndpoint       endpoint.Endpoint
-	InsertPlayerDataEndpoint      endpoint.Endpoint
-	GetPlayerDataEndpoint         endpoint.Endpoint
-	GetUserStateDataEndpoint      endpoint.Endpoint
-	GetFeedsEndpoint              endpoint.Endpoint
-	UpdateBeenLoveEndpoint        endpoint.Endpoint
+	HealthCheckEndpoint             endpoint.Endpoint
+	RegisterEndpoint                endpoint.Endpoint
+	VerifyMailEndpoint              endpoint.Endpoint
+	LoginEndpoint                   endpoint.Endpoint
+	LogoutEndpoint                  endpoint.Endpoint
+	DeleteUserEndpoint              endpoint.Endpoint
+	CancelDeleteUserEndpoint        endpoint.Endpoint
+	ConfirmCancelDeleteUserEndpoint endpoint.Endpoint
+	GetUserEndpoint                 endpoint.Endpoint
+	UpdateUserNameEndpoint          endpoint.Endpoint
+	GetProfileEndpoint              endpoint.Endpoint
+	UpdateProfileEndpoint           endpoint.Endpoint
+	UpdatePasswordEndpoint          endpoint.Endpoint
+	GetForgetPasswordCodeEndpoint   endpoint.Endpoint
+	ResetPasswordEndpoint           endpoint.Endpoint
+	GenerateAccessTokenEndpoint     endpoint.Endpoint
+	GetVerifyMailCodeEndpoint       endpoint.Endpoint
+	GetMatchCodeEndpoint            endpoint.Endpoint
+	MatchLoverEndpoint              endpoint.Endpoint
+	ConfirmMatchLoverEndpoint       endpoint.Endpoint
+	UnMatchLoverEndpoint            endpoint.Endpoint
+	GetMatchedLoverEndpoint         endpoint.Endpoint
+	InsertPlayerDataEndpoint        endpoint.Endpoint
+	GetPlayerDataEndpoint           endpoint.Endpoint
+	GetUserStateDataEndpoint        endpoint.Endpoint
+	GetFeedsEndpoint                endpoint.Endpoint
+	UpdateBeenLoveEndpoint          endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -64,6 +67,19 @@ func NewEndpointSet(svc authorization.Service,
 	logoutEndpoint = middleware.RateLimitRequest(tb, logger)(logoutEndpoint)
 	logoutEndpoint = middleware.ValidateParamRequest(validator, logger)(logoutEndpoint)
 	logoutEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(logoutEndpoint)
+
+	deleteUserEndpoint := MakeDeleteUserEndpoint(svc)
+	deleteUserEndpoint = middleware.RateLimitRequest(tb, logger)(deleteUserEndpoint)
+	deleteUserEndpoint = middleware.ValidateParamRequest(validator, logger)(deleteUserEndpoint)
+	deleteUserEndpoint = middleware.ValidateRefreshToken(auth, r, logger)(deleteUserEndpoint)
+
+	cancelDeleteUserEndpoint := MakeCancelDeleteUserEndpoint(svc)
+	cancelDeleteUserEndpoint = middleware.RateLimitRequest(tb, logger)(cancelDeleteUserEndpoint)
+	cancelDeleteUserEndpoint = middleware.ValidateParamRequest(validator, logger)(cancelDeleteUserEndpoint)
+
+	confirmCancelDeleteUserEndpoint := MakeConfirmCancelDeleteUserEndpoint(svc)
+	confirmCancelDeleteUserEndpoint = middleware.RateLimitRequest(tb, logger)(confirmCancelDeleteUserEndpoint)
+	confirmCancelDeleteUserEndpoint = middleware.ValidateParamRequest(validator, logger)(confirmCancelDeleteUserEndpoint)
 
 	getUserEndpoint := MakeGetUserEndpoint(svc)
 	getUserEndpoint = middleware.RateLimitRequest(tb, logger)(getUserEndpoint)
@@ -159,30 +175,33 @@ func NewEndpointSet(svc authorization.Service,
 	updateBeenLoveEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateBeenLoveEndpoint)
 
 	return Set{
-		HealthCheckEndpoint:           healthCheckEndpoint,
-		RegisterEndpoint:              registerEndpoint,
-		VerifyMailEndpoint:            verifyMailEndpoint,
-		LoginEndpoint:                 loginEndpoint,
-		LogoutEndpoint:                logoutEndpoint,
-		GetUserEndpoint:               getUserEndpoint,
-		GetProfileEndpoint:            getProfileEndpoint,
-		UpdateProfileEndpoint:         updateProfileEndpoint,
-		UpdateUserNameEndpoint:        updateUserNameEndpoint,
-		UpdatePasswordEndpoint:        updatePasswordEndpoint,
-		GetForgetPasswordCodeEndpoint: getForgetPasswordCodeEndpoint,
-		ResetPasswordEndpoint:         resetPasswordEndpoint,
-		GenerateAccessTokenEndpoint:   generateAccessTokenEndpoint,
-		GetVerifyMailCodeEndpoint:     getVerifyMailCodeEndpoint,
-		GetMatchCodeEndpoint:          getMatchCodeEndpoint,
-		MatchLoverEndpoint:            matchLoverEndpoint,
-		ConfirmMatchLoverEndpoint:     confirmMatchLoverEndpoint,
-		UnMatchLoverEndpoint:          unMatchLoverEndpoint,
-		GetMatchedLoverEndpoint:       getMatchedLoverEndpoint,
-		InsertPlayerDataEndpoint:      insertPlayerDataEndpoint,
-		GetPlayerDataEndpoint:         getPlayerDataEndpoint,
-		GetUserStateDataEndpoint:      getUserStateDataEndpoint,
-		GetFeedsEndpoint:              getFeedsEndpoint,
-		UpdateBeenLoveEndpoint:        updateBeenLoveEndpoint,
+		HealthCheckEndpoint:             healthCheckEndpoint,
+		RegisterEndpoint:                registerEndpoint,
+		VerifyMailEndpoint:              verifyMailEndpoint,
+		LoginEndpoint:                   loginEndpoint,
+		LogoutEndpoint:                  logoutEndpoint,
+		DeleteUserEndpoint:              deleteUserEndpoint,
+		CancelDeleteUserEndpoint:        cancelDeleteUserEndpoint,
+		ConfirmCancelDeleteUserEndpoint: confirmCancelDeleteUserEndpoint,
+		GetUserEndpoint:                 getUserEndpoint,
+		GetProfileEndpoint:              getProfileEndpoint,
+		UpdateProfileEndpoint:           updateProfileEndpoint,
+		UpdateUserNameEndpoint:          updateUserNameEndpoint,
+		UpdatePasswordEndpoint:          updatePasswordEndpoint,
+		GetForgetPasswordCodeEndpoint:   getForgetPasswordCodeEndpoint,
+		ResetPasswordEndpoint:           resetPasswordEndpoint,
+		GenerateAccessTokenEndpoint:     generateAccessTokenEndpoint,
+		GetVerifyMailCodeEndpoint:       getVerifyMailCodeEndpoint,
+		GetMatchCodeEndpoint:            getMatchCodeEndpoint,
+		MatchLoverEndpoint:              matchLoverEndpoint,
+		ConfirmMatchLoverEndpoint:       confirmMatchLoverEndpoint,
+		UnMatchLoverEndpoint:            unMatchLoverEndpoint,
+		GetMatchedLoverEndpoint:         getMatchedLoverEndpoint,
+		InsertPlayerDataEndpoint:        insertPlayerDataEndpoint,
+		GetPlayerDataEndpoint:           getPlayerDataEndpoint,
+		GetUserStateDataEndpoint:        getUserStateDataEndpoint,
+		GetFeedsEndpoint:                getFeedsEndpoint,
+		UpdateBeenLoveEndpoint:          updateBeenLoveEndpoint,
 	}
 }
 
@@ -276,6 +295,65 @@ func MakeLogoutEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		message := "Logout successfully"
+		return message, nil
+	}
+}
+
+// MakeDeleteUserEndpoint returns an endpoint that invokes DeleteUser on the service.
+func MakeDeleteUserEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.DeleteUserRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
+		err := svc.DeleteUser(ctx, &req)
+
+		if err != nil {
+			cusErr := utils.NewErrorResponse(utils.NotFound)
+			return nil, cusErr
+		}
+		message := "Delete user successfully"
+		return message, nil
+	}
+}
+
+// MakeCancelDeleteUserEndpoint returns an endpoint that invokes CancelDeleteUser on the service.
+func MakeCancelDeleteUserEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.CancelDeleteUserRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
+		err := svc.CancelDeleteUser(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		message := "Send code for cancel delete user successfully. Please check code in your email."
+		return message, nil
+	}
+}
+
+// MakeConfirmCancelDeleteUserEndpoint returns an endpoint that invokes ConfirmCancelDeleteUser on the service.
+func MakeConfirmCancelDeleteUserEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.ConfirmCancelDeleteUserRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		// Change to lower case
+		req.Email = strings.ToLower(req.Email)
+		err := svc.ConfirmCancelDeleteUser(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		message := "Cancel delete user successfully"
 		return message, nil
 	}
 }

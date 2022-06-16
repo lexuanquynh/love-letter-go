@@ -39,13 +39,14 @@ const userSchema = `
 
 // schema for verification table
 const verificationSchema = `
-		create table if not exists verifications (
-			id 		   Varchar(36) not null,
+		create table if not exists verifications (	
 			email 		Varchar(100) not null,
 			code  		Varchar(10) not null,
 			expiresat 	Timestamp not null,
-			type        Varchar(10) not null,		
-			Primary Key (id),
+			type        Varchar(10) not null,	
+		    createdat  Timestamp not null,
+			updatedat  Timestamp not null,		
+		    unique(email, type),
 			Constraint fk_user_email Foreign Key(email) References users(email)
 				On Delete Cascade On Update Cascade
 		)
@@ -91,16 +92,13 @@ const securityUserSchema = `
 
 // schema for limit table
 const limitSchema = `
-		create table if not exists limits (
-			id 		   Varchar(36) not null,
+		create table if not exists limitdata (		
 			userid 	Varchar(36) not null,
-			numofsendmailverify 	   Int default 0,
-			numofsendresetpassword  Int default 0,
-			numofchangepassword Int default 0,
-		    numoflogin 	   Int default 0,
+		    limittype Varchar(10) not null,
+		    numoflimit  Int default 0,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
-			Primary Key (id),
+			unique(userid, limittype),
 			Constraint fk_user_id Foreign Key(userid) References users(id)
 				On Delete Cascade On Update Cascade
 		)
@@ -173,6 +171,33 @@ const playerSchema = `
 		)
 `
 
+// Schema for schedules table
+const scheduleSchema = `
+		create table if not exists schedules (
+			id 		   Varchar(36) not null,
+			userid 	Varchar(36) not null,
+			name 	   Varchar(255) not null,
+		    scheduletype Varchar(36) not null,
+			description Varchar(255) not null,
+			parameter    Varchar(255) null,	
+		    timeexecute  Timestamp not null,
+		    removeafterrun Boolean default false,
+			createdat  Timestamp not null,
+			updatedat  Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
+// id | userid | name | description | parameter | timeexecute | removeafterrun | createdat | updatedat
+// insert dummy data to schedules tables
+//const scheduleDummyData = `
+//		insert into schedules (id, userid, name, scheduletype, description, parameter, timeexecute, removeafterrun, createdat, updatedat) values (
+//			'2', '9133b186-0647-4d97-aab9-8c39e594619d', 'GetMatchLoveDataByUserID', 'annually', 'get match love data by userid', '9133b186-0647-4d97-aab9-8c39e594619d,abc', '2022-06-16 00:00:00', true,  '2020-01-01 00:00:00', '2020-01-01 00:00:00'
+//		)
+//`
+
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
@@ -203,6 +228,8 @@ func main() {
 	db.MustExec(generateMatchCodeSchema)
 	db.MustExec(playerSchema)
 	db.MustExec(userStateSchema)
+	db.MustExec(scheduleSchema)
+	//db.MustExec(scheduleDummyData)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
@@ -219,12 +246,12 @@ func main() {
 	_, err = s.Every(1).Day().At("00:01").Do(func() {
 		logger.Info("Clear limit data for users after 1 day at 00:01.")
 		var ctx = context.Background()
-		err := repository.ClearLimitData(ctx, database.LimitTypeSendVerifyMail)
+		err := repository.ResetLimitData(ctx, database.LimitTypeSendVerifyMail)
 		if err != nil {
 			logger.Error("Error clearing limit send mail data", "error", err)
 		}
 		// Reset limit login for users.
-		err = repository.ClearLimitData(ctx, database.LimitTypeLogin)
+		err = repository.ResetLimitData(ctx, database.LimitTypeLogin)
 		if err != nil {
 			logger.Error("Error clearing limit login data", "error", err)
 		}
@@ -237,12 +264,12 @@ func main() {
 	_, err = s.Every(15).Minute().Do(func() {
 		logger.Info("Clear change password, send pass reset mail limit data for users after 15 minutes.")
 		var ctx = context.Background()
-		err := repository.ClearLimitData(ctx, database.LimitTypeChangePassword)
+		err := repository.ResetLimitData(ctx, database.LimitTypeChangePassword)
 		if err != nil {
 			logger.Error("Error clearing limit change password data", "error", err)
 		}
 		// Limit for send mail get password code reset
-		err = repository.ClearLimitData(ctx, database.LimitTypeSendPassResetMail)
+		err = repository.ResetLimitData(ctx, database.LimitTypeSendPassResetMail)
 		if err != nil {
 			logger.Error("Error clearing limit send mail data", "error", err)
 		}
@@ -250,6 +277,19 @@ func main() {
 	if err != nil {
 		logger.Error("Error scheduling limit data", "error", err)
 	}
+	// Scan schedule in database after 1 minute.
+	_, err = s.Every(1).Minute().Do(func() {
+		logger.Info("Check schedule in database after 1 minute.")
+		var ctx = context.Background()
+		err := repository.RunSchedule(ctx)
+		if err != nil {
+			logger.Error("Error checking schedule", "error", err)
+		}
+	})
+	if err != nil {
+		logger.Error("Error scheduling limit data", "error", err)
+	}
+
 	s.StartAsync()
 
 	// Create rate limiter for users.

@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"github.com/hashicorp/go-hclog"
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
@@ -54,27 +53,28 @@ func (repo *postgresRepository) CheckUsernameExists(ctx context.Context, usernam
 	return count > 0, nil
 }
 
-// StoreVerificationData adds a mail verification data to db
-func (repo *postgresRepository) StoreVerificationData(ctx context.Context, verificationData *VerificationData, isInsert bool) error {
-	if isInsert {
-		id := uuid.NewV4().String()
-		query := "insert into verifications(id, email, code, expiresat, type) values($1, $2, $3, $4, $5)"
-		_, err := repo.db.ExecContext(ctx, query,
-			id,
-			verificationData.Email,
-			verificationData.Code,
-			verificationData.ExpiresAt,
-			verificationData.Type)
-		return err
-	} else {
-		query := "update verifications set code=$1, expiresat=$2, type=$3 where email=$4"
-		_, err := repo.db.ExecContext(ctx, query,
-			verificationData.Code,
-			verificationData.ExpiresAt,
-			verificationData.Type,
-			verificationData.Email)
-		return err
-	}
+//email 		Varchar(100) not null,
+//code  		Varchar(10) not null,
+//expiresat 	Timestamp not null,
+//type        Varchar(10) not null,
+//createdat  Timestamp not null,
+//updatedat  Timestamp not null,
+
+// InsertVerificationData adds a mail verification data to db
+func (repo *postgresRepository) InsertVerificationData(ctx context.Context, verificationData *VerificationData) error {
+	verificationData.CreatedAt = time.Now()
+	verificationData.UpdatedAt = time.Now()
+	query := "insert into verifications (email, code, expiresat, type, createdat, updatedat) values ($1, $2, $3, $4, $5, $6)" +
+		"on conflict (email, type) do update set code = $2, expiresat = $3, updatedat = $6"
+	_, err := repo.db.ExecContext(ctx,
+		query,
+		verificationData.Email,
+		verificationData.Code,
+		verificationData.ExpiresAt,
+		verificationData.Type,
+		verificationData.CreatedAt,
+		verificationData.UpdatedAt)
+	return err
 }
 
 // GetVerificationData retrieves the stored verification code.
@@ -114,8 +114,15 @@ func (repo *postgresRepository) GetUserByID(ctx context.Context, id string) (*Us
 // UpdateUser updates the user with the given id.
 func (repo *postgresRepository) UpdateUser(ctx context.Context, user *User) error {
 	user.UpdatedAt = time.Now()
-	query := "update users set email = $1, username = $2, password = $3, tokenhash = $4, updatedat = $5 where id = $6"
-	_, err := repo.db.ExecContext(ctx, query, user.Email, user.Username, user.Password, user.TokenHash, user.UpdatedAt, user.ID)
+	query := "update users set email = $1, username = $2, password = $3, tokenhash = $4, banned = $5, updatedat = $6 where id = $7"
+	_, err := repo.db.ExecContext(ctx, query, user.Email, user.Username, user.Password, user.TokenHash, user.Banned, user.UpdatedAt, user.ID)
+	return err
+}
+
+// DeleteUser deletes the user with the given id.
+func (repo *postgresRepository) DeleteUser(ctx context.Context, id string) error {
+	query := "delete from users where id = $1"
+	_, err := repo.db.ExecContext(ctx, query, id)
 	return err
 }
 
@@ -205,92 +212,31 @@ func (repo *postgresRepository) InsertListOfPasswords(ctx context.Context, passw
 
 // GetLimitData returns the limit data
 func (repo *postgresRepository) GetLimitData(ctx context.Context, userID string, limitType LimitType) (*LimitData, error) {
-	query := "select * from limits where userid = $1"
+	query := "select * from limitdata where userid = $1 and limittype = $2"
 	limitData := &LimitData{}
-	err := repo.db.GetContext(ctx, limitData, query, userID)
-	if err != nil {
-		if limitType == LimitTypeLogin {
-			limitData.NumOfLogin = 1
-		} else if limitType == LimitTypeSendVerifyMail {
-			limitData.NumOfSendMailVerify = 1
-		} else if limitType == LimitTypeSendPassResetMail {
-			limitData.NumOfSendResetPassword = 1
-		} else if limitType == LimitTypeChangePassword {
-			limitData.NumOfChangePassword = 1
-		}
-	} else {
-		if limitType == LimitTypeLogin {
-			limitData.NumOfLogin += 1
-		} else if limitType == LimitTypeSendVerifyMail {
-			limitData.NumOfSendMailVerify += 1
-		} else if limitType == LimitTypeSendPassResetMail {
-			limitData.NumOfSendResetPassword += 1
-		} else if limitType == LimitTypeChangePassword {
-			limitData.NumOfChangePassword += 1
-		}
-	}
-	limitData.UserID = userID
+	err := repo.db.GetContext(ctx, limitData, query, userID, limitType)
 	return limitData, err
 }
 
-// InsertOrUpdateLimitData updates the limit data
-func (repo *postgresRepository) InsertOrUpdateLimitData(ctx context.Context, limitData *LimitData, limitType LimitType) error {
-	// Check exist or not limit data
-	_, err := repo.GetLimitData(ctx, limitData.UserID, limitType)
-	isInsert := false
-	if err != nil {
-		isInsert = true
-		limitData.ID = uuid.NewV4().String()
-		limitData.CreatedAt = time.Now()
-	}
-
+// InsertLimitData updates the limit data
+func (repo *postgresRepository) InsertLimitData(ctx context.Context, limitData *LimitData) error {
+	limitData.CreatedAt = time.Now()
 	limitData.UpdatedAt = time.Now()
-	// Insert or update
-	if isInsert {
-		// Insert the limit data
-		query := "insert into limits(id, userid, numofsendmailverify, numofsendresetpassword, numofchangepassword, numoflogin, createdat, updatedat) values($1, $2, $3, $4, $5, $6, $7, $8)"
-		_, err := repo.db.ExecContext(ctx, query,
-			limitData.ID,
-			limitData.UserID,
-			limitData.NumOfSendMailVerify,
-			limitData.NumOfSendResetPassword,
-			limitData.NumOfChangePassword,
-			limitData.NumOfLogin,
-			limitData.CreatedAt,
-			limitData.UpdatedAt)
-		return err
-	} else {
-		// Update the limit data
-		query := "update limits set numofsendmailverify = $1, numofsendresetpassword = $2, numofchangepassword = $3, numoflogin = $4, updatedat = $5 where userid = $6"
-		_, err := repo.db.ExecContext(ctx, query,
-			limitData.NumOfSendMailVerify,
-			limitData.NumOfSendResetPassword,
-			limitData.NumOfChangePassword,
-			limitData.NumOfLogin,
-			limitData.UpdatedAt,
-			limitData.UserID)
-		return err
-	}
+	query := "insert into limitdata(userid, limittype, numoflimit, createdat, updatedat) values($1, $2, $3, $4, $5)" +
+		"on conflict (userid, limittype) do update set numoflimit = $3, updatedat = $5"
+	_, err := repo.db.ExecContext(ctx, query,
+		limitData.UserID,
+		limitData.LimitType,
+		limitData.NumOfLimit,
+		limitData.CreatedAt,
+		limitData.UpdatedAt)
+	return err
 }
 
-// ClearLimitData clears the limit data
-func (repo *postgresRepository) ClearLimitData(ctx context.Context, limitType LimitType) error {
-	var query string
-	if limitType == LimitTypeLogin {
-		// Clear all num of login limit
-		query = "update limits set numoflogin = 0"
-	} else if limitType == LimitTypeSendVerifyMail {
-		// Clear all num of send mail limit
-		query = "update limits set numofsendmailverify = 0"
-	} else if limitType == LimitTypeSendPassResetMail {
-		query = "update limits set numofsendresetpassword = 0"
-	} else if limitType == LimitTypeChangePassword {
-		// Clear all num of change password limit
-		query = "update limits set numofchangepassword = 0"
-	} else {
-		return errors.New("limit type is not valid")
-	}
-	_, err := repo.db.ExecContext(ctx, query)
+// ResetLimitData clears the limit data
+func (repo *postgresRepository) ResetLimitData(ctx context.Context, limitType LimitType) error {
+	query := "update limitdata set numoflimit = 0 where limittype = $1"
+	_, err := repo.db.ExecContext(ctx, query, limitType)
 	return err
 }
 
@@ -425,4 +371,108 @@ func (repo *postgresRepository) GetUserStateData(ctx context.Context, userID str
 	var userStateData UserStateData
 	err := repo.db.GetContext(ctx, &userStateData, query, userID, keyString)
 	return &userStateData, err
+}
+
+// RunSchedule runs the schedule
+func (repo *postgresRepository) RunSchedule(ctx context.Context) error {
+	query := "select * from schedules"
+	rows, err := repo.db.QueryContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var schedule Schedule
+		err = rows.Scan(&schedule.ID, &schedule.UserID, &schedule.Name, &schedule.ScheduleType, &schedule.Description, &schedule.Parameter, &schedule.TimeExecute, &schedule.RemoveAfterRun, &schedule.CreatedAt, &schedule.UpdatedAt)
+		if err != nil {
+			return err
+		}
+		repo.logger.Info("schedule id ", schedule.ID+"userid", schedule.UserID+"name", schedule.Name+"description", schedule.Description+"schedule = ", schedule.Name)
+
+		// Check if time execute is today with ScheduleType is annually, run this schedule
+		now := time.Now()
+		needRunSchedule := false
+
+		if schedule.ScheduleType == ScheduleTypeAnnually && now.Month() == schedule.TimeExecute.Month() && now.Day() == schedule.TimeExecute.Day() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == ScheduleTypeDaily && now.Day() == schedule.TimeExecute.Day() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == ScheduleTypeWeekly && now.Weekday() == schedule.TimeExecute.Weekday() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == ScheduleTypeMonthly && now.Month() == schedule.TimeExecute.Month() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == ScheduleTypeHourly && now.Hour() == schedule.TimeExecute.Hour() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == ScheduleTypeMinutely && now.Minute() == schedule.TimeExecute.Minute() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == ScheduleTypeOneTime && now.Unix() >= schedule.TimeExecute.Unix() {
+			needRunSchedule = true
+		}
+
+		if needRunSchedule {
+			// execute the func by schedule name here
+			switch schedule.Name {
+			case ScheduleActionTypeDeleteUser:
+				// read params from schedule here
+				//params := strings.Split(schedule.Parameter, ",")
+				//if len(params) < 2 {
+				//	repo.logger.Error("error running schedule ", schedule.Name, "params not correct")
+				//	return errors.New("params not correct")
+				//}
+				//userID := params[1]
+				// Delete user here
+				userID := schedule.UserID
+				err = repo.DeleteUser(ctx, userID)
+				if err != nil {
+					repo.logger.Error("error running schedule ", schedule.Name, err)
+					return err
+				}
+			}
+			// check if need remove schedule after run
+			if schedule.RemoveAfterRun {
+				query := "delete from schedules where id = $1"
+				_, err = repo.db.ExecContext(ctx, query, schedule.ID)
+				if err != nil {
+					repo.logger.Error("error remove after run schedule ", schedule.Name, err)
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// InsertSchedule sets the schedule
+func (repo *postgresRepository) InsertSchedule(ctx context.Context, schedule *Schedule) error {
+	schedule.CreatedAt = time.Now()
+	schedule.UpdatedAt = time.Now()
+	query := "insert into schedules(id, userid, name, scheduletype, description, parameter, timeexecute, removeafterrun, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
+	_, err := repo.db.ExecContext(ctx, query,
+		schedule.ID,
+		schedule.UserID,
+		schedule.Name,
+		schedule.ScheduleType,
+		schedule.Description,
+		schedule.Parameter,
+		schedule.TimeExecute,
+		schedule.RemoveAfterRun,
+		schedule.CreatedAt,
+		schedule.UpdatedAt)
+	return err
+}
+
+// DeleteSchedule deletes the schedule
+func (repo *postgresRepository) DeleteSchedule(ctx context.Context, userID string, name string) error {
+	query := "delete from schedules where userid = $1 and name = $2"
+	_, err := repo.db.ExecContext(ctx, query, userID, name)
+	return err
+}
+
+// GetSchedule returns the schedule
+func (repo *postgresRepository) GetSchedule(ctx context.Context, userID string, name string) (*Schedule, error) {
+	query := "select * from schedules where userid = $1 and name = $2"
+	var schedule Schedule
+	err := repo.db.GetContext(ctx, &schedule, query, userID, name)
+	return &schedule, err
 }

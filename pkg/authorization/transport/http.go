@@ -46,6 +46,26 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	m.Handle("/delete-user", httptransport.NewServer(
+		ep.DeleteUserEndpoint,
+		decodeHTTPDeleteUserRequest,
+		encodeResponse,
+		options...,
+	))
+	m.Handle("/cancel-delete-user", httptransport.NewServer(
+		ep.CancelDeleteUserEndpoint,
+		decodeHTTPCancelDeleteUserRequest,
+		encodeResponse,
+		options...,
+	))
+
+	m.Handle("/confirm-cancel-delete-user", httptransport.NewServer(
+		ep.ConfirmCancelDeleteUserEndpoint,
+		decodeHTTPConfirmCancelDeleteUserRequest,
+		encodeResponse,
+		options...,
+	))
+
 	m.Handle("/get-user", httptransport.NewServer(
 		ep.GetUserEndpoint,
 		decodeHTTPGetUserRequest,
@@ -256,6 +276,64 @@ func decodeHTTPLogoutRequest(_ context.Context, r *http.Request) (interface{}, e
 		}
 		if req.RefreshToken == "" {
 			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPDeleteUserRequest decode request
+func decodeHTTPDeleteUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.DeleteUserRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.RefreshToken == "" {
+			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPCancelDeleteUserRequest decode request
+func decodeHTTPCancelDeleteUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.CancelDeleteUserRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+
+		}
+		if req.Email == "" {
+			return nil, utils.NewErrorResponse(utils.MailRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPConfirmCancelDeleteUserRequest decode request
+func decodeHTTPConfirmCancelDeleteUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.ConfirmCancelDeleteUserRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.Email == "" {
+			return nil, utils.NewErrorResponse(utils.MailRequired)
+		}
+		if req.Code == "" {
+			return nil, utils.NewErrorResponse(utils.CodeRequired)
 		}
 		return req, nil
 	} else {
