@@ -221,6 +221,29 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		encodeResponse,
 		options...,
 	))
+	// create letter
+	m.Handle("/create-letter", httptransport.NewServer(
+		ep.CreateLetterEndpoint,
+		decodeHTTPCreateLetterRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// delete letter
+	m.Handle("/delete-letter", httptransport.NewServer(
+		ep.DeleteLetterEndpoint,
+		decodeHTTPDeleteLetterRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// get letters
+	m.Handle("/get-letters", httptransport.NewServer(
+		ep.GetLettersEndpoint,
+		decodeHTTPGetLettersRequest,
+		encodeResponse,
+		options...,
+	))
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
@@ -816,6 +839,60 @@ func decodeHTTPComparePasscodeRequest(_ context.Context, r *http.Request) (inter
 		}
 		if req.PassCode == "" {
 			return nil, utils.NewErrorResponse(utils.PassCodeRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPCreateLetterRequest decode request
+func decodeHTTPCreateLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.CreateLetterRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPDeleteLetterRequest decode request
+func decodeHTTPDeleteLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.DeleteLetterRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetLettersRequest decode request
+func decodeHTTPGetLettersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetLettersRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {

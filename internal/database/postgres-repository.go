@@ -469,3 +469,39 @@ func (repo *postgresRepository) GetSchedule(ctx context.Context, userID string, 
 	err := repo.db.GetContext(ctx, &schedule, query, userID, name)
 	return &schedule, err
 }
+
+// CreateLetter create letter
+func (repo *postgresRepository) CreateLetter(ctx context.Context, letter *Letter) error {
+	letter.ID = uuid.NewV4().String()
+	letter.CreatedAt = time.Now()
+	letter.UpdatedAt = time.Now()
+	query := "insert into letters(id, userid, title, body, isread, isdelete, timeopen, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8, $9)" +
+		"on conflict (id) do update set userid = $2, title = $3, body = $4, isread = $5, isdelete = $6, timeopen = $7, createdat = $8, updatedat = $9"
+	_, err := repo.db.ExecContext(ctx, query,
+		letter.ID,
+		letter.UserID,
+		letter.Title,
+		letter.Body,
+		letter.IsRead,
+		letter.IsDelete,
+		letter.TimeOpen,
+		letter.CreatedAt,
+		letter.UpdatedAt)
+	return err
+}
+
+// DeleteLetter delete letter
+func (repo *postgresRepository) DeleteLetter(ctx context.Context, userID string, letterID string) error {
+	query := "delete from letters where userid = $1 and id = $2"
+	_, err := repo.db.ExecContext(ctx, query, userID, letterID)
+	return err
+}
+
+// GetLetters Get letters by user id and page. maximum by pageSize letters, default is 10
+func (repo *postgresRepository) GetLetters(ctx context.Context, userID string, page int, pageSize int) ([]Letter, error) {
+	query := "select * from letters where userid = $1 order by timeopen desc limit $2 offset $3"
+	var letters []Letter
+	err := repo.db.SelectContext(ctx, &letters, query, userID, pageSize, page*pageSize)
+	return letters, err
+}

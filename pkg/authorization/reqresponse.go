@@ -306,3 +306,23 @@ type ComparePassCodeRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	PassCode    string `json:"pass_code" validate:"required"`
 }
+
+// CreateLetterRequest is used to create letter
+type CreateLetterRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Title       string `json:"title" validate:"required"`
+	Body        string `json:"body" validate:"required"`
+}
+
+// DeleteLetterRequest is used to delete letter
+type DeleteLetterRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	LetterID    string `json:"letter_id" validate:"required"`
+}
+
+// GetLettersRequest is used to get letters
+type GetLettersRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Page        int    `json:"page"`
+	Limit       int    `json:"limit" validate:"required"`
+}

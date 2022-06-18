@@ -44,6 +44,9 @@ type Set struct {
 	CheckPassCodeStatusEndpoint     endpoint.Endpoint
 	SetPassCodeEndpoint             endpoint.Endpoint
 	ComparePassCodeEndpoint         endpoint.Endpoint
+	CreateLetterEndpoint            endpoint.Endpoint
+	DeleteLetterEndpoint            endpoint.Endpoint
+	GetLettersEndpoint              endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -198,6 +201,21 @@ func NewEndpointSet(svc authorization.Service,
 	comparePassCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(comparePassCodeEndpoint)
 	comparePassCodeEndpoint = middleware.ValidateAccessToken(auth, r, logger)(comparePassCodeEndpoint)
 
+	createLetterEndpoint := MakeCreateLetterEndpoint(svc)
+	createLetterEndpoint = middleware.RateLimitRequest(tb, logger)(createLetterEndpoint)
+	createLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(createLetterEndpoint)
+	createLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(createLetterEndpoint)
+
+	deleteLetterEndpoint := MakeDeleteLetterEndpoint(svc)
+	deleteLetterEndpoint = middleware.RateLimitRequest(tb, logger)(deleteLetterEndpoint)
+	deleteLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(deleteLetterEndpoint)
+	deleteLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(deleteLetterEndpoint)
+
+	getLettersEndpoint := MakeGetLettersEndpoint(svc)
+	getLettersEndpoint = middleware.RateLimitRequest(tb, logger)(getLettersEndpoint)
+	getLettersEndpoint = middleware.ValidateParamRequest(validator, logger)(getLettersEndpoint)
+	getLettersEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getLettersEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:             healthCheckEndpoint,
 		RegisterEndpoint:                registerEndpoint,
@@ -230,6 +248,9 @@ func NewEndpointSet(svc authorization.Service,
 		CheckPassCodeStatusEndpoint:     checkPassCodeStatusEndpoint,
 		SetPassCodeEndpoint:             setPassCodeEndpoint,
 		ComparePassCodeEndpoint:         comparePassCodeEndpoint,
+		CreateLetterEndpoint:            createLetterEndpoint,
+		DeleteLetterEndpoint:            deleteLetterEndpoint,
+		GetLettersEndpoint:              getLettersEndpoint,
 	}
 }
 
@@ -760,6 +781,54 @@ func MakeComparePassCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		response, err := svc.ComparePassCode(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeCreateLetterEndpoint returns an endpoint that invokes CreateLetter on the service.
+func MakeCreateLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.CreateLetterRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.CreateLetter(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeDeleteLetterEndpoint returns an endpoint that invokes DeleteLetter on the service.
+func MakeDeleteLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.DeleteLetterRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.DeleteLetter(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetLettersEndpoint returns an endpoint that invokes GetLetters on the service.
+func MakeGetLettersEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetLettersRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetLetters(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

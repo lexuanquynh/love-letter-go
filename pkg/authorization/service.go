@@ -35,4 +35,7 @@ type Service interface {
 	CheckPassCodeStatus(ctx context.Context) (interface{}, error)
 	SetPassCode(ctx context.Context, request *SetPassCodeRequest) (interface{}, error)
 	ComparePassCode(ctx context.Context, request *ComparePassCodeRequest) (interface{}, error)
+	CreateLetter(ctx context.Context, request *CreateLetterRequest) (interface{}, error)
+	DeleteLetter(ctx context.Context, request *DeleteLetterRequest) (interface{}, error)
+	GetLetters(ctx context.Context, request *GetLettersRequest) (interface{}, error)
 }

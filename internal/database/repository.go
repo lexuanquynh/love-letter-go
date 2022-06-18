@@ -68,4 +68,10 @@ type UserRepository interface {
 	DeleteSchedule(ctx context.Context, userID string, name string) error
 	// GetSchedule Get schedule
 	GetSchedule(ctx context.Context, userID string, name string) (*Schedule, error)
+	// CreateLetter Create letter
+	CreateLetter(ctx context.Context, letter *Letter) error
+	// DeleteLetter Delete letter
+	DeleteLetter(ctx context.Context, userID string, letterID string) error
+	// GetLetters Get letters by user id and page. maximum by pageSize letters, default is 10
+	GetLetters(ctx context.Context, userID string, page int, maximum int) ([]Letter, error)
 }

@@ -197,6 +197,31 @@ const scheduleSchema = `
 		)
 `
 
+//AccessToken string `json:"access_token" validate:"required"`
+//Title       string `json:"title" validate:"required"`
+//Body        string `json:"body" validate:"required"`
+//IsRead      bool   `json:"is_read"`
+//IsDelete    bool   `json:"is_delete"`
+//TimeOpen    string `json:"time_open" validate:"required"`
+
+// schema for letter table
+const letterSchema = `
+		create table if not exists letters (
+			id 		   	Varchar(36) not null,
+			userid 		Varchar(36) not null,
+			title 	  	Varchar(255) not null,
+		    body 	  	Varchar(10000) not null,
+		    isread 		Boolean default false,
+		    isdelete 	Boolean default false,
+		    timeopen 	Timestamp not null,			
+			createdat  	Timestamp not null,
+			updatedat  	Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
@@ -228,6 +253,7 @@ func main() {
 	db.MustExec(playerSchema)
 	db.MustExec(userStateSchema)
 	db.MustExec(scheduleSchema)
+	db.MustExec(letterSchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

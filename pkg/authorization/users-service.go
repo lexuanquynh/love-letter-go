@@ -1970,3 +1970,83 @@ func (s *userService) ComparePassCode(ctx context.Context, request *ComparePassC
 	response := map[string]interface{}{"isCorrect": isCorrect}
 	return response, nil
 }
+
+// CreateLetter create letter
+func (s *userService) CreateLetter(ctx context.Context, request *CreateLetterRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Create letter
+	letter := &database.Letter{
+		UserID: user.ID,
+		Title:  request.Title,
+		Body:   request.Body,
+	}
+	err = s.repo.CreateLetter(ctx, letter)
+	if err != nil {
+		s.logger.Error("Cannot create letter", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Create letter success
+	s.logger.Info("Create letter success")
+	return "Create letter success", nil
+}
+
+// DeleteLetter delete letter
+func (s *userService) DeleteLetter(ctx context.Context, request *DeleteLetterRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Delete letter
+	err = s.repo.DeleteLetter(ctx, user.ID, request.LetterID)
+	if err != nil {
+		s.logger.Error("Cannot delete letter", "error", err)
+		cusErr := utils.NewErrorResponse(utils.NotFound)
+		return nil, cusErr
+	}
+	// Delete letter success
+	s.logger.Info("Delete letter success")
+	return "Delete letter success", nil
+}
+
+// GetLetters get letters
+func (s *userService) GetLetters(ctx context.Context, request *GetLettersRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get letters
+	letters, err := s.repo.GetLetters(ctx, user.ID, request.Page, request.Limit)
+	if err != nil {
+		s.logger.Error("Cannot get letters", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Get letters success
+	s.logger.Info("Get letters success")
+	return letters, nil
+}
