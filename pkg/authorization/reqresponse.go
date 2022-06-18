@@ -256,6 +256,17 @@ type GetUserStateDataRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 }
 
+// SetUserStateDataRequest is used to set user state data
+type SetUserStateDataRequest struct {
+	KeyString   string  `json:"key" validate:"required"`
+	AccessToken string  `json:"access_token" validate:"required"`
+	StringValue string  `json:"string_value"`
+	IntValue    int     `json:"int_value"`
+	BoolValue   bool    `json:"bool_value"`
+	FloatValue  float64 `json:"float_value"`
+	TimeValue   string  `json:"time_value"`
+}
+
 // GetUserStateDataResponse is the response for get user state data
 type GetUserStateDataResponse struct {
 	UserID      string    `json:"user_id"`
@@ -282,4 +293,16 @@ type UpdateBeenLoveRequest struct {
 	Gender      int    `json:"gender" validate:"required"`
 	Birthday    string `json:"birthday" validate:"required"`
 	StartDate   string `json:"start_date" validate:"required"`
+}
+
+// SetPassCodeRequest is used to set new passcode
+type SetPassCodeRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	PassCode    string `json:"pass_code" validate:"required"`
+}
+
+// ComparePassCodeRequest is used to compare passcode
+type ComparePassCodeRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	PassCode    string `json:"pass_code" validate:"required"`
 }

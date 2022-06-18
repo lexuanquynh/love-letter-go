@@ -1680,6 +1680,58 @@ func (s *userService) GetUserStateData(ctx context.Context, request *GetUserStat
 	return response, nil
 }
 
+// SetUserStateData set user state data
+func (s *userService) SetUserStateData(ctx context.Context, request *SetUserStateDataRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+
+	var timeValue time.Time
+
+	if request.TimeValue != "" {
+		timeValue, err = time.Parse("2006-01-02", request.TimeValue)
+		if err != nil {
+			s.logger.Error("Cannot parse birthday", "error", err)
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+	}
+
+	// Set user state data
+	setUserStateData := database.UserStateData{
+		UserID:      user.ID,
+		KeyString:   request.KeyString,
+		StringValue: request.StringValue,
+		IntValue:    request.IntValue,
+		FloatValue:  request.FloatValue,
+		BoolValue:   request.BoolValue,
+		TimeValue:   timeValue,
+	}
+	err = s.repo.InsertUserStateData(ctx, &setUserStateData)
+	if err != nil {
+		s.logger.Error("Cannot set user state data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	s.logger.Debug("Successfully set user state data")
+	return nil, nil
+}
+
 // GetFeeds get feeds
 func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
@@ -1869,4 +1921,146 @@ func (s *userService) UpdateBeenLove(ctx context.Context, request *UpdateBeenLov
 	// Update been love success
 	s.logger.Info("Update been love success")
 	return matchLove, nil
+}
+
+// CheckPassCodeStatus check pass code status
+func (s *userService) CheckPassCodeStatus(ctx context.Context) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	passCodeStatus := true
+	if len(user.PassCode) == 0 {
+		// If user not have pass code, return false
+		passCodeStatus = false
+	}
+	response := map[string]interface{}{"passCodeStatus": passCodeStatus}
+	return response, nil
+}
+
+// SetPassCode set pass code
+func (s *userService) SetPassCode(ctx context.Context, request *SetPassCodeRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	// // Hash passcode before saving
+	passCode, err := utils.HashString(request.PassCode)
+	if err != nil {
+		s.logger.Error("Cannot hash passcode", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Update pass code by InsertUser API
+	user.PassCode = passCode
+	err = s.repo.UpdateUser(ctx, user)
+	if err != nil {
+		s.logger.Error("Cannot update user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Update pass code success
+	s.logger.Info("Update pass code success")
+	return "Update pass code success", nil
+}
+
+// ComparePassCode compare pass code
+func (s *userService) ComparePassCode(ctx context.Context, request *ComparePassCodeRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot get user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+
+	// Get limit data
+	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeComparePassCode)
+	if err != nil {
+		s.logger.Error("Empty row get limit data", "error", err)
+	}
+	// Check if limit is reached
+	if limitData.NumOfLimit >= s.configs.CheckPassCodeLimit {
+		s.logger.Error("Verify Mail limit reached", "error", err)
+		cusErr := utils.NewErrorResponse(utils.TooManyRequests)
+		return cusErr.Error(), cusErr
+	}
+	// Update limit data
+	limitData.UserID = user.ID
+	limitData.LimitType = database.LimitTypeComparePassCode
+	limitData.NumOfLimit = limitData.NumOfLimit + 1
+	err = s.repo.InsertLimitData(ctx, limitData)
+	if err != nil {
+		s.logger.Error("Cannot insert or update limit data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+
+	isCorrect := true
+	// Check if user have pass code
+	if len(user.PassCode) == 0 {
+		s.logger.Error("User not have pass code", "error", err)
+		isCorrect = false
+	}
+	// Check if passcode is correct
+	if isSame := s.auth.ComparePassword(user.PassCode, request.PassCode); !isSame {
+		s.logger.Error("Password is incorrect", "error", err)
+		isCorrect = false
+	}
+
+	// Reset limit data
+	if isCorrect {
+		limitData.UserID = user.ID
+		limitData.LimitType = database.LimitTypeComparePassCode
+		limitData.NumOfLimit = 0
+		err = s.repo.InsertLimitData(ctx, limitData)
+		if err != nil {
+			s.logger.Error("Cannot insert or update limit data", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr.Error(), cusErr
+		}
+	}
+
+	// Return response
+	response := map[string]interface{}{"isCorrect": isCorrect}
+	return response, nil
 }

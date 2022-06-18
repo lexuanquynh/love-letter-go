@@ -28,6 +28,7 @@ const userSchema = `
 			email 	   Varchar(100) not null unique,
 			username   Varchar(225),
 			password   Varchar(225) not null,
+		    passcode   Varchar(225) default '',
 			tokenhash  Varchar(15) not null,
 			verified   Boolean default false,
 		    banned     Boolean default false,
@@ -116,8 +117,11 @@ const matchLoveSchema = `
 		    startdate   Timestamp not null,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
-			unique(userid1, userid2)
-			
+			unique(userid1, userid2),
+			Constraint fk_user_id1 Foreign Key(userid1) References users(id)
+				On Delete Cascade On Update Cascade,
+		    Constraint fk_user_id2 Foreign Key(userid2) References users(id)
+				On Delete Cascade On Update Cascade
 		)
 `
 
@@ -148,7 +152,9 @@ const userStateSchema = `
 			timevalue 		Timestamp null,
 			createdat  		Timestamp not null,
 			updatedat   	Timestamp not null,
-		    unique(userid, keystring)			
+		    unique(userid, keystring),
+		    Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
 		)
 `
 
@@ -190,14 +196,6 @@ const scheduleSchema = `
 		)
 `
 
-// id | userid | name | description | parameter | timeexecute | removeafterrun | createdat | updatedat
-// insert dummy data to schedules tables
-//const scheduleDummyData = `
-//		insert into schedules (id, userid, name, scheduletype, description, parameter, timeexecute, removeafterrun, createdat, updatedat) values (
-//			'2', '9133b186-0647-4d97-aab9-8c39e594619d', 'GetMatchLoveDataByUserID', 'annually', 'get match love data by userid', '9133b186-0647-4d97-aab9-8c39e594619d,abc', '2022-06-16 00:00:00', true,  '2020-01-01 00:00:00', '2020-01-01 00:00:00'
-//		)
-//`
-
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
@@ -229,7 +227,6 @@ func main() {
 	db.MustExec(playerSchema)
 	db.MustExec(userStateSchema)
 	db.MustExec(scheduleSchema)
-	//db.MustExec(scheduleDummyData)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.
@@ -273,12 +270,17 @@ func main() {
 		if err != nil {
 			logger.Error("Error clearing limit send mail data", "error", err)
 		}
+		// Limit for compare passcode
+		err = repository.ResetLimitData(ctx, database.LimitTypeComparePassCode)
+		if err != nil {
+			logger.Error("Error clearing limit compare passcode data", "error", err)
+		}
 	})
 	if err != nil {
 		logger.Error("Error scheduling limit data", "error", err)
 	}
-	// Scan schedule in database after 1 minute.
-	_, err = s.Every(1).Minute().Do(func() {
+	// Scan schedule in database after 1 hours.
+	_, err = s.Every(1).Hour().Do(func() {
 		logger.Info("Check schedule in database after 1 minute.")
 		var ctx = context.Background()
 		err := repository.RunSchedule(ctx)

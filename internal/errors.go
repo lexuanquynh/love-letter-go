@@ -54,6 +54,7 @@ const (
 	KeyStringRequired              = 34
 	UserIDRequired                 = 35
 	AccountIsNotNeedToCancelDelete = 36
+	PassCodeRequired               = 37
 )
 
 func (e ErrorResponse) Error() string {
@@ -148,6 +149,8 @@ func (e ErrorResponse) Error() string {
 		return "user id required"
 	case AccountIsNotNeedToCancelDelete:
 		return "account is not need to cancel delete"
+	case PassCodeRequired:
+		return "pass code required"
 	default:
 		return "Unknown Error"
 	}

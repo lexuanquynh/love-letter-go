@@ -29,6 +29,10 @@ type Service interface {
 	InsertPlayerData(ctx context.Context, request *InsertPlayerDataRequest) error
 	GetPlayerData(ctx context.Context) (interface{}, error)
 	GetUserStateData(ctx context.Context, request *GetUserStateDataRequest) (interface{}, error)
+	SetUserStateData(ctx context.Context, request *SetUserStateDataRequest) (interface{}, error)
 	GetFeeds(ctx context.Context) (interface{}, error)
 	UpdateBeenLove(ctx context.Context, request *UpdateBeenLoveRequest) (interface{}, error)
+	CheckPassCodeStatus(ctx context.Context) (interface{}, error)
+	SetPassCode(ctx context.Context, request *SetPassCodeRequest) (interface{}, error)
+	ComparePassCode(ctx context.Context, request *ComparePassCodeRequest) (interface{}, error)
 }

@@ -19,6 +19,7 @@ const (
 	LimitTypeSendPassResetMail
 	LimitTypeChangePassword
 	LimitTypeCancelDeleteUser
+	LimitTypeComparePassCode
 )
 
 // Type of verification data
@@ -78,11 +79,11 @@ type PlayerData struct {
 type UserStateData struct {
 	UserID      string    `json:"userid" sql:"userid"`
 	KeyString   string    `json:"keystring" sql:"keystring"`
-	StringValue string    `json:"stringvalue" sql:"stringvalue"`
-	IntValue    int       `json:"intvalue" sql:"intvalue"`
-	BoolValue   bool      `json:"boolvalue" sql:"boolvalue"`
-	FloatValue  float64   `json:"floatvalue" sql:"floatvalue"`
-	TimeValue   time.Time `json:"timevalue" sql:"timevalue"`
+	StringValue string    `json:"string_value" sql:"stringvalue"`
+	IntValue    int       `json:"int_value" sql:"intvalue"`
+	BoolValue   bool      `json:"bool_value" sql:"boolvalue"`
+	FloatValue  float64   `json:"float_value" sql:"floatvalue"`
+	TimeValue   time.Time `json:"time_value" sql:"timevalue"`
 	CreatedAt   time.Time `json:"createdat" sql:"createdat"`
 	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
 }
@@ -121,4 +122,8 @@ const (
 
 const (
 	ScheduleActionTypeDeleteUser = "deleteuser"
+)
+
+const (
+	UserStateTypePassCode = "PASSCODE"
 )

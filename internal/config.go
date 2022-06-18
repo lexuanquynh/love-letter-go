@@ -36,6 +36,7 @@ type Configurations struct {
 	SendMailResetPasswordLimit int    `mapstructure:"SEND_MAIL_RESET_PASSWORD_LIMIT"`
 	SendMailCancelDeleteLimit  int    `mapstructure:"SEND_MAIL_CANCEL_DELETE_LIMIT"`
 	LoginLimit                 int    `mapstructure:"LOGIN_LIMIT"`
+	CheckPassCodeLimit         int    `mapstructure:"CHECK_PASS_CODE_LIMIT"`
 	OneSignalAppId             string `mapstructure:"ONE_SIGNAL_APP_ID"`
 	OneSignalAPIKey            string `mapstructure:"ONE_SIGNAL_API_KEY"`
 }

@@ -38,8 +38,12 @@ type Set struct {
 	InsertPlayerDataEndpoint        endpoint.Endpoint
 	GetPlayerDataEndpoint           endpoint.Endpoint
 	GetUserStateDataEndpoint        endpoint.Endpoint
+	SetUserStateDataEndpoint        endpoint.Endpoint
 	GetFeedsEndpoint                endpoint.Endpoint
 	UpdateBeenLoveEndpoint          endpoint.Endpoint
+	CheckPassCodeStatusEndpoint     endpoint.Endpoint
+	SetPassCodeEndpoint             endpoint.Endpoint
+	ComparePassCodeEndpoint         endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -164,6 +168,11 @@ func NewEndpointSet(svc authorization.Service,
 	getUserStateDataEndpoint = middleware.ValidateParamRequest(validator, logger)(getUserStateDataEndpoint)
 	getUserStateDataEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getUserStateDataEndpoint)
 
+	setUserStateDataEndpoint := SetUserStateDataEndpoint(svc)
+	setUserStateDataEndpoint = middleware.RateLimitRequest(tb, logger)(setUserStateDataEndpoint)
+	setUserStateDataEndpoint = middleware.ValidateParamRequest(validator, logger)(setUserStateDataEndpoint)
+	setUserStateDataEndpoint = middleware.ValidateAccessToken(auth, r, logger)(setUserStateDataEndpoint)
+
 	getFeedsEndpoint := MakeGetFeedsEndpoint(svc)
 	getFeedsEndpoint = middleware.RateLimitRequest(tb, logger)(getFeedsEndpoint)
 	getFeedsEndpoint = middleware.ValidateParamRequest(validator, logger)(getFeedsEndpoint)
@@ -173,6 +182,21 @@ func NewEndpointSet(svc authorization.Service,
 	updateBeenLoveEndpoint = middleware.RateLimitRequest(tb, logger)(updateBeenLoveEndpoint)
 	updateBeenLoveEndpoint = middleware.ValidateParamRequest(validator, logger)(updateBeenLoveEndpoint)
 	updateBeenLoveEndpoint = middleware.ValidateAccessToken(auth, r, logger)(updateBeenLoveEndpoint)
+
+	checkPassCodeStatusEndpoint := MakeCheckPassCodeStatusEndpoint(svc)
+	checkPassCodeStatusEndpoint = middleware.RateLimitRequest(tb, logger)(checkPassCodeStatusEndpoint)
+	checkPassCodeStatusEndpoint = middleware.ValidateParamRequest(validator, logger)(checkPassCodeStatusEndpoint)
+	checkPassCodeStatusEndpoint = middleware.ValidateAccessToken(auth, r, logger)(checkPassCodeStatusEndpoint)
+
+	setPassCodeEndpoint := MakeSetPassCodeEndpoint(svc)
+	setPassCodeEndpoint = middleware.RateLimitRequest(tb, logger)(setPassCodeEndpoint)
+	setPassCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(setPassCodeEndpoint)
+	setPassCodeEndpoint = middleware.ValidateAccessToken(auth, r, logger)(setPassCodeEndpoint)
+
+	comparePassCodeEndpoint := MakeComparePassCodeEndpoint(svc)
+	comparePassCodeEndpoint = middleware.RateLimitRequest(tb, logger)(comparePassCodeEndpoint)
+	comparePassCodeEndpoint = middleware.ValidateParamRequest(validator, logger)(comparePassCodeEndpoint)
+	comparePassCodeEndpoint = middleware.ValidateAccessToken(auth, r, logger)(comparePassCodeEndpoint)
 
 	return Set{
 		HealthCheckEndpoint:             healthCheckEndpoint,
@@ -200,8 +224,12 @@ func NewEndpointSet(svc authorization.Service,
 		InsertPlayerDataEndpoint:        insertPlayerDataEndpoint,
 		GetPlayerDataEndpoint:           getPlayerDataEndpoint,
 		GetUserStateDataEndpoint:        getUserStateDataEndpoint,
+		SetUserStateDataEndpoint:        setUserStateDataEndpoint,
 		GetFeedsEndpoint:                getFeedsEndpoint,
 		UpdateBeenLoveEndpoint:          updateBeenLoveEndpoint,
+		CheckPassCodeStatusEndpoint:     checkPassCodeStatusEndpoint,
+		SetPassCodeEndpoint:             setPassCodeEndpoint,
+		ComparePassCodeEndpoint:         comparePassCodeEndpoint,
 	}
 }
 
@@ -643,6 +671,22 @@ func GetUserStateDataEndpoint(svc authorization.Service) endpoint.Endpoint {
 	}
 }
 
+// SetUserStateDataEndpoint returns an endpoint that invokes SetUserStateData on the service.
+func SetUserStateDataEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.SetUserStateDataRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		_, err := svc.SetUserStateData(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return "successfully set user state data", nil
+	}
+}
+
 // MakeGetFeedsEndpoint returns an endpoint that invokes GetFeed on the service.
 func MakeGetFeedsEndpoint(svc authorization.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
@@ -668,6 +712,54 @@ func MakeUpdateBeenLoveEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		response, err := svc.UpdateBeenLove(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeCheckPassCodeStatusEndpoint returns an endpoint that invokes CheckPassCodeStatus on the service.
+func MakeCheckPassCodeStatusEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_, ok := request.(authorization.CommonAuthorizationRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.CheckPassCodeStatus(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeSetPassCodeEndpoint returns an endpoint that invokes SetPassCode on the service.
+func MakeSetPassCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.SetPassCodeRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.SetPassCode(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeComparePassCodeEndpoint returns an endpoint that invokes ComparePassCode on the service.
+func MakeComparePassCodeEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.ComparePassCodeRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.ComparePassCode(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

@@ -175,6 +175,13 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	m.Handle("/set-user-state", httptransport.NewServer(
+		ep.SetUserStateDataEndpoint,
+		decodeHTTPSetUserStateDataRequest,
+		encodeResponse,
+		options...,
+	))
+
 	// Get feeds
 	m.Handle("/get-feeds", httptransport.NewServer(
 		ep.GetFeedsEndpoint,
@@ -187,6 +194,30 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 	m.Handle("/update-been-love", httptransport.NewServer(
 		ep.UpdateBeenLoveEndpoint,
 		decodeHTTPUpdateBeenLoveRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// Check passcode status
+	m.Handle("/check-passcode-status", httptransport.NewServer(
+		ep.CheckPassCodeStatusEndpoint,
+		decodeHTTPCheckPasscodeStatusRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// Set passcode
+	m.Handle("/set-passcode", httptransport.NewServer(
+		ep.SetPassCodeEndpoint,
+		decodeHTTPSetPasscodeRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// Compare passcode
+	m.Handle("/compare-passcode", httptransport.NewServer(
+		ep.ComparePassCodeEndpoint,
+		decodeHTTPComparePasscodeRequest,
 		encodeResponse,
 		options...,
 	))
@@ -675,6 +706,28 @@ func decodeHTTPGetUserStateDataRequest(_ context.Context, r *http.Request) (inte
 	}
 }
 
+// decodeHTTPSetUserStateDataRequest decode request
+func decodeHTTPSetUserStateDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.SetUserStateDataRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		if req.KeyString == "" {
+			return nil, utils.NewErrorResponse(utils.KeyStringRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+
+}
+
 // decodeHTTPGetFeedsRequest decode request
 func decodeHTTPGetFeedsRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
@@ -703,6 +756,66 @@ func decodeHTTPUpdateBeenLoveRequest(_ context.Context, r *http.Request) (interf
 		}
 		if req.AccessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPCheckPasscodeStatusRequest decode request
+func decodeHTTPCheckPasscodeStatusRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.CommonAuthorizationRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPSetPasscodeRequest decode request
+func decodeHTTPSetPasscodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.SetPassCodeRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		if req.PassCode == "" {
+			return nil, utils.NewErrorResponse(utils.PassCodeRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPComparePasscodeRequest decode request
+func decodeHTTPComparePasscodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.ComparePassCodeRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		if req.PassCode == "" {
+			return nil, utils.NewErrorResponse(utils.PassCodeRequired)
 		}
 		return req, nil
 	} else {
