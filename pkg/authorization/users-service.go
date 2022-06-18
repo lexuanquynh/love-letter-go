@@ -6,7 +6,6 @@ import (
 	"LoveLetterProject/pkg/authorization/middleware"
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/OneSignal/onesignal-go-client"
 	"github.com/hashicorp/go-hclog"
@@ -305,25 +304,56 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 	return loginResponse, nil
 }
 
-// Logout user. Make refreshToken invalid.
-func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error {
+func (s *userService) commonCheckUserStatus(ctx context.Context, email string) (*database.User, error) {
 	// Get user from database
-	user, err := s.repo.GetUserByEmail(ctx, request.Email)
+	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		s.logger.Error("Error getting user", "error", err)
 		if strings.Contains(err.Error(), utils.PgNoRowsMsg) {
 			cusErr := utils.NewErrorResponse(utils.NotFound)
-			return cusErr
+			return nil, cusErr
 		}
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
+		return nil, cusErr
 	}
 
 	// Check if user is banned
 	if user.Banned {
 		s.logger.Error("User is banned", "error", err)
 		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr
+		return nil, cusErr
+	}
+	return user, nil
+}
+
+func (s *userService) commonCheckUserStatusByUserId(ctx context.Context, userID string) (*database.User, error) {
+	// Get user from database
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		s.logger.Error("Error getting user", "error", err)
+		if strings.Contains(err.Error(), utils.PgNoRowsMsg) {
+			cusErr := utils.NewErrorResponse(utils.NotFound)
+			return nil, cusErr
+		}
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+
+	// Check if user is banned
+	if user.Banned {
+		s.logger.Error("User is banned", "error", err)
+		cusErr := utils.NewErrorResponse(utils.Forbidden)
+		return nil, cusErr
+	}
+	return user, nil
+}
+
+// Logout user. Make refreshToken invalid.
+func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error {
+	// Common check user status
+	user, err := s.commonCheckUserStatus(ctx, request.Email)
+	if err != nil {
+		return err
 	}
 
 	// Set new random text for token hash. It will make invalid the previous refreshToken.
@@ -352,16 +382,10 @@ func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error 
 
 // DeleteUser deletes a user.
 func (s *userService) DeleteUser(ctx context.Context, request *DeleteUserRequest) error {
-	// Get user from database
-	user, err := s.repo.GetUserByEmail(ctx, request.Email)
+	// Common check user status
+	user, err := s.commonCheckUserStatus(ctx, request.Email)
 	if err != nil {
-		s.logger.Error("Error getting user", "error", err)
-		if strings.Contains(err.Error(), utils.PgNoRowsMsg) {
-			cusErr := utils.NewErrorResponse(utils.NotFound)
-			return cusErr
-		}
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
+		return err
 	}
 
 	// Change user to banned
@@ -397,23 +421,10 @@ func (s *userService) DeleteUser(ctx context.Context, request *DeleteUserRequest
 
 // CancelDeleteUser cancels delete user.
 func (s *userService) CancelDeleteUser(ctx context.Context, request *CancelDeleteUserRequest) error {
-	// Get user from database
-	user, err := s.repo.GetUserByEmail(ctx, request.Email)
+	// Common check user status
+	user, err := s.commonCheckUserStatus(ctx, request.Email)
 	if err != nil {
-		s.logger.Error("Error getting user", "error", err)
-		if strings.Contains(err.Error(), utils.PgNoRowsMsg) {
-			cusErr := utils.NewErrorResponse(utils.NotFound)
-			return cusErr
-		}
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
-
-	// Check banned status
-	if !user.Banned {
-		s.logger.Error("User is not banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.AccountIsNotNeedToCancelDelete)
-		return cusErr
+		return err
 	}
 	// Get limit data
 	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeCancelDeleteUser)
@@ -544,18 +555,12 @@ func (s *userService) GetUser(ctx context.Context) (interface{}, error) {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr.Error(), cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr.Error(), cusErr
+		return err.Error(), err
 	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr.Error(), cusErr
-	}
+
 	// Make response data
 	userResponse := GetUserResponse{
 		Email:    user.Email,
@@ -607,17 +612,10 @@ func (s *userService) UpdateUserName(ctx context.Context, request *UpdateUserNam
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr.Error(), cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr.Error(), cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr.Error(), cusErr
+		return err.Error(), err
 	}
 	// Check if username is already taken
 	if exist, err := s.repo.CheckUsernameExists(ctx, request.Username); exist || err != nil {
@@ -651,18 +649,10 @@ func (s *userService) UpdateProfile(ctx context.Context, request *UpdateProfileR
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr.Error(), cusErr
 	}
-	// Get user by id
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr.Error(), cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr.Error(), cusErr
+		return err.Error(), err
 	}
 	// Get profile by id
 	profile, err := s.repo.GetProfileByID(ctx, userID)
@@ -750,17 +740,10 @@ func (s *userService) UpdatePassword(ctx context.Context, request *UpdatePasswor
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return "", cusErr
 	}
-	// Get user by id
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		err := errors.New("internal server error. Please try again later")
 		return err.Error(), err
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		return "User is banned", errors.New("user is banned")
 	}
 	// Get limit data
 	limitData, err := s.repo.GetLimitData(ctx, userID, database.LimitTypeChangePassword)
@@ -1033,17 +1016,10 @@ func (s *userService) GenerateAccessToken(ctx context.Context) (interface{}, err
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr.Error(), cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr.Error(), cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr.Error(), cusErr
+		return err.Error(), err
 	}
 	accessToken, err := s.auth.GenerateAccessToken(user)
 	if err != nil {
@@ -1067,17 +1043,10 @@ func (s *userService) GetVerifyMailCode(ctx context.Context) error {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr
+		return err
 	}
 	// Check if user is verified
 	if user.Verified {
@@ -1151,17 +1120,10 @@ func (s *userService) GetMatchCode(ctx context.Context) (interface{}, error) {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return nil, err
 	}
 	// Check user is in relationship
 	lover, _ := s.GetMatchLover(ctx)
@@ -1202,17 +1164,10 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr
+		return err
 	}
 	// Check if user has already matched
 	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
@@ -1304,17 +1259,10 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr
+		return err
 	}
 	// Check if user has match code
 	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
@@ -1373,17 +1321,10 @@ func (s *userService) GetMatchLover(ctx context.Context) (interface{}, error) {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return err.Error(), err
 	}
 	// Check if user has match code
 	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
@@ -1459,17 +1400,10 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr
+		return err
 	}
 	// Check if user has match code
 	matchLove, err := s.repo.GetMatchLoveDataByUserID(ctx, user.ID)
@@ -1556,17 +1490,10 @@ func (s *userService) InsertPlayerData(ctx context.Context, request *InsertPlaye
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return cusErr
+		return err
 	}
 	// Create player data for insert
 	insertPlayerData := database.PlayerData{
@@ -1598,17 +1525,10 @@ func (s *userService) GetPlayerData(ctx context.Context) (interface{}, error) {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return nil, err
 	}
 	// Get player data
 	playerData, err := s.repo.GetPlayerData(ctx, user.ID)
@@ -1638,17 +1558,10 @@ func (s *userService) GetUserStateData(ctx context.Context, request *GetUserStat
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return nil, err
 	}
 	// Get user state data
 	userStateData, err := s.repo.GetUserStateData(ctx, user.ID, request.KeyString)
@@ -1688,19 +1601,11 @@ func (s *userService) SetUserStateData(ctx context.Context, request *SetUserStat
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
+		return nil, err
 	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
-	}
-
 	var timeValue time.Time
 
 	if request.TimeValue != "" {
@@ -1740,17 +1645,10 @@ func (s *userService) GetFeeds(ctx context.Context) (interface{}, error) {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return nil, err
 	}
 	//Get feeds
 	//Create slice for feeds
@@ -1849,17 +1747,10 @@ func (s *userService) UpdateBeenLove(ctx context.Context, request *UpdateBeenLov
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return nil, err
 	}
 	// Check if user is in relationship
 	matchResponse, _ := s.GetMatchLover(ctx)
@@ -1931,17 +1822,10 @@ func (s *userService) CheckPassCodeStatus(ctx context.Context) (interface{}, err
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return nil, err
 	}
 	passCodeStatus := true
 	if len(user.PassCode) == 0 {
@@ -1960,19 +1844,12 @@ func (s *userService) SetPassCode(ctx context.Context, request *SetPassCodeReque
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
+		return nil, err
 	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
-	}
-	// // Hash passcode before saving
+	// Hash passcode before saving
 	passCode, err := utils.HashString(request.PassCode)
 	if err != nil {
 		s.logger.Error("Cannot hash passcode", "error", err)
@@ -2000,17 +1877,10 @@ func (s *userService) ComparePassCode(ctx context.Context, request *ComparePassC
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return nil, cusErr
 	}
-	user, err := s.repo.GetUserByID(ctx, userID)
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
 	if err != nil {
-		s.logger.Error("Cannot get user", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return nil, cusErr
-	}
-	// Check if user is banned
-	if user.Banned {
-		s.logger.Error("User is banned", "error", err)
-		cusErr := utils.NewErrorResponse(utils.Forbidden)
-		return nil, cusErr
+		return nil, err
 	}
 
 	// Get limit data
