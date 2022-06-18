@@ -55,6 +55,7 @@ const (
 	UserIDRequired                 = 35
 	AccountIsNotNeedToCancelDelete = 36
 	PassCodeRequired               = 37
+	UserDeleted                    = 38
 )
 
 func (e ErrorResponse) Error() string {
@@ -151,6 +152,8 @@ func (e ErrorResponse) Error() string {
 		return "account is not need to cancel delete"
 	case PassCodeRequired:
 		return "pass code required"
+	case UserDeleted:
+		return "user is on the deletion schedule."
 	default:
 		return "Unknown Error"
 	}

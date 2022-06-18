@@ -32,6 +32,7 @@ const userSchema = `
 			tokenhash  Varchar(15) not null,
 			verified   Boolean default false,
 		    banned     Boolean default false,
+		    deleted    Boolean default false,
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
 			Primary Key (id)

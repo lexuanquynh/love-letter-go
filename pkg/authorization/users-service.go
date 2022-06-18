@@ -240,6 +240,13 @@ func (s *userService) Login(ctx context.Context, request *LoginRequest) (interfa
 		cusErr := utils.NewErrorResponse(utils.Forbidden)
 		return cusErr.Error(), cusErr
 	}
+	// Check if user deleted
+	if user.Deleted {
+		s.logger.Error("User is deleted", "error", err)
+		cusErr := utils.NewErrorResponse(utils.UserDeleted)
+		return cusErr.Error(), cusErr
+	}
+
 	// Get limit data
 	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeLogin)
 	if err != nil {
@@ -323,6 +330,14 @@ func (s *userService) commonCheckUserStatus(ctx context.Context, email string) (
 		cusErr := utils.NewErrorResponse(utils.Forbidden)
 		return nil, cusErr
 	}
+
+	// Check if user is deleted
+	if user.Deleted {
+		s.logger.Error("User is deleted", "error", err)
+		cusErr := utils.NewErrorResponse(utils.UserDeleted)
+		return nil, cusErr
+	}
+
 	return user, nil
 }
 
@@ -345,6 +360,14 @@ func (s *userService) commonCheckUserStatusByUserId(ctx context.Context, userID 
 		cusErr := utils.NewErrorResponse(utils.Forbidden)
 		return nil, cusErr
 	}
+
+	// Check if user is deleted
+	if user.Deleted {
+		s.logger.Error("User is deleted", "error", err)
+		cusErr := utils.NewErrorResponse(utils.UserDeleted)
+		return nil, cusErr
+	}
+
 	return user, nil
 }
 
@@ -388,8 +411,8 @@ func (s *userService) DeleteUser(ctx context.Context, request *DeleteUserRequest
 		return err
 	}
 
-	// Change user to banned
-	user.Banned = true
+	// Change user to delete
+	user.Deleted = true
 	// Update user
 	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
@@ -421,11 +444,24 @@ func (s *userService) DeleteUser(ctx context.Context, request *DeleteUserRequest
 
 // CancelDeleteUser cancels delete user.
 func (s *userService) CancelDeleteUser(ctx context.Context, request *CancelDeleteUserRequest) error {
-	// Common check user status
-	user, err := s.commonCheckUserStatus(ctx, request.Email)
+	// Get user from database
+	user, err := s.repo.GetUserByEmail(ctx, request.Email)
 	if err != nil {
-		return err
+		s.logger.Error("Error getting user", "error", err)
+		if strings.Contains(err.Error(), utils.PgNoRowsMsg) {
+			cusErr := utils.NewErrorResponse(utils.NotFound)
+			return cusErr
+		}
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
 	}
+	// Check if user is not deleted
+	if !user.Deleted {
+		s.logger.Error("User is not deleted", "error", err)
+		cusErr := utils.NewErrorResponse(utils.BadRequest)
+		return cusErr
+	}
+
 	// Get limit data
 	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeCancelDeleteUser)
 	if err != nil {
@@ -510,8 +546,8 @@ func (s *userService) ConfirmCancelDeleteUser(ctx context.Context, request *Conf
 		s.logger.Error("unable to get user", "error", err)
 		return utils.NewErrorResponse(utils.InternalServerError)
 	}
-	// Change user status to not banned
-	user.Banned = false
+	// Change user status to not deleted
+	user.Deleted = false
 	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("unable to update user", "error", err)

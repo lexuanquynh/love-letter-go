@@ -29,8 +29,8 @@ func (repo *postgresRepository) CreateUser(ctx context.Context, user *User) erro
 	user.ID = uuid.NewV4().String()
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	query := "insert into users (id, email, username, password, passcode, tokenhash, banned, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)"
-	_, err := repo.db.ExecContext(ctx, query, user.ID, user.Email, user.Username, user.Password, user.PassCode, user.TokenHash, user.Banned, user.CreatedAt, user.UpdatedAt)
+	query := "insert into users (id, email, username, password, passcode, tokenhash, banned, deleted, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
+	_, err := repo.db.ExecContext(ctx, query, user.ID, user.Email, user.Username, user.Password, user.PassCode, user.TokenHash, user.Banned, user.Deleted, user.CreatedAt, user.UpdatedAt)
 	return err
 }
 
@@ -107,8 +107,8 @@ func (repo *postgresRepository) GetUserByID(ctx context.Context, id string) (*Us
 // UpdateUser updates the user with the given id.
 func (repo *postgresRepository) UpdateUser(ctx context.Context, user *User) error {
 	user.UpdatedAt = time.Now()
-	query := "update users set passcode = $1, username = $2, password = $3, tokenhash = $4, banned = $5, updatedat = $6 where id = $7"
-	_, err := repo.db.ExecContext(ctx, query, user.Password, user.Username, user.Password, user.TokenHash, user.Banned, user.UpdatedAt, user.ID)
+	query := "update users set passcode = $1, username = $2, password = $3, tokenhash = $4, banned = $5, deleted = $6, updatedat = $7 where id = $8"
+	_, err := repo.db.ExecContext(ctx, query, user.Password, user.Username, user.Password, user.TokenHash, user.Banned, user.Deleted, user.UpdatedAt, user.ID)
 	return err
 }
 

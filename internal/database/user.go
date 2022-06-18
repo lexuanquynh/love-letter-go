@@ -15,6 +15,7 @@ type User struct {
 	TokenHash string    `json:"tokenhash" sql:"tokenhash"`
 	Verified  bool      `json:"verified" sql:"verified"`
 	Banned    bool      `json:"banned" sql:"banned"`
+	Deleted   bool      `json:"deleted" sql:"deleted"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }
