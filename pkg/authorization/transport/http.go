@@ -245,30 +245,32 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
-	// insert psychology
-	m.Handle("/insert-psychology", httptransport.NewServer(
-		ep.InsertPsychologyEndpoint,
-		decodeHTTPInsertPsychologyRequest,
-		encodeResponse,
-		options...,
-	))
+	/*
+			// insert psychology
+			m.Handle("/insert-psychology", httptransport.NewServer(
+				ep.InsertPsychologyEndpoint,
+				decodeHTTPInsertPsychologyRequest,
+				encodeResponse,
+				options...,
+			))
 
-	// delete psychology
-	m.Handle("/delete-psychology", httptransport.NewServer(
-		ep.DeletePsychologyEndpoint,
-		decodeHTTPDeletePsychologyRequest,
-		encodeResponse,
-		options...,
-	))
+			// delete psychology
+			m.Handle("/delete-psychology", httptransport.NewServer(
+				ep.DeletePsychologyEndpoint,
+				decodeHTTPDeletePsychologyRequest,
+				encodeResponse,
+				options...,
+			))
 
-	// Get psychologies
-	m.Handle("/get-psychologies", httptransport.NewServer(
-		ep.GetPsychologiesEndpoint,
-		decodeHTTPGetPsychologiesRequest,
-		encodeResponse,
-		options...,
-	))
 
+		// Get psychologies
+		m.Handle("/get-psychologies", httptransport.NewServer(
+			ep.GetPsychologiesEndpoint,
+			decodeHTTPGetPsychologiesRequest,
+			encodeResponse,
+			options...,
+		))
+	*/
 	// create holiday
 	m.Handle("/create-holiday", httptransport.NewServer(
 		ep.CreateHolidayEndpoint,
