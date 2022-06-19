@@ -326,3 +326,24 @@ type GetLettersRequest struct {
 	Page        int    `json:"page"`
 	Limit       int    `json:"limit" validate:"required"`
 }
+
+// InsertPsychologyRequest is used to insert psychology
+type InsertPsychologyRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	Level       int    `json:"level"`
+}
+
+// DeletePsychologyRequest is used to delete psychology
+type DeletePsychologyRequest struct {
+	AccessToken  string `json:"access_token" validate:"required"`
+	PsychologyID string `json:"psychology_id" validate:"required"`
+}
+
+// GetPsychologiesRequest is used to get psychologies
+type GetPsychologiesRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Page        int    `json:"page"`
+	Limit       int    `json:"limit" validate:"required"`
+}

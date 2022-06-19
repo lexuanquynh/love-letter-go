@@ -2050,3 +2050,83 @@ func (s *userService) GetLetters(ctx context.Context, request *GetLettersRequest
 	s.logger.Info("Get letters success")
 	return letters, nil
 }
+
+// InsertPsychology insert psychology
+func (s *userService) InsertPsychology(ctx context.Context, request *InsertPsychologyRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	psychology := &database.Psychology{
+		Title:       request.Title,
+		Description: request.Description,
+		Level:       request.Level,
+	}
+	err = s.repo.InsertPsychology(ctx, psychology)
+	if err != nil {
+		s.logger.Error("Cannot insert psychology", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Insert psychology success
+	s.logger.Info("Insert psychology success")
+	return "Insert psychology success", nil
+}
+
+// DeletePsychology delete psychology
+func (s *userService) DeletePsychology(ctx context.Context, request *DeletePsychologyRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Delete psychology
+	err = s.repo.DeletePsychology(ctx, request.PsychologyID)
+	if err != nil {
+		s.logger.Error("Cannot delete psychology", "error", err)
+		cusErr := utils.NewErrorResponse(utils.NotFound)
+		return nil, cusErr
+	}
+	// Delete psychology success
+	s.logger.Info("Delete psychology success")
+	return "Delete psychology success", nil
+}
+
+// GetPsychologies get psychologies
+func (s *userService) GetPsychologies(ctx context.Context, request *GetPsychologiesRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get psychologies
+	psychologies, err := s.repo.GetPsychologies(ctx, request.Limit, request.Page)
+	if err != nil {
+		s.logger.Error("Cannot get psychologies", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Get psychologies success
+	s.logger.Info("Get psychologies success")
+	return psychologies, nil
+
+}

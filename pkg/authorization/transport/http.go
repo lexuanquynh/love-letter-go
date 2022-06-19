@@ -245,6 +245,30 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	// insert psychology
+	m.Handle("/insert-psychology", httptransport.NewServer(
+		ep.InsertPsychologyEndpoint,
+		decodeHTTPInsertPsychologyRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// delete psychology
+	m.Handle("/delete-psychology", httptransport.NewServer(
+		ep.DeletePsychologyEndpoint,
+		decodeHTTPDeletePsychologyRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// Get psychologies
+	m.Handle("/get-psychologies", httptransport.NewServer(
+		ep.GetPsychologiesEndpoint,
+		decodeHTTPGetPsychologiesRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -887,6 +911,60 @@ func decodeHTTPDeleteLetterRequest(_ context.Context, r *http.Request) (interfac
 func decodeHTTPGetLettersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.GetLettersRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPInsertPsychologyRequest decode request
+func decodeHTTPInsertPsychologyRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.InsertPsychologyRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPDeletePsychologyRequest decode request
+func decodeHTTPDeletePsychologyRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.DeletePsychologyRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetPsychologiesRequest decode request
+func decodeHTTPGetPsychologiesRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetPsychologiesRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)

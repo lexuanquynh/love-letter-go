@@ -47,6 +47,9 @@ type Set struct {
 	CreateLetterEndpoint            endpoint.Endpoint
 	DeleteLetterEndpoint            endpoint.Endpoint
 	GetLettersEndpoint              endpoint.Endpoint
+	InsertPsychologyEndpoint        endpoint.Endpoint
+	DeletePsychologyEndpoint        endpoint.Endpoint
+	GetPsychologiesEndpoint         endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -216,6 +219,21 @@ func NewEndpointSet(svc authorization.Service,
 	getLettersEndpoint = middleware.ValidateParamRequest(validator, logger)(getLettersEndpoint)
 	getLettersEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getLettersEndpoint)
 
+	insertPsychologyEndpoint := MakeInsertPsychologyEndpoint(svc)
+	insertPsychologyEndpoint = middleware.RateLimitRequest(tb, logger)(insertPsychologyEndpoint)
+	insertPsychologyEndpoint = middleware.ValidateParamRequest(validator, logger)(insertPsychologyEndpoint)
+	insertPsychologyEndpoint = middleware.ValidateAccessToken(auth, r, logger)(insertPsychologyEndpoint)
+
+	deletePsychologyEndpoint := MakeDeletePsychologyEndpoint(svc)
+	deletePsychologyEndpoint = middleware.RateLimitRequest(tb, logger)(deletePsychologyEndpoint)
+	deletePsychologyEndpoint = middleware.ValidateParamRequest(validator, logger)(deletePsychologyEndpoint)
+	deletePsychologyEndpoint = middleware.ValidateAccessToken(auth, r, logger)(deletePsychologyEndpoint)
+
+	getPsychologiesEndpoint := MakeGetPsychologiesEndpoint(svc)
+	getPsychologiesEndpoint = middleware.RateLimitRequest(tb, logger)(getPsychologiesEndpoint)
+	getPsychologiesEndpoint = middleware.ValidateParamRequest(validator, logger)(getPsychologiesEndpoint)
+	getPsychologiesEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getPsychologiesEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:             healthCheckEndpoint,
 		RegisterEndpoint:                registerEndpoint,
@@ -251,6 +269,9 @@ func NewEndpointSet(svc authorization.Service,
 		CreateLetterEndpoint:            createLetterEndpoint,
 		DeleteLetterEndpoint:            deleteLetterEndpoint,
 		GetLettersEndpoint:              getLettersEndpoint,
+		InsertPsychologyEndpoint:        insertPsychologyEndpoint,
+		DeletePsychologyEndpoint:        deletePsychologyEndpoint,
+		GetPsychologiesEndpoint:         getPsychologiesEndpoint,
 	}
 }
 
@@ -829,6 +850,54 @@ func MakeGetLettersEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		response, err := svc.GetLetters(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeInsertPsychologyEndpoint returns an endpoint that invokes InsertPsychology on the service.
+func MakeInsertPsychologyEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.InsertPsychologyRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.InsertPsychology(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeDeletePsychologyEndpoint returns an endpoint that invokes DeletePsychology on the service.
+func MakeDeletePsychologyEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.DeletePsychologyRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.DeletePsychology(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetPsychologiesEndpoint returns an endpoint that invokes GetPsychologies on the service.
+func MakeGetPsychologiesEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetPsychologiesRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetPsychologies(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

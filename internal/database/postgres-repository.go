@@ -505,3 +505,36 @@ func (repo *postgresRepository) GetLetters(ctx context.Context, userID string, p
 	err := repo.db.SelectContext(ctx, &letters, query, userID, pageSize, page*pageSize)
 	return letters, err
 }
+
+// InsertPsychology insert psychology
+func (repo *postgresRepository) InsertPsychology(ctx context.Context, psychology *Psychology) error {
+	psychology.ID = uuid.NewV4().String()
+	psychology.CreatedAt = time.Now()
+	psychology.UpdatedAt = time.Now()
+	query := "insert into psychologies(id, title, description, level, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6)" +
+		"on conflict (id) do update set title = $2, description = $3, level = $4, createdat = $5, updatedat = $6"
+	_, err := repo.db.ExecContext(ctx, query,
+		psychology.ID,
+		psychology.Title,
+		psychology.Description,
+		psychology.Level,
+		psychology.CreatedAt,
+		psychology.UpdatedAt)
+	return err
+}
+
+// DeletePsychology Delete psychology by psychologyID
+func (repo *postgresRepository) DeletePsychology(ctx context.Context, psychologyID string) error {
+	query := "delete from psychologies where id = $1"
+	_, err := repo.db.ExecContext(ctx, query, psychologyID)
+	return err
+}
+
+// GetPsychologies Get psychology by limit and offset
+func (repo *postgresRepository) GetPsychologies(ctx context.Context, limit int, offset int) ([]Psychology, error) {
+	query := "select * from psychologies order by level desc limit $1 offset $2"
+	var psychologies []Psychology
+	err := repo.db.SelectContext(ctx, &psychologies, query, limit, offset)
+	return psychologies, err
+}

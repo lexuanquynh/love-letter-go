@@ -115,6 +115,16 @@ type Letter struct {
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }
 
+// Psychology represents the type for the data stored for psychology.
+type Psychology struct {
+	ID          string    `json:"id" sql:"id"`
+	Title       string    `json:"title" sql:"title"`
+	Description string    `json:"description" sql:"description"`
+	Level       int       `json:"level" sql:"level"`
+	CreatedAt   time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
+}
+
 const MatchLoverStateKey = "state"
 
 const (
@@ -139,4 +149,21 @@ const (
 
 const (
 	UserStateTypePassCode = "PASSCODE"
+)
+
+const (
+	PsychologyTypeHappiness  = 4
+	PsychologyTypeLove       = 3
+	PsychologyTypeHealth     = 2
+	PsychologyTypeMoney      = 1
+	PsychologyTypeFun        = 2
+	PsychologyTypeNormal     = 1
+	PsychologyTypeSad        = 0
+	PsychologyTypeAngry      = -1
+	PsychologyTypeFear       = -2
+	PsychologyTypeDisgust    = -3
+	PsychologyTypeSurprise   = -4
+	PsychologyTypeSadness    = -5
+	PsychologyTypeAnxiety    = -6
+	PsychologyTypeDepression = -7
 )

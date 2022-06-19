@@ -74,4 +74,10 @@ type UserRepository interface {
 	DeleteLetter(ctx context.Context, userID string, letterID string) error
 	// GetLetters Get letters by user id and page. maximum by pageSize letters, default is 10
 	GetLetters(ctx context.Context, userID string, page int, maximum int) ([]Letter, error)
+	// InsertPsychology Insert psychology
+	InsertPsychology(ctx context.Context, psychology *Psychology) error
+	// DeletePsychology Delete psychology by psychologyID
+	DeletePsychology(ctx context.Context, psychologyID string) error
+	// GetPsychologies Get psychology by limit and offset
+	GetPsychologies(ctx context.Context, limit int, offset int) ([]Psychology, error)
 }

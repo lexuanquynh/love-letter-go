@@ -38,4 +38,7 @@ type Service interface {
 	CreateLetter(ctx context.Context, request *CreateLetterRequest) (interface{}, error)
 	DeleteLetter(ctx context.Context, request *DeleteLetterRequest) (interface{}, error)
 	GetLetters(ctx context.Context, request *GetLettersRequest) (interface{}, error)
+	InsertPsychology(ctx context.Context, request *InsertPsychologyRequest) (interface{}, error)
+	DeletePsychology(ctx context.Context, request *DeletePsychologyRequest) (interface{}, error)
+	GetPsychologies(ctx context.Context, request *GetPsychologiesRequest) (interface{}, error)
 }
