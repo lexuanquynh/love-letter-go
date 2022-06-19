@@ -538,3 +538,38 @@ func (repo *postgresRepository) GetPsychologies(ctx context.Context, limit int, 
 	err := repo.db.SelectContext(ctx, &psychologies, query, limit, offset)
 	return psychologies, err
 }
+
+// CreateHoliday create holiday
+func (repo *postgresRepository) CreateHoliday(ctx context.Context, holiday *Holiday) error {
+	holiday.ID = uuid.NewV4().String()
+	holiday.CreatedAt = time.Now()
+	holiday.UpdatedAt = time.Now()
+	query := "insert into holidays(id, userid, title, description, startdate, enddate, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8)" +
+		"on conflict (id) do update set userid = $2, title = $3, description = $4, startdate = $5, enddate = $6, createdat = $7, updatedat = $8"
+	_, err := repo.db.ExecContext(ctx, query,
+		holiday.ID,
+		holiday.UserID,
+		holiday.Title,
+		holiday.Description,
+		holiday.StartDate,
+		holiday.EndDate,
+		holiday.CreatedAt,
+		holiday.UpdatedAt)
+	return err
+}
+
+// DeleteHoliday Delete holiday by holidayID
+func (repo *postgresRepository) DeleteHoliday(ctx context.Context, holidayID string) error {
+	query := "delete from holidays where id = $1"
+	_, err := repo.db.ExecContext(ctx, query, holidayID)
+	return err
+}
+
+// GetHolidays Get holidays by limit and offset
+func (repo *postgresRepository) GetHolidays(ctx context.Context, limit int, offset int) ([]Holiday, error) {
+	query := "select * from holidays order by startdate desc limit $1 offset $2"
+	var holidays []Holiday
+	err := repo.db.SelectContext(ctx, &holidays, query, limit, offset)
+	return holidays, err
+}

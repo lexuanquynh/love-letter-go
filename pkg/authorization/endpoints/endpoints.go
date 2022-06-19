@@ -50,6 +50,9 @@ type Set struct {
 	InsertPsychologyEndpoint        endpoint.Endpoint
 	DeletePsychologyEndpoint        endpoint.Endpoint
 	GetPsychologiesEndpoint         endpoint.Endpoint
+	CreateHolidayEndpoint           endpoint.Endpoint
+	DeleteHolidayEndpoint           endpoint.Endpoint
+	GetHolidaysEndpoint             endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -234,6 +237,21 @@ func NewEndpointSet(svc authorization.Service,
 	getPsychologiesEndpoint = middleware.ValidateParamRequest(validator, logger)(getPsychologiesEndpoint)
 	getPsychologiesEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getPsychologiesEndpoint)
 
+	createHolidayEndpoint := MakeCreateHolidayEndpoint(svc)
+	createHolidayEndpoint = middleware.RateLimitRequest(tb, logger)(createHolidayEndpoint)
+	createHolidayEndpoint = middleware.ValidateParamRequest(validator, logger)(createHolidayEndpoint)
+	createHolidayEndpoint = middleware.ValidateAccessToken(auth, r, logger)(createHolidayEndpoint)
+
+	deleteHolidayEndpoint := MakeDeleteHolidayEndpoint(svc)
+	deleteHolidayEndpoint = middleware.RateLimitRequest(tb, logger)(deleteHolidayEndpoint)
+	deleteHolidayEndpoint = middleware.ValidateParamRequest(validator, logger)(deleteHolidayEndpoint)
+	deleteHolidayEndpoint = middleware.ValidateAccessToken(auth, r, logger)(deleteHolidayEndpoint)
+
+	getHolidaysEndpoint := MakeGetHolidaysEndpoint(svc)
+	getHolidaysEndpoint = middleware.RateLimitRequest(tb, logger)(getHolidaysEndpoint)
+	getHolidaysEndpoint = middleware.ValidateParamRequest(validator, logger)(getHolidaysEndpoint)
+	getHolidaysEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getHolidaysEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:             healthCheckEndpoint,
 		RegisterEndpoint:                registerEndpoint,
@@ -272,6 +290,9 @@ func NewEndpointSet(svc authorization.Service,
 		InsertPsychologyEndpoint:        insertPsychologyEndpoint,
 		DeletePsychologyEndpoint:        deletePsychologyEndpoint,
 		GetPsychologiesEndpoint:         getPsychologiesEndpoint,
+		CreateHolidayEndpoint:           createHolidayEndpoint,
+		DeleteHolidayEndpoint:           deleteHolidayEndpoint,
+		GetHolidaysEndpoint:             getHolidaysEndpoint,
 	}
 }
 
@@ -898,6 +919,54 @@ func MakeGetPsychologiesEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		response, err := svc.GetPsychologies(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeCreateHolidayEndpoint returns an endpoint that invokes CreateHoliday on the service.
+func MakeCreateHolidayEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.CreateHolidayRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.CreateHoliday(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeDeleteHolidayEndpoint returns an endpoint that invokes DeleteHoliday on the service.
+func MakeDeleteHolidayEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.DeleteHolidayRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.DeleteHoliday(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetHolidaysEndpoint returns an endpoint that invokes GetHolidays on the service.
+func MakeGetHolidaysEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetHolidaysRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetHolidays(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

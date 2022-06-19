@@ -347,3 +347,25 @@ type GetPsychologiesRequest struct {
 	Page        int    `json:"page"`
 	Limit       int    `json:"limit" validate:"required"`
 }
+
+// CreateHolidayRequest is used to create holiday
+type CreateHolidayRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	StartDate   string `json:"start_date" validate:"required"`
+	EndDate     string `json:"end_date" validate:"required"`
+}
+
+// DeleteHolidayRequest is used to delete holiday
+type DeleteHolidayRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	HolidayID   string `json:"holiday_id" validate:"required"`
+}
+
+// GetHolidaysRequest is used to get holidays
+type GetHolidaysRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Page        int    `json:"page"`
+	Limit       int    `json:"limit" validate:"required"`
+}

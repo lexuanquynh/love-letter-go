@@ -80,4 +80,10 @@ type UserRepository interface {
 	DeletePsychology(ctx context.Context, psychologyID string) error
 	// GetPsychologies Get psychology by limit and offset
 	GetPsychologies(ctx context.Context, limit int, offset int) ([]Psychology, error)
+	// CreateHoliday Create holiday
+	CreateHoliday(ctx context.Context, holiday *Holiday) error
+	// DeleteHoliday Delete holiday by holidayID
+	DeleteHoliday(ctx context.Context, holidayID string) error
+	// GetHolidays Get holidays by limit and offset
+	GetHolidays(ctx context.Context, limit int, offset int) ([]Holiday, error)
 }

@@ -269,6 +269,28 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	// create holiday
+	m.Handle("/create-holiday", httptransport.NewServer(
+		ep.CreateHolidayEndpoint,
+		decodeHTTPCreateHolidayRequest,
+		encodeResponse,
+		options...,
+	))
+	// delete holiday
+	m.Handle("/delete-holiday", httptransport.NewServer(
+		ep.DeleteHolidayEndpoint,
+		decodeHTTPDeleteHolidayRequest,
+		encodeResponse,
+		options...,
+	))
+	// get holidays
+	m.Handle("/get-holidays", httptransport.NewServer(
+		ep.GetHolidaysEndpoint,
+		decodeHTTPGetHolidaysRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -965,6 +987,60 @@ func decodeHTTPDeletePsychologyRequest(_ context.Context, r *http.Request) (inte
 func decodeHTTPGetPsychologiesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.GetPsychologiesRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPCreateHolidayRequest decode request
+func decodeHTTPCreateHolidayRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.CreateHolidayRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPDeleteHolidayRequest decode request
+func decodeHTTPDeleteHolidayRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.DeleteHolidayRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetHolidaysRequest decode request
+func decodeHTTPGetHolidaysRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetHolidaysRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)

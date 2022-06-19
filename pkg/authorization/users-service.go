@@ -2130,3 +2130,102 @@ func (s *userService) GetPsychologies(ctx context.Context, request *GetPsycholog
 	return psychologies, nil
 
 }
+
+// CreateHoliday create holiday
+func (s *userService) CreateHoliday(ctx context.Context, request *CreateHolidayRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	holiday := &database.Holiday{
+		UserID:      userID,
+		Title:       request.Title,
+		Description: request.Description,
+	}
+
+	if request.StartDate != "" {
+		startDate, err := time.Parse("2006-01-02", request.StartDate)
+		if err != nil {
+			s.logger.Error("Cannot parse birthday", "error", err)
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		holiday.StartDate = startDate
+	}
+	if request.EndDate != "" {
+		endDate, err := time.Parse("2006-01-02", request.EndDate)
+		if err != nil {
+			s.logger.Error("Cannot parse birthday", "error", err)
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		holiday.EndDate = endDate
+	}
+	err = s.repo.CreateHoliday(ctx, holiday)
+	if err != nil {
+		s.logger.Error("Cannot create holiday", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Create holiday success
+	s.logger.Info("Create holiday success")
+	return "Create holiday success", nil
+}
+
+// DeleteHoliday delete holiday
+func (s *userService) DeleteHoliday(ctx context.Context, request *DeleteHolidayRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Delete holiday
+	err = s.repo.DeleteHoliday(ctx, request.HolidayID)
+	if err != nil {
+		s.logger.Error("Cannot delete holiday", "error", err)
+		cusErr := utils.NewErrorResponse(utils.NotFound)
+		return nil, cusErr
+	}
+	// Delete holiday success
+	s.logger.Info("Delete holiday success")
+	return "Delete holiday success", nil
+}
+
+// GetHolidays get holidays
+func (s *userService) GetHolidays(ctx context.Context, request *GetHolidaysRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get holidays
+	holidays, err := s.repo.GetHolidays(ctx, request.Limit, request.Page)
+	if err != nil {
+		s.logger.Error("Cannot get holidays", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Get holidays success
+	s.logger.Info("Get holidays success")
+	return holidays, nil
+}

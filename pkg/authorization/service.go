@@ -41,4 +41,7 @@ type Service interface {
 	InsertPsychology(ctx context.Context, request *InsertPsychologyRequest) (interface{}, error)
 	DeletePsychology(ctx context.Context, request *DeletePsychologyRequest) (interface{}, error)
 	GetPsychologies(ctx context.Context, request *GetPsychologiesRequest) (interface{}, error)
+	CreateHoliday(ctx context.Context, request *CreateHolidayRequest) (interface{}, error)
+	DeleteHoliday(ctx context.Context, request *DeleteHolidayRequest) (interface{}, error)
+	GetHolidays(ctx context.Context, request *GetHolidaysRequest) (interface{}, error)
 }

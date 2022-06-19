@@ -218,13 +218,30 @@ const letterSchema = `
 // schema for psychology table
 const psychologySchema = `
 		create table if not exists psychologies (
-			id 		   	Varchar(36) not null,	
-			title 	  	Varchar(255) not null,	
+			id 		   	Varchar(36) not null,
+			title 	  	Varchar(255) not null,
 			description Varchar(1000) not null,
 			level 	  	int not null,
 			createdat  	Timestamp not null,
-			updatedat  	Timestamp not null,	
+			updatedat  	Timestamp not null,
 			Primary Key (id)
+		)
+`
+
+// schema for holiday table
+const holidaySchema = `
+		create table if not exists holidays (
+			id 		   	Varchar(36) not null,
+		    userid 		Varchar(36) not null,
+			title 	  	Varchar(255) not null,
+			description Varchar(1000) not null,
+		    startdate   Timestamp not null,
+		    enddate  	Timestamp not null,
+			createdat  	Timestamp not null,
+			updatedat  	Timestamp not null,
+		    Primary Key (id),
+		    Constraint fk_user_id Foreign Key(userid) References users(id)
+		    On Delete Cascade On Update Cascade
 		)
 `
 
@@ -261,6 +278,7 @@ func main() {
 	db.MustExec(scheduleSchema)
 	db.MustExec(letterSchema)
 	db.MustExec(psychologySchema)
+	db.MustExec(holidaySchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

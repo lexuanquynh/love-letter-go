@@ -125,6 +125,18 @@ type Psychology struct {
 	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
 }
 
+// Holiday represents the type for the data stored for holiday.
+type Holiday struct {
+	ID          string    `json:"id" sql:"id"`
+	UserID      string    `json:"userid" sql:"userid"`
+	Title       string    `json:"title" sql:"title"`
+	Description string    `json:"description" sql:"description"`
+	StartDate   time.Time `json:"startdate" sql:"startdate"`
+	EndDate     time.Time `json:"enddate" sql:"enddate"`
+	CreatedAt   time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
+}
+
 const MatchLoverStateKey = "state"
 
 const (
