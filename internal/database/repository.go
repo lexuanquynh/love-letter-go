@@ -17,8 +17,6 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	// GetUserByID Get user by id
 	GetUserByID(ctx context.Context, id string) (*User, error)
-	// UpdateUser Update user
-	UpdateUser(ctx context.Context, user *User) error
 	DeleteUser(ctx context.Context, id string) error
 	// CheckUsernameExists Check if username exists
 	CheckUsernameExists(ctx context.Context, username string) (bool, error)

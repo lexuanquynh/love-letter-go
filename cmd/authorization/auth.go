@@ -33,6 +33,7 @@ const userSchema = `
 			verified   Boolean default false,
 		    banned     Boolean default false,
 		    deleted    Boolean default false,
+		    role 	 Varchar(225) default 'user',
 			createdat  Timestamp not null,
 			updatedat  Timestamp not null,
 			Primary Key (id)

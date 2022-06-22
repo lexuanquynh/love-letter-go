@@ -16,6 +16,7 @@ type User struct {
 	Verified  bool      `json:"verified" sql:"verified"`
 	Banned    bool      `json:"banned" sql:"banned"`
 	Deleted   bool      `json:"deleted" sql:"deleted"`
+	Role      string    `json:"role" sql:"role"`
 	CreatedAt time.Time `json:"createdat" sql:"createdat"`
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }

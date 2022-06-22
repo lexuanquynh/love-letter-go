@@ -233,6 +233,18 @@ type GetPlayerDataResponse struct {
 	DeviceLocalize string `json:"device_localize,omitempty"`
 }
 
+// GetLettersResponse is the response for get letters
+type GetLettersResponse struct {
+	ID        string    `json:"id" sql:"id"`
+	Title     string    `json:"title" sql:"title"`
+	Body      string    `json:"body" sql:"body"`
+	IsRead    bool      `json:"isread" sql:"isread"`
+	IsDelete  bool      `json:"isdelete" sql:"isdelete"`
+	TimeOpen  time.Time `json:"timeopen" sql:"timeopen"`
+	CreatedAt time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
+}
+
 // GetMatchLoverResponse response is the response for get match lover
 type GetMatchLoverResponse struct {
 	userid1   string `json:"userid1"`

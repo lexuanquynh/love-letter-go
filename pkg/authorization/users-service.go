@@ -52,6 +52,7 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 	user := database.User{
 		Email:    request.Email,
 		Password: request.Password,
+		Role:     database.UserRoleTypeUser,
 	}
 
 	// Hash password before saving
@@ -391,7 +392,7 @@ func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error 
 	}
 	s.logger.Debug("successfully generated token", "refresh token", refreshToken)
 	// Update user token hash to database
-	err = s.repo.UpdateUser(ctx, user)
+	err = s.repo.CreateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Error updating user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -414,7 +415,7 @@ func (s *userService) DeleteUser(ctx context.Context, request *DeleteUserRequest
 	// Change user to delete
 	user.Deleted = true
 	// Update user
-	err = s.repo.UpdateUser(ctx, user)
+	err = s.repo.CreateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Error updating user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -548,7 +549,7 @@ func (s *userService) ConfirmCancelDeleteUser(ctx context.Context, request *Conf
 	}
 	// Change user status to not deleted
 	user.Deleted = false
-	err = s.repo.UpdateUser(ctx, user)
+	err = s.repo.CreateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("unable to update user", "error", err)
 		return utils.NewErrorResponse(utils.InternalServerError)
@@ -661,7 +662,7 @@ func (s *userService) UpdateUserName(ctx context.Context, request *UpdateUserNam
 	}
 	// Update user name
 	user.Username = request.Username
-	err = s.repo.UpdateUser(ctx, user)
+	err = s.repo.CreateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Cannot update user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1894,7 +1895,7 @@ func (s *userService) SetPassCode(ctx context.Context, request *SetPassCodeReque
 	}
 	// Update pass code by InsertUser API
 	user.PassCode = passCode
-	err = s.repo.UpdateUser(ctx, user)
+	err = s.repo.CreateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Cannot update user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -2048,7 +2049,22 @@ func (s *userService) GetLetters(ctx context.Context, request *GetLettersRequest
 	}
 	// Get letters success
 	s.logger.Info("Get letters success")
-	return letters, nil
+
+	var responses []GetLettersResponse
+	for i := 0; i < len(letters); i++ {
+		response := GetLettersResponse{
+			ID:        letters[i].ID,
+			Title:     letters[i].Title,
+			Body:      letters[i].Body,
+			IsRead:    letters[i].IsRead,
+			IsDelete:  letters[i].IsDelete,
+			TimeOpen:  letters[i].TimeOpen,
+			CreatedAt: letters[i].CreatedAt,
+			UpdatedAt: letters[i].UpdatedAt,
+		}
+		responses = append(responses, response)
+	}
+	return responses, nil
 }
 
 // InsertPsychology insert psychology

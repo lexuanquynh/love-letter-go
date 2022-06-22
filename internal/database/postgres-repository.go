@@ -26,11 +26,27 @@ func NewPostgresRepository(db *sqlx.DB, logger hclog.Logger) *postgresRepository
 
 // CreateUser inserts the given user into the database.
 func (repo *postgresRepository) CreateUser(ctx context.Context, user *User) error {
-	user.ID = uuid.NewV4().String()
+	if user.ID == "" {
+		user.ID = uuid.NewV4().String()
+	}
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	query := "insert into users (id, email, username, password, passcode, tokenhash, banned, deleted, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
-	_, err := repo.db.ExecContext(ctx, query, user.ID, user.Email, user.Username, user.Password, user.PassCode, user.TokenHash, user.Banned, user.Deleted, user.CreatedAt, user.UpdatedAt)
+	query := "insert into users (id, email, username, password, passcode, tokenhash, verified, banned, deleted, role, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)" +
+		"on conflict (email) do update set username = $3, password = $4, passcode = $5, tokenhash = $6, verified = $7, banned = $8, deleted = $9, role = $10, updatedat = $11"
+	_, err := repo.db.ExecContext(ctx,
+		query,
+		user.ID,
+		user.Email,
+		user.Username,
+		user.Password,
+		user.PassCode,
+		user.TokenHash,
+		user.Verified,
+		user.Banned,
+		user.Deleted,
+		user.Role,
+		user.CreatedAt,
+		user.UpdatedAt)
 	return err
 }
 
@@ -102,14 +118,6 @@ func (repo *postgresRepository) GetUserByID(ctx context.Context, id string) (*Us
 	user := &User{}
 	err := repo.db.GetContext(ctx, user, query, id)
 	return user, err
-}
-
-// UpdateUser updates the user with the given id.
-func (repo *postgresRepository) UpdateUser(ctx context.Context, user *User) error {
-	user.UpdatedAt = time.Now()
-	query := "update users set passcode = $1, username = $2, password = $3, tokenhash = $4, banned = $5, deleted = $6, updatedat = $7 where id = $8"
-	_, err := repo.db.ExecContext(ctx, query, user.Password, user.Username, user.Password, user.TokenHash, user.Banned, user.Deleted, user.UpdatedAt, user.ID)
-	return err
 }
 
 // DeleteUser deletes the user with the given id.

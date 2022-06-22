@@ -179,3 +179,11 @@ const (
 	PsychologyTypeAnxiety    = -6
 	PsychologyTypeDepression = -7
 )
+
+const (
+	UserRoleTypeAdmin    = "admin"
+	UserRoleTypeUser     = "user"
+	UserRoleTypeReporter = "reporter"
+	UserRoleTypeSupport  = "support"
+	UserRoleTypeGuest    = "guest"
+)

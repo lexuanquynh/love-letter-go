@@ -116,6 +116,13 @@ func authorizedAccessToken(ctx context.Context, auth Authentication, r database.
 		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
 		return "", cusErr
 	}
+	
+	// Check role is guest, not authorized
+	if user.Role == "guest" {
+		logger.Error("You're not authorized. Please try again latter.")
+		cusErr := utils.NewErrorResponse(utils.ValidationTokenFailure)
+		return "", cusErr
+	}
 
 	actualCustomKey := auth.GenerateCustomKey(user.ID, user.TokenHash)
 	if customKey != actualCustomKey {
