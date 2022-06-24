@@ -478,19 +478,31 @@ func (repo *postgresRepository) GetSchedule(ctx context.Context, userID string, 
 	return &schedule, err
 }
 
+//id 		   	Varchar(36) not null,
+//userid 		Varchar(36) not null,
+//title 	  	Varchar(255) not null,
+//body 	  	Varchar(10000) not null,
+//shortbody 	Varchar(255) not null,
+//isread 		Boolean default false,
+//isdelete 	Boolean default false,
+//timeopen 	Timestamp not null,
+//createdat  	Timestamp not null,
+//updatedat  	Timestamp not null,
+
 // CreateLetter create letter
 func (repo *postgresRepository) CreateLetter(ctx context.Context, letter *Letter) error {
 	letter.ID = uuid.NewV4().String()
 	letter.CreatedAt = time.Now()
 	letter.UpdatedAt = time.Now()
-	query := "insert into letters(id, userid, title, body, isread, isdelete, timeopen, createdat, updatedat) " +
-		"values($1, $2, $3, $4, $5, $6, $7, $8, $9)" +
-		"on conflict (id) do update set userid = $2, title = $3, body = $4, isread = $5, isdelete = $6, timeopen = $7, createdat = $8, updatedat = $9"
+	query := "insert into letters(id, userid, title, body, shortbody, isread, isdelete, timeopen, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)" +
+		"on conflict (id) do update set userid = $2, title = $3, body = $4, shortbody = $5, isread = $6, isdelete = $7, timeopen = $8, createdat = $9, updatedat = $10"
 	_, err := repo.db.ExecContext(ctx, query,
 		letter.ID,
 		letter.UserID,
 		letter.Title,
 		letter.Body,
+		letter.ShortBody,
 		letter.IsRead,
 		letter.IsDelete,
 		letter.TimeOpen,
@@ -506,12 +518,32 @@ func (repo *postgresRepository) DeleteLetter(ctx context.Context, userID string,
 	return err
 }
 
+//ID        string    `json:"id" sql:"id"`
+//UserID    string    `json:"userid" sql:"userid"`
+//Title     string    `json:"title" sql:"title"`
+//Body      string    `json:"body" sql:"body"`
+//ShortBody string    `json:"short_body" sql:"shortbody"`
+//IsRead    bool      `json:"isread" sql:"isread"`
+//IsDelete  bool      `json:"isdelete" sql:"isdelete"`
+//TimeOpen  time.Time `json:"timeopen" sql:"timeopen"`
+//CreatedAt time.Time `json:"createdat" sql:"createdat"`
+//UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
+
 // GetLetters Get letters by user id and page. maximum by pageSize letters, default is 10
 func (repo *postgresRepository) GetLetters(ctx context.Context, userID string, page int, pageSize int) ([]Letter, error) {
-	query := "select * from letters where userid = $1 order by timeopen desc limit $2 offset $3"
+	query := "select id, userid, title, shortbody, isread, isdelete, timeopen, createdat, updatedat from letters where userid = $1 order by createdat desc limit $2 offset $3"
+	//query := "select * from letters where userid = $1 order by timeopen desc limit $2 offset $3"
 	var letters []Letter
 	err := repo.db.SelectContext(ctx, &letters, query, userID, pageSize, page*pageSize)
 	return letters, err
+}
+
+// GetLetter Get letter by id
+func (repo *postgresRepository) GetLetter(ctx context.Context, userID string, letterID string) (*Letter, error) {
+	query := "select * from letters where userid = $1 and id = $2"
+	var letter Letter
+	err := repo.db.GetContext(ctx, &letter, query, userID, letterID)
+	return &letter, err
 }
 
 // InsertPsychology insert psychology

@@ -164,8 +164,8 @@ const userStateSchema = `
 const playerSchema = `
 		create table if not exists players (			
 			userid 				Varchar(36) not null,
-			uuid 				Varchar(100) not null,
-		    playerid 			Varchar(100)  null,
+			uuid 				Varchar(200) not null,
+		    playerid 			Varchar(200)  null,
 		    devicename 			Varchar(100)  null,
 		    deviceversion 		Varchar(10)  null,
 		    devicemodel 		Varchar(20)  null,
@@ -205,6 +205,7 @@ const letterSchema = `
 			userid 		Varchar(36) not null,
 			title 	  	Varchar(255) not null,
 		    body 	  	Varchar(10000) not null,
+		    shortbody 	Varchar(255) not null,
 		    isread 		Boolean default false,
 		    isdelete 	Boolean default false,
 		    timeopen 	Timestamp not null,			

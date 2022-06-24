@@ -245,6 +245,14 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	// get letter
+	m.Handle("/get-letter", httptransport.NewServer(
+		ep.GetLetterEndpoint,
+		decodeHTTPGetLetterRequest,
+		encodeResponse,
+		options...,
+	))
+
 	/*
 			// insert psychology
 			m.Handle("/insert-psychology", httptransport.NewServer(
@@ -935,6 +943,24 @@ func decodeHTTPDeleteLetterRequest(_ context.Context, r *http.Request) (interfac
 func decodeHTTPGetLettersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.GetLettersRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetLetterRequest decode request
+func decodeHTTPGetLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetLetterRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)

@@ -1987,9 +1987,10 @@ func (s *userService) CreateLetter(ctx context.Context, request *CreateLetterReq
 	}
 	// Create letter
 	letter := &database.Letter{
-		UserID: user.ID,
-		Title:  request.Title,
-		Body:   request.Body,
+		UserID:    user.ID,
+		Title:     request.Title,
+		Body:      request.Body,
+		ShortBody: request.ShortBody,
 	}
 	err = s.repo.CreateLetter(ctx, letter)
 	if err != nil {
@@ -2055,7 +2056,7 @@ func (s *userService) GetLetters(ctx context.Context, request *GetLettersRequest
 		response := GetLettersResponse{
 			ID:        letters[i].ID,
 			Title:     letters[i].Title,
-			Body:      letters[i].Body,
+			ShortBody: letters[i].ShortBody,
 			IsRead:    letters[i].IsRead,
 			IsDelete:  letters[i].IsDelete,
 			TimeOpen:  letters[i].TimeOpen,
@@ -2065,6 +2066,43 @@ func (s *userService) GetLetters(ctx context.Context, request *GetLettersRequest
 		responses = append(responses, response)
 	}
 	return responses, nil
+}
+
+// GetLetter get letter
+func (s *userService) GetLetter(ctx context.Context, request *GetLetterRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	user, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get letter
+	letter, err := s.repo.GetLetter(ctx, user.ID, request.LetterID)
+	if err != nil {
+		s.logger.Error("Cannot get letter", "error", err)
+		cusErr := utils.NewErrorResponse(utils.NotFound)
+		return nil, cusErr
+	}
+	// Get letter success
+	s.logger.Info("Get letter success")
+
+	response := GetLettersResponse{
+		ID:        letter.ID,
+		Title:     letter.Title,
+		ShortBody: letter.ShortBody,
+		Body:      letter.Body,
+		IsRead:    letter.IsRead,
+		IsDelete:  letter.IsDelete,
+		TimeOpen:  letter.TimeOpen,
+		CreatedAt: letter.CreatedAt,
+		UpdatedAt: letter.UpdatedAt,
+	}
+	return response, nil
 }
 
 // InsertPsychology insert psychology

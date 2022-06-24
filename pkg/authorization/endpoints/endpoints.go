@@ -47,6 +47,7 @@ type Set struct {
 	CreateLetterEndpoint            endpoint.Endpoint
 	DeleteLetterEndpoint            endpoint.Endpoint
 	GetLettersEndpoint              endpoint.Endpoint
+	GetLetterEndpoint               endpoint.Endpoint
 	InsertPsychologyEndpoint        endpoint.Endpoint
 	DeletePsychologyEndpoint        endpoint.Endpoint
 	GetPsychologiesEndpoint         endpoint.Endpoint
@@ -222,6 +223,11 @@ func NewEndpointSet(svc authorization.Service,
 	getLettersEndpoint = middleware.ValidateParamRequest(validator, logger)(getLettersEndpoint)
 	getLettersEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getLettersEndpoint)
 
+	getLetterEndpoint := MakeGetLetterEndpoint(svc)
+	getLetterEndpoint = middleware.RateLimitRequest(tb, logger)(getLetterEndpoint)
+	getLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(getLetterEndpoint)
+	getLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getLetterEndpoint)
+
 	insertPsychologyEndpoint := MakeInsertPsychologyEndpoint(svc)
 	insertPsychologyEndpoint = middleware.RateLimitRequest(tb, logger)(insertPsychologyEndpoint)
 	insertPsychologyEndpoint = middleware.ValidateParamRequest(validator, logger)(insertPsychologyEndpoint)
@@ -287,6 +293,7 @@ func NewEndpointSet(svc authorization.Service,
 		CreateLetterEndpoint:            createLetterEndpoint,
 		DeleteLetterEndpoint:            deleteLetterEndpoint,
 		GetLettersEndpoint:              getLettersEndpoint,
+		GetLetterEndpoint:               getLetterEndpoint,
 		InsertPsychologyEndpoint:        insertPsychologyEndpoint,
 		DeletePsychologyEndpoint:        deletePsychologyEndpoint,
 		GetPsychologiesEndpoint:         getPsychologiesEndpoint,
@@ -871,6 +878,22 @@ func MakeGetLettersEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		response, err := svc.GetLetters(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetLetterEndpoint returns an endpoint that invokes GetLetter on the service.
+func MakeGetLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetLetterRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetLetter(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

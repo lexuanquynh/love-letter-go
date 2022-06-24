@@ -235,14 +235,15 @@ type GetPlayerDataResponse struct {
 
 // GetLettersResponse is the response for get letters
 type GetLettersResponse struct {
-	ID        string    `json:"id" sql:"id"`
-	Title     string    `json:"title" sql:"title"`
-	Body      string    `json:"body" sql:"body"`
-	IsRead    bool      `json:"isread" sql:"isread"`
-	IsDelete  bool      `json:"isdelete" sql:"isdelete"`
-	TimeOpen  time.Time `json:"timeopen" sql:"timeopen"`
-	CreatedAt time.Time `json:"createdat" sql:"createdat"`
-	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body,omitempty"`
+	ShortBody string    `json:"short_body"`
+	IsRead    bool      `json:"isread"`
+	IsDelete  bool      `json:"isdelete"`
+	TimeOpen  time.Time `json:"timeopen"`
+	CreatedAt time.Time `json:"createdat"`
+	UpdatedAt time.Time `json:"updatedat"`
 }
 
 // GetMatchLoverResponse response is the response for get match lover
@@ -324,6 +325,7 @@ type CreateLetterRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	Title       string `json:"title" validate:"required"`
 	Body        string `json:"body" validate:"required"`
+	ShortBody   string `json:"short_body" validate:"required"`
 }
 
 // DeleteLetterRequest is used to delete letter
@@ -337,6 +339,12 @@ type GetLettersRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	Page        int    `json:"page"`
 	Limit       int    `json:"limit" validate:"required"`
+}
+
+// GetLetterRequest is used to get letter
+type GetLetterRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	LetterID    string `json:"letter_id" validate:"required"`
 }
 
 // InsertPsychologyRequest is used to insert psychology

@@ -108,6 +108,7 @@ type Letter struct {
 	UserID    string    `json:"userid" sql:"userid"`
 	Title     string    `json:"title" sql:"title"`
 	Body      string    `json:"body" sql:"body"`
+	ShortBody string    `json:"short_body" sql:"shortbody"`
 	IsRead    bool      `json:"isread" sql:"isread"`
 	IsDelete  bool      `json:"isdelete" sql:"isdelete"`
 	TimeOpen  time.Time `json:"timeopen" sql:"timeopen"`
