@@ -658,14 +658,18 @@ func (s *userService) UpdateUserName(ctx context.Context, request *UpdateUserNam
 	if err != nil {
 		return err.Error(), err
 	}
+	// change username to lowercase
+	request.Username = strings.ToLower(request.Username)
+
 	// Check if username is already taken
 	if exist, err := s.repo.CheckUsernameExists(ctx, request.Username); exist || err != nil {
 		s.logger.Error("Username is already taken", "error", err)
 		cusErr := utils.NewErrorResponse(utils.ExistUserName)
 		return cusErr.Error(), cusErr
 	}
-	// Update user name
-	user.Username = request.Username
+
+	// Update username
+	user.Username = strings.ToLower(request.Username)
 	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Cannot update user", "error", err)
@@ -2092,7 +2096,9 @@ func (s *userService) GetLetters(ctx context.Context, request *GetLettersRequest
 	aeskeyInDatabase, err := s.repo.GetAESKey(ctx, user.ID)
 	if err != nil {
 		s.logger.Error("Cannot get aes key", "error", err)
-		return nil, err
+		// return empty list
+		var responses []GetLettersResponse
+		return responses, nil
 	}
 	var responses []GetLettersResponse
 	for i := 0; i < len(letters); i++ {
