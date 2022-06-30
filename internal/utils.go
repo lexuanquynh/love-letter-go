@@ -9,6 +9,7 @@ import (
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const numberBytes = "0123456789"
+const numberLetters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -32,6 +33,17 @@ func GenerateRandomNumberString(n int) string {
 	for i := 0; i < n; i++ {
 		idx := rand.Int63() % int64(len(numberBytes))
 		sb.WriteByte(numberBytes[idx])
+	}
+	return sb.String()
+}
+
+// GenerateRandomNumberAndString generates a random number and a random string of given length
+func GenerateRandomNumberAndString(n int) string {
+	sb := strings.Builder{}
+	sb.Grow(n)
+	for i := 0; i < n; i++ {
+		idx := rand.Int63() % int64(len(numberLetters))
+		sb.WriteByte(numberLetters[idx])
 	}
 	return sb.String()
 }

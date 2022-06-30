@@ -131,11 +131,16 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 			return cusErr.Error(), cusErr
 		}
 	}
+	// check if user deleted
+	if user.Deleted {
+		cusErr := utils.NewErrorResponse(utils.UserDeleted)
+		return cusErr.Error(), cusErr
+	}
 	// if user is verified, return success.
 	if user.Verified == true {
 		return "Email has been successfully verified.", nil
 	}
-	// Get limit data
+	// Get limit datalo
 	limitData, err := s.repo.GetLimitData(ctx, user.ID, database.LimitTypeSendVerifyMail)
 	if err != nil {
 		s.logger.Error("Empty row get limit data", "error", err)
@@ -392,7 +397,7 @@ func (s *userService) Logout(ctx context.Context, request *LogoutRequest) error 
 	}
 	s.logger.Debug("successfully generated token", "refresh token", refreshToken)
 	// Update user token hash to database
-	err = s.repo.CreateUser(ctx, user)
+	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Error updating user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -411,11 +416,10 @@ func (s *userService) DeleteUser(ctx context.Context, request *DeleteUserRequest
 	if err != nil {
 		return err
 	}
-
 	// Change user to delete
 	user.Deleted = true
 	// Update user
-	err = s.repo.CreateUser(ctx, user)
+	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Error updating user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -549,7 +553,7 @@ func (s *userService) ConfirmCancelDeleteUser(ctx context.Context, request *Conf
 	}
 	// Change user status to not deleted
 	user.Deleted = false
-	err = s.repo.CreateUser(ctx, user)
+	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("unable to update user", "error", err)
 		return utils.NewErrorResponse(utils.InternalServerError)
@@ -662,7 +666,7 @@ func (s *userService) UpdateUserName(ctx context.Context, request *UpdateUserNam
 	}
 	// Update user name
 	user.Username = request.Username
-	err = s.repo.CreateUser(ctx, user)
+	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Cannot update user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1895,7 +1899,7 @@ func (s *userService) SetPassCode(ctx context.Context, request *SetPassCodeReque
 	}
 	// Update pass code by InsertUser API
 	user.PassCode = passCode
-	err = s.repo.CreateUser(ctx, user)
+	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Cannot update user", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -1985,12 +1989,45 @@ func (s *userService) CreateLetter(ctx context.Context, request *CreateLetterReq
 	if err != nil {
 		return nil, err
 	}
+	// get aes key from database
+	aeskeyInDatabase, err := s.repo.GetAESKey(ctx, user.ID)
+	aesKey := ""
+	if err != nil {
+		s.logger.Error("Cannot get aes key", "error", err)
+		// no key data found. create a new key
+		// generate aes key with 32 bits
+		aesKey = utils.GenerateRandomNumberAndString(32)
+		// save key to database
+		newAESData := database.AESKey{
+			UserID:    user.ID,
+			KeyString: aesKey,
+		}
+		err = s.repo.CreateAESKey(ctx, &newAESData)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.InternalServerError)
+		}
+	} else {
+		aesKey = aeskeyInDatabase
+	}
+
+	// using aes encryption to encrypt data
+	// encrypt title
+	title, err := utils.EncryptAES(request.Title, aesKey)
+	if err != nil {
+		s.logger.Error("Cannot encrypt title", "error", err)
+		return nil, err
+	}
+	// encrypt body
+	body, err := utils.EncryptAES(request.Body, aesKey)
+	if err != nil {
+		s.logger.Error("Cannot encrypt body", "error", err)
+		return nil, err
+	}
 	// Create letter
 	letter := &database.Letter{
-		UserID:    user.ID,
-		Title:     request.Title,
-		Body:      request.Body,
-		ShortBody: request.ShortBody,
+		UserID: user.ID,
+		Title:  title,
+		Body:   body,
 	}
 	err = s.repo.CreateLetter(ctx, letter)
 	if err != nil {
@@ -2051,12 +2088,23 @@ func (s *userService) GetLetters(ctx context.Context, request *GetLettersRequest
 	// Get letters success
 	s.logger.Info("Get letters success")
 
+	// get AES key from database
+	aeskeyInDatabase, err := s.repo.GetAESKey(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Cannot get aes key", "error", err)
+		return nil, err
+	}
 	var responses []GetLettersResponse
 	for i := 0; i < len(letters); i++ {
+		// decrypt title
+		title, err := utils.DecryptAES(letters[i].Title, aeskeyInDatabase)
+		if err != nil {
+			s.logger.Error("Cannot decrypt title", "error", err)
+			return nil, err
+		}
 		response := GetLettersResponse{
 			ID:        letters[i].ID,
-			Title:     letters[i].Title,
-			ShortBody: letters[i].ShortBody,
+			Title:     title,
 			IsRead:    letters[i].IsRead,
 			IsDelete:  letters[i].IsDelete,
 			TimeOpen:  letters[i].TimeOpen,
@@ -2090,12 +2138,31 @@ func (s *userService) GetLetter(ctx context.Context, request *GetLetterRequest) 
 	}
 	// Get letter success
 	s.logger.Info("Get letter success")
+	// get AESKey from database
+	aeskeyInDatabase, err := s.repo.GetAESKey(ctx, user.ID)
+	if err != nil {
+		s.logger.Error("Error getting aes key", "error", err)
+		// return
+		return nil, err
+	}
 
+	// decrypt title
+	title, err := utils.DecryptAES(letter.Title, aeskeyInDatabase)
+	if err != nil {
+		s.logger.Error("Cannot decrypt title", "error", err)
+		return nil, err
+	}
+
+	// decrypt body
+	body, err := utils.DecryptAES(letter.Body, aeskeyInDatabase)
+	if err != nil {
+		s.logger.Error("Cannot decrypt body", "error", err)
+		return nil, err
+	}
 	response := GetLettersResponse{
 		ID:        letter.ID,
-		Title:     letter.Title,
-		ShortBody: letter.ShortBody,
-		Body:      letter.Body,
+		Title:     title,
+		Body:      body,
 		IsRead:    letter.IsRead,
 		IsDelete:  letter.IsDelete,
 		TimeOpen:  letter.TimeOpen,

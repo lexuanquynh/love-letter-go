@@ -203,9 +203,8 @@ const letterSchema = `
 		create table if not exists letters (
 			id 		   	Varchar(36) not null,
 			userid 		Varchar(36) not null,
-			title 	  	Varchar(255) not null,
-		    body 	  	Varchar(10000) not null,
-		    shortbody 	Varchar(255) not null,
+			title 	  	bytea not null,
+		    body 	  	bytea not null,
 		    isread 		Boolean default false,
 		    isdelete 	Boolean default false,
 		    timeopen 	Timestamp not null,			
@@ -247,6 +246,19 @@ const holidaySchema = `
 		)
 `
 
+// schema for AES encrypt table
+const aesSchema = `
+		create table if not exists aeskeys (			
+			userid 		Varchar(36) not null,
+			keystring 	Varchar(32) not null,	
+			createdat  	Timestamp not null,
+			updatedat  	Timestamp not null,
+			unique(userid, keystring),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
@@ -281,6 +293,7 @@ func main() {
 	db.MustExec(letterSchema)
 	db.MustExec(psychologySchema)
 	db.MustExec(holidaySchema)
+	db.MustExec(aesSchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

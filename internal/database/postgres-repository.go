@@ -31,22 +31,16 @@ func (repo *postgresRepository) CreateUser(ctx context.Context, user *User) erro
 	}
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	query := "insert into users (id, email, username, password, passcode, tokenhash, verified, banned, deleted, role, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)" +
-		"on conflict (email) do update set username = $3, password = $4, passcode = $5, tokenhash = $6, verified = $7, banned = $8, deleted = $9, role = $10, updatedat = $11"
-	_, err := repo.db.ExecContext(ctx,
-		query,
-		user.ID,
-		user.Email,
-		user.Username,
-		user.Password,
-		user.PassCode,
-		user.TokenHash,
-		user.Verified,
-		user.Banned,
-		user.Deleted,
-		user.Role,
-		user.CreatedAt,
-		user.UpdatedAt)
+	query := "insert into users (id, username, email, password, tokenhash, createdat, updatedat) values ($1, $2, $3, $4, $5, $6, $7)"
+	_, err := repo.db.ExecContext(ctx, query, user.ID, user.Username, user.Email, user.Password, user.TokenHash, user.CreatedAt, user.UpdatedAt)
+	return err
+}
+
+// UpdateUser updates the user with the given id.
+func (repo *postgresRepository) UpdateUser(ctx context.Context, user *User) error {
+	user.UpdatedAt = time.Now()
+	query := "update users set username = $2, email = $3, password = $4, tokenhash = $5, verified = $6, banned = $7, deleted = $8, role = $9, updatedat = $10 where id = $1"
+	_, err := repo.db.ExecContext(ctx, query, user.ID, user.Username, user.Email, user.Password, user.TokenHash, user.Verified, user.Banned, user.Deleted, user.Role, user.UpdatedAt)
 	return err
 }
 
@@ -478,31 +472,19 @@ func (repo *postgresRepository) GetSchedule(ctx context.Context, userID string, 
 	return &schedule, err
 }
 
-//id 		   	Varchar(36) not null,
-//userid 		Varchar(36) not null,
-//title 	  	Varchar(255) not null,
-//body 	  	Varchar(10000) not null,
-//shortbody 	Varchar(255) not null,
-//isread 		Boolean default false,
-//isdelete 	Boolean default false,
-//timeopen 	Timestamp not null,
-//createdat  	Timestamp not null,
-//updatedat  	Timestamp not null,
-
 // CreateLetter create letter
 func (repo *postgresRepository) CreateLetter(ctx context.Context, letter *Letter) error {
 	letter.ID = uuid.NewV4().String()
 	letter.CreatedAt = time.Now()
 	letter.UpdatedAt = time.Now()
-	query := "insert into letters(id, userid, title, body, shortbody, isread, isdelete, timeopen, createdat, updatedat) " +
-		"values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)" +
-		"on conflict (id) do update set userid = $2, title = $3, body = $4, shortbody = $5, isread = $6, isdelete = $7, timeopen = $8, createdat = $9, updatedat = $10"
+	query := "insert into letters(id, userid, title, body, isread, isdelete, timeopen, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8, $9)" +
+		"on conflict (id) do update set userid = $2, title = $3, body = $4, isread = $5, isdelete = $6, timeopen = $7, createdat = $8, updatedat = $9"
 	_, err := repo.db.ExecContext(ctx, query,
 		letter.ID,
 		letter.UserID,
 		letter.Title,
 		letter.Body,
-		letter.ShortBody,
 		letter.IsRead,
 		letter.IsDelete,
 		letter.TimeOpen,
@@ -518,21 +500,9 @@ func (repo *postgresRepository) DeleteLetter(ctx context.Context, userID string,
 	return err
 }
 
-//ID        string    `json:"id" sql:"id"`
-//UserID    string    `json:"userid" sql:"userid"`
-//Title     string    `json:"title" sql:"title"`
-//Body      string    `json:"body" sql:"body"`
-//ShortBody string    `json:"short_body" sql:"shortbody"`
-//IsRead    bool      `json:"isread" sql:"isread"`
-//IsDelete  bool      `json:"isdelete" sql:"isdelete"`
-//TimeOpen  time.Time `json:"timeopen" sql:"timeopen"`
-//CreatedAt time.Time `json:"createdat" sql:"createdat"`
-//UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
-
 // GetLetters Get letters by user id and page. maximum by pageSize letters, default is 10
 func (repo *postgresRepository) GetLetters(ctx context.Context, userID string, page int, pageSize int) ([]Letter, error) {
-	query := "select id, userid, title, shortbody, isread, isdelete, timeopen, createdat, updatedat from letters where userid = $1 order by createdat desc limit $2 offset $3"
-	//query := "select * from letters where userid = $1 order by timeopen desc limit $2 offset $3"
+	query := "select * from letters where userid = $1 order by createdat desc limit $2 offset $3"
 	var letters []Letter
 	err := repo.db.SelectContext(ctx, &letters, query, userID, pageSize, page*pageSize)
 	return letters, err
@@ -612,4 +582,34 @@ func (repo *postgresRepository) GetHolidays(ctx context.Context, limit int, offs
 	var holidays []Holiday
 	err := repo.db.SelectContext(ctx, &holidays, query, limit, offset)
 	return holidays, err
+}
+
+// CreateAESKey create aes key
+func (repo *postgresRepository) CreateAESKey(ctx context.Context, aesKey *AESKey) error {
+	aesKey.CreatedAt = time.Now()
+	aesKey.UpdatedAt = time.Now()
+	query := "insert into aeskeys(userid, keystring, createdat, updatedat) " +
+		"values($1, $2, $3, $4)" +
+		"on conflict (userid, keystring) do update set keystring = $2, createdat = $3, updatedat = $4"
+	_, err := repo.db.ExecContext(ctx, query,
+		aesKey.UserID,
+		aesKey.KeyString,
+		aesKey.CreatedAt,
+		aesKey.UpdatedAt)
+	return err
+}
+
+// DeleteAESKey Delete aes key by userID
+func (repo *postgresRepository) DeleteAESKey(ctx context.Context, userID string) error {
+	query := "delete from aeskeys where userid = $1"
+	_, err := repo.db.ExecContext(ctx, query, userID)
+	return err
+}
+
+// GetAESKey Get AES keys by user id
+func (repo *postgresRepository) GetAESKey(ctx context.Context, userID string) (string, error) {
+	query := "select keystring from aeskeys where userid = $1"
+	var keystring string
+	err := repo.db.GetContext(ctx, &keystring, query, userID)
+	return keystring, err
 }

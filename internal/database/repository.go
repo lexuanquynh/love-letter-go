@@ -5,6 +5,8 @@ import "context"
 type UserRepository interface {
 	// CreateUser Create  new user
 	CreateUser(ctx context.Context, user *User) error
+	// UpdateUser Update user
+	UpdateUser(ctx context.Context, user *User) error
 	// UpdateUserVerificationStatus Update user verification status
 	UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error
 	// InsertVerificationData Save verification data into database
@@ -86,4 +88,10 @@ type UserRepository interface {
 	DeleteHoliday(ctx context.Context, holidayID string) error
 	// GetHolidays Get holidays by limit and offset
 	GetHolidays(ctx context.Context, limit int, offset int) ([]Holiday, error)
+	// CreateAESKey Create AES key
+	CreateAESKey(ctx context.Context, aesKey *AESKey) error
+	// DeleteAESKey Delete AES key by keyID
+	DeleteAESKey(ctx context.Context, keyID string) error
+	// GetAESKey Get AES keys by user id
+	GetAESKey(ctx context.Context, userID string) (string, error)
 }

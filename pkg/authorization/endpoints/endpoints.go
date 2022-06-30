@@ -389,8 +389,7 @@ func MakeLogoutEndpoint(svc authorization.Service) endpoint.Endpoint {
 		err := svc.Logout(ctx, &req)
 
 		if err != nil {
-			cusErr := utils.NewErrorResponse(utils.BadRequest)
-			return nil, cusErr
+			return nil, err
 		}
 		message := "Logout successfully"
 		return message, nil
@@ -410,8 +409,7 @@ func MakeDeleteUserEndpoint(svc authorization.Service) endpoint.Endpoint {
 		err := svc.DeleteUser(ctx, &req)
 
 		if err != nil {
-			cusErr := utils.NewErrorResponse(utils.NotFound)
-			return nil, cusErr
+			return nil, err
 		}
 		message := "Delete user successfully"
 		return message, nil

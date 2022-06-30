@@ -102,13 +102,27 @@ type Schedule struct {
 	UpdatedAt      time.Time `json:"updatedat" sql:"updatedat"`
 }
 
+//create table if not exists letters (
+//id 		   	Varchar(36) not null,
+//userid 		Varchar(36) not null,
+//title 	  	Varchar(255) not null,
+//body 	  	bytea not null,
+//isread 		Boolean default false,
+//isdelete 	Boolean default false,
+//timeopen 	Timestamp not null,
+//createdat  	Timestamp not null,
+//updatedat  	Timestamp not null,
+//Primary Key (id),
+//Constraint fk_user_id Foreign Key(userid) References users(id)
+//On Delete Cascade On Update Cascade
+//)
+
 // Letter represents the type for the data stored for letter.
 type Letter struct {
 	ID        string    `json:"id" sql:"id"`
 	UserID    string    `json:"userid" sql:"userid"`
-	Title     string    `json:"title" sql:"title"`
-	Body      string    `json:"body" sql:"body"`
-	ShortBody string    `json:"short_body" sql:"shortbody"`
+	Title     []byte    `json:"title" sql:"title"`
+	Body      []byte    `json:"body" sql:"body"`
 	IsRead    bool      `json:"isread" sql:"isread"`
 	IsDelete  bool      `json:"isdelete" sql:"isdelete"`
 	TimeOpen  time.Time `json:"timeopen" sql:"timeopen"`
@@ -136,6 +150,14 @@ type Holiday struct {
 	EndDate     time.Time `json:"enddate" sql:"enddate"`
 	CreatedAt   time.Time `json:"createdat" sql:"createdat"`
 	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
+}
+
+// AESKey represents the type for the data stored for aes key.
+type AESKey struct {
+	UserID    string    `json:"userid" sql:"userid"`
+	KeyString string    `json:"keyString" sql:"keystring"`
+	CreatedAt time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }
 
 const MatchLoverStateKey = "state"

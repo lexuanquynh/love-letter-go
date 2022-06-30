@@ -238,7 +238,6 @@ type GetLettersResponse struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body,omitempty"`
-	ShortBody string    `json:"short_body"`
 	IsRead    bool      `json:"isread"`
 	IsDelete  bool      `json:"isdelete"`
 	TimeOpen  time.Time `json:"timeopen"`
@@ -325,7 +324,6 @@ type CreateLetterRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	Title       string `json:"title" validate:"required"`
 	Body        string `json:"body" validate:"required"`
-	ShortBody   string `json:"short_body" validate:"required"`
 }
 
 // DeleteLetterRequest is used to delete letter
