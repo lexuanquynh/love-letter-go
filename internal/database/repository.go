@@ -94,4 +94,14 @@ type UserRepository interface {
 	DeleteAESKey(ctx context.Context, keyID string) error
 	// GetAESKey Get AES keys by user id
 	GetAESKey(ctx context.Context, userID string) (string, error)
+	// InsertNotification Create notification
+	InsertNotification(ctx context.Context, notification *Notification) error
+	// UpdateNotification Update notification
+	UpdateNotification(ctx context.Context, notification *Notification) error
+	// DeleteNotification Delete notification by userId and notificationID
+	DeleteNotification(ctx context.Context, userID string, notificationID string) error
+	// GetNotifications Get notifications by user id, offset and limit
+	GetNotifications(ctx context.Context, userID string, offset int, limit int) ([]Notification, error)
+	// GetNotification Get notification by notificationID
+	GetNotification(ctx context.Context, notificationID string) (*Notification, error)
 }

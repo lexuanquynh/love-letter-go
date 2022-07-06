@@ -54,6 +54,9 @@ type Set struct {
 	CreateHolidayEndpoint           endpoint.Endpoint
 	DeleteHolidayEndpoint           endpoint.Endpoint
 	GetHolidaysEndpoint             endpoint.Endpoint
+	GetNotificationsEndpoint        endpoint.Endpoint
+	GetNotificationEndpoint         endpoint.Endpoint
+	DeleteNotificationEndpoint      endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -258,6 +261,21 @@ func NewEndpointSet(svc authorization.Service,
 	getHolidaysEndpoint = middleware.ValidateParamRequest(validator, logger)(getHolidaysEndpoint)
 	getHolidaysEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getHolidaysEndpoint)
 
+	getNotificationsEndpoint := MakeGetNotificationsEndpoint(svc)
+	getNotificationsEndpoint = middleware.RateLimitRequest(tb, logger)(getNotificationsEndpoint)
+	getNotificationsEndpoint = middleware.ValidateParamRequest(validator, logger)(getNotificationsEndpoint)
+	getNotificationsEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getNotificationsEndpoint)
+
+	getNotificationEndpoint := MakeGetNotificationEndpoint(svc)
+	getNotificationEndpoint = middleware.RateLimitRequest(tb, logger)(getNotificationEndpoint)
+	getNotificationEndpoint = middleware.ValidateParamRequest(validator, logger)(getNotificationEndpoint)
+	getNotificationEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getNotificationEndpoint)
+
+	deleteNotificationEndpoint := MakeDeleteNotificationEndpoint(svc)
+	deleteNotificationEndpoint = middleware.RateLimitRequest(tb, logger)(deleteNotificationEndpoint)
+	deleteNotificationEndpoint = middleware.ValidateParamRequest(validator, logger)(deleteNotificationEndpoint)
+	deleteNotificationEndpoint = middleware.ValidateAccessToken(auth, r, logger)(deleteNotificationEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:             healthCheckEndpoint,
 		RegisterEndpoint:                registerEndpoint,
@@ -300,6 +318,9 @@ func NewEndpointSet(svc authorization.Service,
 		CreateHolidayEndpoint:           createHolidayEndpoint,
 		DeleteHolidayEndpoint:           deleteHolidayEndpoint,
 		GetHolidaysEndpoint:             getHolidaysEndpoint,
+		GetNotificationsEndpoint:        getNotificationsEndpoint,
+		GetNotificationEndpoint:         getNotificationEndpoint,
+		DeleteNotificationEndpoint:      deleteNotificationEndpoint,
 	}
 }
 
@@ -988,6 +1009,54 @@ func MakeGetHolidaysEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		response, err := svc.GetHolidays(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetNotificationsEndpoint returns an endpoint that invokes GetNotifications on the service.
+func MakeGetNotificationsEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetNotificationsRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetNotifications(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetNotificationEndpoint returns an endpoint that invokes GetNotification on the service.
+func MakeGetNotificationEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.NotificationRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetNotification(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeDeleteNotificationEndpoint returns an endpoint that invokes DeleteNotification on the service.
+func MakeDeleteNotificationEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.NotificationRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.DeleteNotification(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

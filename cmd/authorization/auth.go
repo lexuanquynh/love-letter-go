@@ -259,6 +259,25 @@ const aesSchema = `
 		)
 `
 
+// Schema for user's notification table
+const notificationSchema = `
+		create table if not exists notifications (			
+			id 		   	Varchar(36) not null,
+			userid 		Varchar(36) not null,
+		    notitype 	Varchar(36) not null,
+			title 	  	Varchar(255) not null,
+			description Varchar(1000) not null,
+		    isread 		Boolean default false,
+		    isdelete 	Boolean default false,
+			timeopen 	Timestamp not null,			
+			createdat  	Timestamp not null,
+			updatedat  	Timestamp not null,
+			Primary Key (id),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
@@ -294,6 +313,7 @@ func main() {
 	db.MustExec(psychologySchema)
 	db.MustExec(holidaySchema)
 	db.MustExec(aesSchema)
+	db.MustExec(notificationSchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

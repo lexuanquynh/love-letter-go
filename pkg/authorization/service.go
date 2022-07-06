@@ -45,4 +45,7 @@ type Service interface {
 	CreateHoliday(ctx context.Context, request *CreateHolidayRequest) (interface{}, error)
 	DeleteHoliday(ctx context.Context, request *DeleteHolidayRequest) (interface{}, error)
 	GetHolidays(ctx context.Context, request *GetHolidaysRequest) (interface{}, error)
+	GetNotifications(ctx context.Context, request *GetNotificationsRequest) (interface{}, error)
+	GetNotification(ctx context.Context, request *NotificationRequest) (interface{}, error)
+	DeleteNotification(ctx context.Context, request *NotificationRequest) (interface{}, error)
 }

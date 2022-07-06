@@ -160,6 +160,20 @@ type AESKey struct {
 	UpdatedAt time.Time `json:"updatedat" sql:"updatedat"`
 }
 
+// Notification represents the type for the data stored for notification.
+type Notification struct {
+	ID          string    `json:"id" sql:"id"`
+	UserID      string    `json:"userid" sql:"userid"`
+	NotiType    string    `json:"notitype" sql:"notitype"`
+	Title       string    `json:"title" sql:"title"`
+	Description string    `json:"description" sql:"description"`
+	IsRead      bool      `json:"isread" sql:"isread"`
+	IsDelete    bool      `json:"isdelete" sql:"isdelete"`
+	TimeOpen    time.Time `json:"timeopen" sql:"timeopen"`
+	CreatedAt   time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
+}
+
 const MatchLoverStateKey = "state"
 
 const (
@@ -209,4 +223,9 @@ const (
 	UserRoleTypeReporter = "reporter"
 	UserRoleTypeSupport  = "support"
 	UserRoleTypeGuest    = "guest"
+)
+
+const (
+	NotificationTypeConfirmEmail   = "confirmEmail"
+	NotificationTypeChangeUsername = "changeUsername"
 )

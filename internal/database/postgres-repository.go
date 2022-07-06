@@ -613,3 +613,68 @@ func (repo *postgresRepository) GetAESKey(ctx context.Context, userID string) (s
 	err := repo.db.GetContext(ctx, &keystring, query, userID)
 	return keystring, err
 }
+
+// InsertNotification create notification
+func (repo *postgresRepository) InsertNotification(ctx context.Context, notification *Notification) error {
+	notification.ID = uuid.NewV4().String()
+	notification.CreatedAt = time.Now()
+	notification.UpdatedAt = time.Now()
+	query := "insert into notifications(id, userid, notitype, title, description, isread, isdelete, timeopen, createdat, updatedat) " +
+		"values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)" +
+		"on conflict (id) do update set userid = $2, notitype = $3, title = $4, description = $5, isread = $6, isdelete = $7, timeopen = $8, createdat = $9, updatedat = $10"
+	_, err := repo.db.ExecContext(ctx, query,
+		notification.ID,
+		notification.UserID,
+		notification.NotiType,
+		notification.Title,
+		notification.Description,
+		notification.IsRead,
+		notification.IsDelete,
+		notification.TimeOpen,
+		notification.CreatedAt,
+		notification.UpdatedAt)
+	return err
+}
+
+// UpdateNotification Update notification
+func (repo *postgresRepository) UpdateNotification(ctx context.Context, notification *Notification) error {
+	notification.UpdatedAt = time.Now()
+	query := "update notifications set userid = $2, notitype = $3, title = $4, description = $5, isread = $6, isdelete = $7, timeopen = $8, updatedat = $9 where id = $1"
+	_, err := repo.db.ExecContext(ctx, query,
+		notification.ID,
+		notification.UserID,
+		notification.NotiType,
+		notification.Title,
+		notification.Description,
+		notification.IsRead,
+		notification.IsDelete,
+		notification.TimeOpen,
+		notification.UpdatedAt)
+	return err
+}
+
+// DeleteNotification Delete notification by userId and notificationID
+func (repo *postgresRepository) DeleteNotification(ctx context.Context, userID string, notificationID string) error {
+	// delete just change isdelete to true
+	query := "update notifications set isdelete = true where userid = $1 and id = $2"
+	_, err := repo.db.ExecContext(ctx, query, userID, notificationID)
+	return err
+}
+
+// GetNotifications Get notifications by user id, offset and limit
+func (repo *postgresRepository) GetNotifications(ctx context.Context, userID string, offset int, limit int) ([]Notification, error) {
+	// get notifications by user id and offset and limit, and isdelete is false
+	query := "select * from notifications where userid = $1 and isdelete = false order by timeopen desc limit $2 offset $3"
+	var notifications []Notification
+	err := repo.db.SelectContext(ctx, &notifications, query, userID, limit, offset)
+	return notifications, err
+}
+
+// GetNotification Get notification by notificationID
+func (repo *postgresRepository) GetNotification(ctx context.Context, notificationID string) (*Notification, error) {
+	// get notification by notificationID and isdelete is false
+	query := "select * from notifications where id = $1 and isdelete = false"
+	var notification Notification
+	err := repo.db.GetContext(ctx, &notification, query, notificationID)
+	return &notification, err
+}

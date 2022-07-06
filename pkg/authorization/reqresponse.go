@@ -103,6 +103,16 @@ type GetProfileResponse struct {
 	Country   string `json:"country,omitempty"`
 }
 
+// NotificationResponse is the response for get user notification
+type NotificationResponse struct {
+	ID          string    `json:"id"`
+	Notitype    string    `json:"notitype"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	IsRead      bool      `json:"is_read"`
+	CreatedAt   time.Time `json:"createdat"`
+}
+
 // UpdatePasswordRequest is used to change password
 type UpdatePasswordRequest struct {
 	AccessToken     string `json:"access_token" validate:"required"`
@@ -386,4 +396,17 @@ type GetHolidaysRequest struct {
 	AccessToken string `json:"access_token" validate:"required"`
 	Page        int    `json:"page"`
 	Limit       int    `json:"limit" validate:"required"`
+}
+
+// GetNotificationsRequest is used to get notifications
+type GetNotificationsRequest struct {
+	AccessToken string `json:"access_token" validate:"required"`
+	Offset      int    `json:"offset"`
+	Limit       int    `json:"limit" validate:"required"`
+}
+
+// NotificationRequest is used to get notification
+type NotificationRequest struct {
+	AccessToken    string `json:"access_token" validate:"required"`
+	NotificationID string `json:"notification_id" validate:"required"`
 }

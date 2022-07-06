@@ -113,7 +113,57 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr.Error(), cusErr
 	}
+
+	//ID          string    `json:"id" sql:"id"`
+	//UserID      string    `json:"userid" sql:"userid"`
+	//NotiType    string    `json:"notitype" sql:"notitype"`
+	//Title       string    `json:"title" sql:"title"`
+	//Description string    `json:"description" sql:"description"`
+
+	// Generate notification title and description by notification type
+	notificationTitle, notificationDescription := s.generateNotificationTitleAndDescription(database.NotificationTypeConfirmEmail)
+
+	// Insert into notification database: user need to confirm his email
+	notification := database.Notification{
+		UserID:      user.ID,
+		NotiType:    database.NotificationTypeConfirmEmail,
+		Title:       notificationTitle,
+		Description: notificationDescription,
+	}
+
+	err = s.repo.InsertNotification(ctx, &notification)
+	if err != nil {
+		s.logger.Error("Error storing notification data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+	// Insert into notification database: user need change username
+	notificationTitle, notificationDescription = s.generateNotificationTitleAndDescription(database.NotificationTypeChangeUsername)
+	notification = database.Notification{
+		UserID:      user.ID,
+		NotiType:    database.NotificationTypeChangeUsername,
+		Title:       notificationTitle,
+		Description: notificationDescription,
+	}
+	err = s.repo.InsertNotification(ctx, &notification)
+	if err != nil {
+		s.logger.Error("Error storing notification data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+
 	return "success created user. Please confirm your email to active your account.", nil
+}
+
+// Generate notification title and description by notification type
+func (s *userService) generateNotificationTitleAndDescription(notiType string) (string, string) {
+	switch notiType {
+	case database.NotificationTypeConfirmEmail:
+		return "Confirm your email", "Please confirm your email to active your account."
+	case database.NotificationTypeChangeUsername:
+		return "Change your username", "Please change your username."
+	}
+	return "", ""
 }
 
 // VerifyMail verifies the user's email.
@@ -193,6 +243,14 @@ func (s *userService) VerifyMail(ctx context.Context, request *VerifyMailRequest
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr.Error(), cusErr
 	}
+	// delete verify notification data
+	err = s.repo.DeleteNotification(ctx, user.ID, database.NotificationTypeConfirmEmail)
+	if err != nil {
+		s.logger.Error("unable to delete the notification data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+
 	// Reset limit
 	limitData.UserID = user.ID
 	limitData.NumOfLimit = 0
@@ -673,6 +731,13 @@ func (s *userService) UpdateUserName(ctx context.Context, request *UpdateUserNam
 	err = s.repo.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error("Cannot update user", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr.Error(), cusErr
+	}
+	// delete change username in notification data
+	err = s.repo.DeleteNotification(ctx, user.ID, database.NotificationTypeChangeUsername)
+	if err != nil {
+		s.logger.Error("Cannot delete notification data", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr.Error(), cusErr
 	}
@@ -2355,4 +2420,122 @@ func (s *userService) GetHolidays(ctx context.Context, request *GetHolidaysReque
 	// Get holidays success
 	s.logger.Info("Get holidays success")
 	return holidays, nil
+}
+
+// GetNotifications get notifications
+func (s *userService) GetNotifications(ctx context.Context, request *GetNotificationsRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get notifications
+	notifications, err := s.repo.GetNotifications(ctx, userID, request.Offset, request.Limit)
+	if err != nil {
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No notifications")
+			return nil, nil
+		}
+		s.logger.Error("Cannot get notifications", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+
+	// Get notifications success
+	s.logger.Info("Get notifications success")
+	// Create notificationResponse
+	notificationResponses := make([]*NotificationResponse, len(notifications))
+	for i, notification := range notifications {
+		notificationResponses[i] = &NotificationResponse{
+			ID:          notification.ID,
+			Notitype:    notification.NotiType,
+			Title:       notification.Title,
+			Description: notification.Description,
+			IsRead:      notification.IsRead,
+			CreatedAt:   notification.CreatedAt,
+		}
+	}
+	return notificationResponses, nil
+}
+
+// GetNotification get notification
+func (s *userService) GetNotification(ctx context.Context, request *NotificationRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get notification
+	notification, err := s.repo.GetNotification(ctx, request.NotificationID)
+	if err != nil {
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No notification")
+			return nil, nil
+		}
+
+		s.logger.Error("Cannot get notification", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Update notification status
+	notification.TimeOpen = time.Now()
+	notification.IsRead = true
+	err = s.repo.UpdateNotification(ctx, notification)
+	if err != nil {
+		s.logger.Error("Cannot update notification", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+
+	// Get notification success
+	s.logger.Info("Get notification success")
+	// Create notificationResponse
+	notificationResponse := &NotificationResponse{
+		ID:          notification.ID,
+		Notitype:    notification.NotiType,
+		Title:       notification.Title,
+		Description: notification.Description,
+		IsRead:      notification.IsRead,
+		CreatedAt:   notification.CreatedAt,
+	}
+	return notificationResponse, nil
+}
+
+// DeleteNotification delete notification
+func (s *userService) DeleteNotification(ctx context.Context, request *NotificationRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Delete notification
+	err = s.repo.DeleteNotification(ctx, userID, request.NotificationID)
+	if err != nil {
+		s.logger.Error("Cannot delete notification", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Delete notification success
+	s.logger.Info("Delete notification success")
+	return "Delete notification success", nil
 }

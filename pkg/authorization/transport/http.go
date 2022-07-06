@@ -301,6 +301,30 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	// get notifications
+	m.Handle("/get-notifications", httptransport.NewServer(
+		ep.GetNotificationsEndpoint,
+		decodeHTTPGetNotificationsRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// get notification
+	m.Handle("/get-notification", httptransport.NewServer(
+		ep.GetNotificationEndpoint,
+		decodeHTTPGetNotificationRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// delete notification
+	m.Handle("/delete-notification", httptransport.NewServer(
+		ep.DeleteNotificationEndpoint,
+		decodeHTTPDeleteNotificationRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -950,6 +974,10 @@ func decodeHTTPGetLettersRequest(_ context.Context, r *http.Request) (interface{
 		if req.AccessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		//Limit must not be negative
+		if req.Limit < 0 {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -1069,6 +1097,69 @@ func decodeHTTPDeleteHolidayRequest(_ context.Context, r *http.Request) (interfa
 func decodeHTTPGetHolidaysRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.GetHolidaysRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		//Limit must not be negative
+		if req.Limit < 0 {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetNotificationsRequest decode request
+func decodeHTTPGetNotificationsRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetNotificationsRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		//Limit must not be negative
+		if req.Limit < 0 {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetNotificationRequest decode request
+func decodeHTTPGetNotificationRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.NotificationRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPDeleteNotificationRequest decode request
+func decodeHTTPDeleteNotificationRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.NotificationRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
