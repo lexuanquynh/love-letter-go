@@ -48,4 +48,6 @@ type Service interface {
 	GetNotifications(ctx context.Context, request *GetNotificationsRequest) (interface{}, error)
 	GetNotification(ctx context.Context, request *NotificationRequest) (interface{}, error)
 	DeleteNotification(ctx context.Context, request *NotificationRequest) (interface{}, error)
+	SendHolidayNotification(ctx context.Context, UserID string, holidayID string) error
+	RunSchedule(ctx context.Context) error
 }

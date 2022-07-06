@@ -114,12 +114,6 @@ func (s *userService) SignUp(ctx context.Context, request *RegisterRequest) (str
 		return cusErr.Error(), cusErr
 	}
 
-	//ID          string    `json:"id" sql:"id"`
-	//UserID      string    `json:"userid" sql:"userid"`
-	//NotiType    string    `json:"notitype" sql:"notitype"`
-	//Title       string    `json:"title" sql:"title"`
-	//Description string    `json:"description" sql:"description"`
-
 	// Generate notification title and description by notification type
 	notificationTitle, notificationDescription := s.generateNotificationTitleAndDescription(database.NotificationTypeConfirmEmail)
 
@@ -162,6 +156,10 @@ func (s *userService) generateNotificationTitleAndDescription(notiType string) (
 		return "Confirm your email", "Please confirm your email to active your account."
 	case database.NotificationTypeChangeUsername:
 		return "Change your username", "Please change your username."
+	case database.NotificationTypeConfirmMatch:
+		return "Confirm your match", "Please confirm your love match."
+	case database.NotificationTypeResponseMatch:
+		return "Response your match", "Someone responded to your request."
 	}
 	return "", ""
 }
@@ -1341,7 +1339,7 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		Vi: &viContent,
 	}
 	data := map[string]interface{}{
-		"userid": matchLove.UserID1,
+		"userID": matchLove.UserID1,
 		"email":  matchLove.Email1,
 	}
 	// get playerData of matched user
@@ -1356,8 +1354,28 @@ func (s *userService) MatchLover(ctx context.Context, request *MatchLoverRequest
 		Message:  contents,
 		Data:     data,
 	}
+
 	s.logger.Info("Sending notification to user")
 	s.notificationService.SendNotification(ctx, &notificationData)
+
+	// Generate notification title and description by notification type
+	notificationTitle, notificationDescription := s.generateNotificationTitleAndDescription(database.NotificationTypeConfirmMatch)
+
+	// Insert into notification database: user need to confirm this match
+	notification := database.Notification{
+		UserID:      matchLove.UserID2,
+		NotiType:    database.NotificationTypeConfirmMatch,
+		Title:       notificationTitle,
+		Description: notificationDescription,
+	}
+
+	// Insert into notification database: show sending notification into userID2
+	err = s.repo.InsertNotification(ctx, &notification)
+	if err != nil {
+		s.logger.Error("Cannot insert notification", "error", err)
+		return nil
+	}
+	s.logger.Debug("Successfully sent notification")
 	return nil
 }
 
@@ -1403,7 +1421,7 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		Vi: &viContent,
 	}
 	data := map[string]interface{}{
-		"userid": matchLove.UserID1,
+		"userID": matchLove.UserID1,
 		"email":  matchLove.Email1,
 	}
 	// get playerData of matched user
@@ -1571,7 +1589,7 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 		Vi: &viContent,
 	}
 	data := map[string]interface{}{
-		"userid": matchLove.UserID1,
+		"userID": matchLove.UserID1,
 		"email":  matchLove.Email1,
 	}
 	// get playerData of matched user
@@ -1581,6 +1599,7 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 		s.logger.Error("Cannot get player data", "error", err)
 		return nil
 	}
+
 	notificationData := NotificationData{
 		PlayerID: playerData.PlayerId,
 		Message:  contents,
@@ -1589,6 +1608,21 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 	s.logger.Info("Sending notification to user")
 	s.notificationService.SendNotification(ctx, &notificationData)
 
+	// Generate notification title and description by notification NotificationTypeResponseMatch type
+	notificationTitle, notificationDescription := s.generateNotificationTitleAndDescription(database.NotificationTypeResponseMatch)
+	// Insert into notification database: user need to confirm his email
+	notification := database.Notification{
+		UserID:      matchLove.UserID1,
+		NotiType:    database.NotificationTypeResponseMatch,
+		Title:       notificationTitle,
+		Description: notificationDescription,
+	}
+	err = s.repo.InsertNotification(ctx, &notification)
+	if err != nil {
+		s.logger.Error("Cannot insert notification", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
 	return nil
 }
 
@@ -2355,11 +2389,17 @@ func (s *userService) CreateHoliday(ctx context.Context, request *CreateHolidayR
 	if request.EndDate != "" {
 		endDate, err := time.Parse("2006-01-02", request.EndDate)
 		if err != nil {
-			s.logger.Error("Cannot parse birthday", "error", err)
+			s.logger.Error("Cannot parse end date", "error", err)
 			cusErr := utils.NewErrorResponse(utils.BadRequest)
 			return nil, cusErr
 		}
 		holiday.EndDate = endDate
+	}
+	// check end date > start date
+	if holiday.EndDate.Before(holiday.StartDate) {
+		s.logger.Error("End date is before start date")
+		cusErr := utils.NewErrorResponse(utils.BadRequest)
+		return nil, cusErr
 	}
 	err = s.repo.CreateHoliday(ctx, holiday)
 	if err != nil {
@@ -2369,6 +2409,25 @@ func (s *userService) CreateHoliday(ctx context.Context, request *CreateHolidayR
 	}
 	// Create holiday success
 	s.logger.Info("Create holiday success")
+	// Add holiday to schedule for send notification annual
+	schedule := database.Schedule{
+		UserID:         userID,
+		Name:           database.ScheduleActionTypeSendHolidayNotifications,
+		ScheduleType:   database.ScheduleTypeAnnually,
+		Description:    "Send holiday notification annually",
+		Parameter:      holiday.ID,
+		TimeExecute:    holiday.StartDate,
+		RemoveAfterRun: false,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+	err = s.repo.InsertSchedule(ctx, &schedule)
+	if err != nil {
+		s.logger.Error("Cannot insert schedule", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+
 	return "Create holiday success", nil
 }
 
@@ -2538,4 +2597,132 @@ func (s *userService) DeleteNotification(ctx context.Context, request *Notificat
 	// Delete notification success
 	s.logger.Info("Delete notification success")
 	return "Delete notification success", nil
+}
+
+// RunSchedule run schedule
+func (s *userService) RunSchedule(ctx context.Context) error {
+	// Get schedule
+	schedules, err := s.repo.GetSchedules(ctx)
+	if err != nil {
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No schedule")
+			return nil
+		}
+		s.logger.Error("Cannot get schedule", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+
+	// run schedule
+	for _, schedule := range schedules {
+		// Check if time execute is today with ScheduleType is annually, run this schedule
+		now := time.Now()
+		needRunSchedule := false
+
+		if schedule.ScheduleType == database.ScheduleTypeAnnually &&
+			now.Month() == schedule.TimeExecute.Month() &&
+			now.Day() == schedule.TimeExecute.Day() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == database.ScheduleTypeDaily &&
+			now.Day() == schedule.TimeExecute.Day() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == database.ScheduleTypeWeekly &&
+			now.Weekday() == schedule.TimeExecute.Weekday() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == database.ScheduleTypeMonthly &&
+			now.Month() == schedule.TimeExecute.Month() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == database.ScheduleTypeHourly &&
+			now.Hour() == schedule.TimeExecute.Hour() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == database.ScheduleTypeMinutely &&
+			now.Minute() == schedule.TimeExecute.Minute() {
+			needRunSchedule = true
+		} else if schedule.ScheduleType == database.ScheduleTypeOneTime &&
+			now.Unix() >= schedule.TimeExecute.Unix() {
+			needRunSchedule = true
+		}
+		if needRunSchedule {
+			userID := schedule.UserID
+			// execute the func by schedule name here
+			switch schedule.Name {
+			case database.ScheduleActionTypeDeleteUser:
+				// Delete user here
+				err = s.repo.DeleteUser(ctx, userID)
+				if err != nil {
+					s.logger.Error("Cannot delete user in schedule", "error", err)
+					cusErr := utils.NewErrorResponse(utils.InternalServerError)
+					return cusErr
+				}
+			case database.ScheduleActionTypeSendHolidayNotifications:
+				// read params from schedule here
+				userID = schedule.UserID
+				holidayID := schedule.Parameter
+				err = s.SendHolidayNotification(ctx, userID, holidayID)
+				if err != nil {
+					s.logger.Error("error running schedule ", schedule.Name, err)
+					cusErr := utils.NewErrorResponse(utils.InternalServerError)
+					return cusErr
+				}
+			}
+			// check if you need remove schedule after run
+			if schedule.RemoveAfterRun {
+				err = s.repo.DeleteSchedule(ctx, userID, schedule.Name)
+				if err != nil {
+					s.logger.Error("Cannot delete schedule", "error", err)
+					cusErr := utils.NewErrorResponse(utils.InternalServerError)
+					return cusErr
+				}
+			}
+		}
+	}
+
+	// Run schedule success
+	s.logger.Info("Run schedule success")
+	return nil
+}
+
+// SendHolidayNotification send holiday notification
+func (s *userService) SendHolidayNotification(ctx context.Context, UserID string, holidayID string) error {
+	// get holiday by holidayID
+	holiday, err := s.repo.GetHoliday(ctx, holidayID)
+	if err != nil {
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No holiday")
+			return nil
+		}
+		s.logger.Error("Cannot get holiday", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+
+	// get playerData of matched user
+	playerData, err := s.repo.GetPlayerData(ctx, UserID)
+	// if user not enable notification, skip
+	if err != nil {
+		s.logger.Error("Cannot get player data", "error", err)
+		return nil
+	}
+	// Send notification to matched user
+	var viContent = "💌 💕Hôm nay là " + holiday.Title + "💌 💕"
+	contents := onesignal.StringMap{
+		En: "💌 💕Today is " + holiday.Title + "💌 💕",
+		Vi: &viContent,
+	}
+	data := map[string]interface{}{
+		"userID":    UserID,
+		"holidayID": holidayID,
+	}
+
+	notificationData := NotificationData{
+		PlayerID: playerData.PlayerId,
+		Message:  contents,
+		Data:     data,
+	}
+
+	s.logger.Info("Sending notification to user")
+	s.notificationService.SendNotification(ctx, &notificationData)
+	return nil
 }

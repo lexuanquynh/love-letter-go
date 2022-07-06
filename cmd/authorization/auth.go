@@ -187,7 +187,7 @@ const scheduleSchema = `
 			name 	   Varchar(255) not null,
 		    scheduletype Varchar(36) not null,
 			description Varchar(255) not null,
-			parameter    Varchar(255) null,	
+			parameter    Varchar(255) null,
 		    timeexecute  Timestamp not null,
 		    removeafterrun Boolean default false,
 			createdat  Timestamp not null,
@@ -366,20 +366,6 @@ func main() {
 	if err != nil {
 		logger.Error("Error scheduling limit data", "error", err)
 	}
-	// Scan schedule in database after 1 hours.
-	_, err = s.Every(1).Hour().Do(func() {
-		logger.Info("Check schedule in database after 1 hours.")
-		var ctx = context.Background()
-		err := repository.RunSchedule(ctx)
-		if err != nil {
-			logger.Error("Error checking schedule", "error", err)
-		}
-	})
-	if err != nil {
-		logger.Error("Error scheduling limit data", "error", err)
-	}
-
-	s.StartAsync()
 
 	// Create rate limiter for users.
 	rlBucket := ratelimit.NewBucket(1*time.Second, 5)
@@ -390,6 +376,21 @@ func main() {
 		eps         = endpoints.NewEndpointSet(service, auth, repository, logger, validator, rlBucket)
 		httpHandler = transport.NewHTTPHandler(eps)
 	)
+
+	// Scan schedule in database after 1 days.
+	_, err = s.Every(1).Day().Do(func() {
+		logger.Info("Check schedule in database after 1 days.")
+		var ctx = context.Background()
+		err = service.RunSchedule(ctx)
+		if err != nil {
+			logger.Error("Error checking schedule", "error", err)
+		}
+	})
+	if err != nil {
+		logger.Error("Error scheduling limit data", "error", err)
+	}
+
+	s.StartAsync()
 
 	var g group.Group
 	{

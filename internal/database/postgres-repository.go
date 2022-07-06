@@ -368,77 +368,9 @@ func (repo *postgresRepository) GetUserStateData(ctx context.Context, userID str
 	return &userStateData, err
 }
 
-// RunSchedule runs the schedule
-func (repo *postgresRepository) RunSchedule(ctx context.Context) error {
-	query := "select * from schedules"
-	rows, err := repo.db.QueryContext(ctx, query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var schedule Schedule
-		err = rows.Scan(&schedule.ID, &schedule.UserID, &schedule.Name, &schedule.ScheduleType, &schedule.Description, &schedule.Parameter, &schedule.TimeExecute, &schedule.RemoveAfterRun, &schedule.CreatedAt, &schedule.UpdatedAt)
-		if err != nil {
-			return err
-		}
-		repo.logger.Info("schedule id ", schedule.ID+"userid", schedule.UserID+"name", schedule.Name+"description", schedule.Description+"schedule = ", schedule.Name)
-
-		// Check if time execute is today with ScheduleType is annually, run this schedule
-		now := time.Now()
-		needRunSchedule := false
-
-		if schedule.ScheduleType == ScheduleTypeAnnually && now.Month() == schedule.TimeExecute.Month() && now.Day() == schedule.TimeExecute.Day() {
-			needRunSchedule = true
-		} else if schedule.ScheduleType == ScheduleTypeDaily && now.Day() == schedule.TimeExecute.Day() {
-			needRunSchedule = true
-		} else if schedule.ScheduleType == ScheduleTypeWeekly && now.Weekday() == schedule.TimeExecute.Weekday() {
-			needRunSchedule = true
-		} else if schedule.ScheduleType == ScheduleTypeMonthly && now.Month() == schedule.TimeExecute.Month() {
-			needRunSchedule = true
-		} else if schedule.ScheduleType == ScheduleTypeHourly && now.Hour() == schedule.TimeExecute.Hour() {
-			needRunSchedule = true
-		} else if schedule.ScheduleType == ScheduleTypeMinutely && now.Minute() == schedule.TimeExecute.Minute() {
-			needRunSchedule = true
-		} else if schedule.ScheduleType == ScheduleTypeOneTime && now.Unix() >= schedule.TimeExecute.Unix() {
-			needRunSchedule = true
-		}
-
-		if needRunSchedule {
-			// execute the func by schedule name here
-			switch schedule.Name {
-			case ScheduleActionTypeDeleteUser:
-				// read params from schedule here
-				//params := strings.Split(schedule.Parameter, ",")
-				//if len(params) < 2 {
-				//	repo.logger.Error("error running schedule ", schedule.Name, "params not correct")
-				//	return errors.New("params not correct")
-				//}
-				//userID := params[1]
-				// Delete user here
-				userID := schedule.UserID
-				err = repo.DeleteUser(ctx, userID)
-				if err != nil {
-					repo.logger.Error("error running schedule ", schedule.Name, err)
-					return err
-				}
-			}
-			// check if need remove schedule after run
-			if schedule.RemoveAfterRun {
-				query := "delete from schedules where id = $1"
-				_, err = repo.db.ExecContext(ctx, query, schedule.ID)
-				if err != nil {
-					repo.logger.Error("error remove after run schedule ", schedule.Name, err)
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
-
 // InsertSchedule sets the schedule
 func (repo *postgresRepository) InsertSchedule(ctx context.Context, schedule *Schedule) error {
+	schedule.ID = uuid.NewV4().String()
 	schedule.CreatedAt = time.Now()
 	schedule.UpdatedAt = time.Now()
 	query := "insert into schedules(id, userid, name, scheduletype, description, parameter, timeexecute, removeafterrun, createdat, updatedat) " +
@@ -464,12 +396,12 @@ func (repo *postgresRepository) DeleteSchedule(ctx context.Context, userID strin
 	return err
 }
 
-// GetSchedule returns the schedule
-func (repo *postgresRepository) GetSchedule(ctx context.Context, userID string, name string) (*Schedule, error) {
-	query := "select * from schedules where userid = $1 and name = $2"
-	var schedule Schedule
-	err := repo.db.GetContext(ctx, &schedule, query, userID, name)
-	return &schedule, err
+// GetSchedules returns the schedules
+func (repo *postgresRepository) GetSchedules(ctx context.Context) ([]*Schedule, error) {
+	query := "select * from schedules"
+	var schedules []*Schedule
+	err := repo.db.SelectContext(ctx, &schedules, query)
+	return schedules, err
 }
 
 // CreateLetter create letter
@@ -582,6 +514,14 @@ func (repo *postgresRepository) GetHolidays(ctx context.Context, limit int, offs
 	var holidays []Holiday
 	err := repo.db.SelectContext(ctx, &holidays, query, limit, offset)
 	return holidays, err
+}
+
+// GetHoliday Get holiday by holidayID
+func (repo *postgresRepository) GetHoliday(ctx context.Context, holidayID string) (*Holiday, error) {
+	query := "select * from holidays where id = $1"
+	var holiday Holiday
+	err := repo.db.GetContext(ctx, &holiday, query, holidayID)
+	return &holiday, err
 }
 
 // CreateAESKey create aes key

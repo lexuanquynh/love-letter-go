@@ -60,14 +60,12 @@ type UserRepository interface {
 	DeleteUserStateData(ctx context.Context, userID string, keyString string) error
 	// GetUserStateData Get user state data
 	GetUserStateData(ctx context.Context, userID string, keyString string) (*UserStateData, error)
-	// RunSchedule Run schedule
-	RunSchedule(ctx context.Context) error
 	// InsertSchedule Set schedule
 	InsertSchedule(ctx context.Context, schedule *Schedule) error
 	// DeleteSchedule Delete schedule
 	DeleteSchedule(ctx context.Context, userID string, name string) error
-	// GetSchedule Get schedule
-	GetSchedule(ctx context.Context, userID string, name string) (*Schedule, error)
+	// GetSchedules Get schedules
+	GetSchedules(ctx context.Context) ([]*Schedule, error)
 	// CreateLetter Create letter
 	CreateLetter(ctx context.Context, letter *Letter) error
 	// DeleteLetter Delete letter
@@ -88,6 +86,8 @@ type UserRepository interface {
 	DeleteHoliday(ctx context.Context, holidayID string) error
 	// GetHolidays Get holidays by limit and offset
 	GetHolidays(ctx context.Context, limit int, offset int) ([]Holiday, error)
+	// GetHoliday Get holiday by holidayID
+	GetHoliday(ctx context.Context, holidayID string) (*Holiday, error)
 	// CreateAESKey Create AES key
 	CreateAESKey(ctx context.Context, aesKey *AESKey) error
 	// DeleteAESKey Delete AES key by keyID

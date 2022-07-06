@@ -193,7 +193,8 @@ const (
 )
 
 const (
-	ScheduleActionTypeDeleteUser = "deleteuser"
+	ScheduleActionTypeDeleteUser               = "deleteuser"
+	ScheduleActionTypeSendHolidayNotifications = "sendholidaynotifications"
 )
 
 const (
@@ -228,4 +229,6 @@ const (
 const (
 	NotificationTypeConfirmEmail   = "confirmEmail"
 	NotificationTypeChangeUsername = "changeUsername"
+	NotificationTypeConfirmMatch   = "confirmMatch"
+	NotificationTypeResponseMatch  = "responseMatch"
 )
