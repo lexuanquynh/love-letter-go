@@ -59,6 +59,7 @@ type Set struct {
 	DeleteNotificationEndpoint      endpoint.Endpoint
 	GetShareLettersEndpoint         endpoint.Endpoint
 	GetShareLetterEndpoint          endpoint.Endpoint
+	GetShareHolidaysEndpoint        endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -288,6 +289,11 @@ func NewEndpointSet(svc authorization.Service,
 	getShareLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(getShareLetterEndpoint)
 	getShareLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getShareLetterEndpoint)
 
+	getShareHolidaysEndpoint := MakeGetShareHolidaysEndpoint(svc)
+	getShareHolidaysEndpoint = middleware.RateLimitRequest(tb, logger)(getShareHolidaysEndpoint)
+	getShareHolidaysEndpoint = middleware.ValidateParamRequest(validator, logger)(getShareHolidaysEndpoint)
+	getShareHolidaysEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getShareHolidaysEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:             healthCheckEndpoint,
 		RegisterEndpoint:                registerEndpoint,
@@ -335,6 +341,7 @@ func NewEndpointSet(svc authorization.Service,
 		DeleteNotificationEndpoint:      deleteNotificationEndpoint,
 		GetShareLettersEndpoint:         getShareLettersEndpoint,
 		GetShareLetterEndpoint:          getShareLetterEndpoint,
+		GetShareHolidaysEndpoint:        getShareHolidaysEndpoint,
 	}
 }
 
@@ -1103,6 +1110,22 @@ func MakeGetShareLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
 			return nil, cusErr
 		}
 		response, err := svc.GetShareLetter(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetShareHolidaysEndpoint returns an endpoint that invokes GetShareHolidays on the service.
+func MakeGetShareHolidaysEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetHolidaysRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetShareHolidays(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

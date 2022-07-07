@@ -304,7 +304,7 @@ func main() {
 	defer func(db *sqlx.DB) {
 		err := db.Close()
 		if err != nil {
-
+			logger.Error("sqlx close error: ", err)
 		}
 	}(db)
 	if err != nil {

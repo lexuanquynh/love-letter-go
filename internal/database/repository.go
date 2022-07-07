@@ -85,7 +85,7 @@ type UserRepository interface {
 	// DeleteHoliday Delete holiday by holidayID
 	DeleteHoliday(ctx context.Context, holidayID string) error
 	// GetHolidays Get holidays by limit and offset
-	GetHolidays(ctx context.Context, limit int, offset int) ([]Holiday, error)
+	GetHolidays(ctx context.Context, userID string, limit int, offset int) ([]Holiday, error)
 	// GetHoliday Get holiday by holidayID
 	GetHoliday(ctx context.Context, holidayID string) (*Holiday, error)
 	// CreateAESKey Create AES key

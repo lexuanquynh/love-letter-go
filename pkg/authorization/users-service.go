@@ -2510,7 +2510,7 @@ func (s *userService) GetHolidays(ctx context.Context, request *GetHolidaysReque
 		return nil, err
 	}
 	// Get holidays
-	holidays, err := s.repo.GetHolidays(ctx, request.Limit, request.Page)
+	holidays, err := s.repo.GetHolidays(ctx, userID, request.Limit, request.Page)
 	if err != nil {
 		s.logger.Error("Cannot get holidays", "error", err)
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
@@ -2918,4 +2918,47 @@ func (s *userService) GetShareLetter(ctx context.Context, request *GetLetterRequ
 	// log success
 	s.logger.Info("Get share letter success")
 	return response, nil
+}
+
+// GetShareHolidays get share holidays
+func (s *userService) GetShareHolidays(ctx context.Context, request *GetHolidaysRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get shared by user id
+	shared, err := s.repo.GetShare(ctx, userID)
+	if err != nil {
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No share")
+			return nil, nil
+		}
+		s.logger.Error("Cannot get share", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	idRequest := ""
+	if userID == shared.UserID {
+		idRequest = shared.ShareUserID
+	} else {
+		idRequest = shared.UserID
+	}
+	// Get holidays by shared user id
+	holidays, err := s.repo.GetHolidays(ctx, idRequest, request.Limit, request.Page)
+	if err != nil {
+		s.logger.Error("Cannot get holidays", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// log success
+	s.logger.Info("Get share holidays success")
+	return holidays, nil
 }

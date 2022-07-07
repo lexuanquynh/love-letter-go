@@ -509,10 +509,10 @@ func (repo *postgresRepository) DeleteHoliday(ctx context.Context, holidayID str
 }
 
 // GetHolidays Get holidays by limit and offset
-func (repo *postgresRepository) GetHolidays(ctx context.Context, limit int, offset int) ([]Holiday, error) {
-	query := "select * from holidays order by startdate desc limit $1 offset $2"
+func (repo *postgresRepository) GetHolidays(ctx context.Context, userID string, limit int, offset int) ([]Holiday, error) {
+	query := "select * from holidays where userid = $1 order by startdate desc limit $2 offset $3"
 	var holidays []Holiday
-	err := repo.db.SelectContext(ctx, &holidays, query, limit, offset)
+	err := repo.db.SelectContext(ctx, &holidays, query, userID, limit, offset)
 	return holidays, err
 }
 
@@ -642,7 +642,7 @@ func (repo *postgresRepository) InsertShare(ctx context.Context, share *Share) e
 
 // DeleteShare Delete share by userID
 func (repo *postgresRepository) DeleteShare(ctx context.Context, userID string) error {
-	query := "delete from shares where userid = $1"
+	query := "delete from shares where userid = $1 or shareuserid = $1"
 	_, err := repo.db.ExecContext(ctx, query, userID)
 	return err
 }

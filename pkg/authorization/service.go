@@ -52,4 +52,5 @@ type Service interface {
 	RunSchedule(ctx context.Context) error
 	GetShareLetters(ctx context.Context, request *GetLettersRequest) (interface{}, error)
 	GetShareLetter(ctx context.Context, request *GetLetterRequest) (interface{}, error)
+	GetShareHolidays(ctx context.Context, request *GetHolidaysRequest) (interface{}, error)
 }
