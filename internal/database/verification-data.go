@@ -174,6 +174,14 @@ type Notification struct {
 	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
 }
 
+// Share represents the type for the data stored for share.
+type Share struct {
+	UserID      string    `json:"userid" sql:"userid"`
+	ShareUserID string    `json:"shareuserid" sql:"shareuserid"`
+	CreatedAt   time.Time `json:"createdat" sql:"createdat"`
+	UpdatedAt   time.Time `json:"updatedat" sql:"updatedat"`
+}
+
 const MatchLoverStateKey = "state"
 
 const (

@@ -50,4 +50,6 @@ type Service interface {
 	DeleteNotification(ctx context.Context, request *NotificationRequest) (interface{}, error)
 	SendHolidayNotification(ctx context.Context, UserID string, holidayID string) error
 	RunSchedule(ctx context.Context) error
+	GetShareLetters(ctx context.Context, request *GetLettersRequest) (interface{}, error)
+	GetShareLetter(ctx context.Context, request *GetLetterRequest) (interface{}, error)
 }

@@ -618,3 +618,39 @@ func (repo *postgresRepository) GetNotification(ctx context.Context, notificatio
 	err := repo.db.GetContext(ctx, &notification, query, notificationID)
 	return &notification, err
 }
+
+//userid 		Varchar(36) not null,
+//shareuserid Varchar(36) not null,
+//createdat  	Timestamp not null,
+//updatedat  	Timestamp not null,
+//unique(userid, shareuserid),
+
+// InsertShare create share
+func (repo *postgresRepository) InsertShare(ctx context.Context, share *Share) error {
+	share.CreatedAt = time.Now()
+	share.UpdatedAt = time.Now()
+	query := "insert into shares(userid, shareuserid, createdat, updatedat) " +
+		"values($1, $2, $3, $4)" +
+		"on conflict (userid, shareuserid) do update set shareuserid = $2, createdat = $3, updatedat = $4"
+	_, err := repo.db.ExecContext(ctx, query,
+		share.UserID,
+		share.ShareUserID,
+		share.CreatedAt,
+		share.UpdatedAt)
+	return err
+}
+
+// DeleteShare Delete share by userID
+func (repo *postgresRepository) DeleteShare(ctx context.Context, userID string) error {
+	query := "delete from shares where userid = $1"
+	_, err := repo.db.ExecContext(ctx, query, userID)
+	return err
+}
+
+// GetShare Get shares by userID
+func (repo *postgresRepository) GetShare(ctx context.Context, userID string) (Share, error) {
+	query := "select * from shares where userid = $1 or shareuserid = $1"
+	var share Share
+	err := repo.db.GetContext(ctx, &share, query, userID)
+	return share, err
+}

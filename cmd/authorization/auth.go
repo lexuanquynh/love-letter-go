@@ -278,6 +278,19 @@ const notificationSchema = `
 		)
 `
 
+// Schema for user's share table
+const shareSchema = `
+		create table if not exists shares (			
+			userid 		Varchar(36) not null,
+		    shareuserid Varchar(36) not null,				
+			createdat  	Timestamp not null,
+			updatedat  	Timestamp not null,
+			 unique(userid, shareuserid),
+			Constraint fk_user_id Foreign Key(userid) References users(id)
+				On Delete Cascade On Update Cascade
+		)
+`
+
 func main() {
 	logger := utils.NewLogger()
 	// quynhlx change config with multi environments
@@ -314,6 +327,7 @@ func main() {
 	db.MustExec(holidaySchema)
 	db.MustExec(aesSchema)
 	db.MustExec(notificationSchema)
+	db.MustExec(shareSchema)
 
 	logger.Info("database created")
 	// repository contains all the methods that interact with DB to perform CURD operations for user.

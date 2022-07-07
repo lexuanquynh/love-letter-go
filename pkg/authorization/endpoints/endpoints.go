@@ -57,6 +57,8 @@ type Set struct {
 	GetNotificationsEndpoint        endpoint.Endpoint
 	GetNotificationEndpoint         endpoint.Endpoint
 	DeleteNotificationEndpoint      endpoint.Endpoint
+	GetShareLettersEndpoint         endpoint.Endpoint
+	GetShareLetterEndpoint          endpoint.Endpoint
 }
 
 func NewEndpointSet(svc authorization.Service,
@@ -276,6 +278,16 @@ func NewEndpointSet(svc authorization.Service,
 	deleteNotificationEndpoint = middleware.ValidateParamRequest(validator, logger)(deleteNotificationEndpoint)
 	deleteNotificationEndpoint = middleware.ValidateAccessToken(auth, r, logger)(deleteNotificationEndpoint)
 
+	getShareLettersEndpoint := MakeGetShareLettersEndpoint(svc)
+	getShareLettersEndpoint = middleware.RateLimitRequest(tb, logger)(getShareLettersEndpoint)
+	getShareLettersEndpoint = middleware.ValidateParamRequest(validator, logger)(getShareLettersEndpoint)
+	getShareLettersEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getShareLettersEndpoint)
+
+	getShareLetterEndpoint := MakeGetShareLetterEndpoint(svc)
+	getShareLetterEndpoint = middleware.RateLimitRequest(tb, logger)(getShareLetterEndpoint)
+	getShareLetterEndpoint = middleware.ValidateParamRequest(validator, logger)(getShareLetterEndpoint)
+	getShareLetterEndpoint = middleware.ValidateAccessToken(auth, r, logger)(getShareLetterEndpoint)
+
 	return Set{
 		HealthCheckEndpoint:             healthCheckEndpoint,
 		RegisterEndpoint:                registerEndpoint,
@@ -321,6 +333,8 @@ func NewEndpointSet(svc authorization.Service,
 		GetNotificationsEndpoint:        getNotificationsEndpoint,
 		GetNotificationEndpoint:         getNotificationEndpoint,
 		DeleteNotificationEndpoint:      deleteNotificationEndpoint,
+		GetShareLettersEndpoint:         getShareLettersEndpoint,
+		GetShareLetterEndpoint:          getShareLetterEndpoint,
 	}
 }
 
@@ -1057,6 +1071,38 @@ func MakeDeleteNotificationEndpoint(svc authorization.Service) endpoint.Endpoint
 			return nil, cusErr
 		}
 		response, err := svc.DeleteNotification(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetShareLettersEndpoint returns an endpoint that invokes GetShareLetters on the service.
+func MakeGetShareLettersEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetLettersRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetShareLetters(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+}
+
+// MakeGetShareLetterEndpoint returns an endpoint that invokes GetShareLetter on the service.
+func MakeGetShareLetterEndpoint(svc authorization.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(authorization.GetLetterRequest)
+		if !ok {
+			cusErr := utils.NewErrorResponse(utils.BadRequest)
+			return nil, cusErr
+		}
+		response, err := svc.GetShareLetter(ctx, &req)
 		if err != nil {
 			return nil, err
 		}

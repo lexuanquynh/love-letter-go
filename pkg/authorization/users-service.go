@@ -1411,6 +1411,13 @@ func (s *userService) UnMatchedLover(ctx context.Context) error {
 		cusErr := utils.NewErrorResponse(utils.InternalServerError)
 		return cusErr
 	}
+	// delete share user data
+	err = s.repo.DeleteShare(ctx, userID)
+	if err != nil {
+		s.logger.Error("Cannot delete share data", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
 	s.logger.Debug("Successfully unmatched lover")
 	// Send notification to matched user
 	var viContent = "Rất tiếc! Người ấy đã từ chối kết nối với bạn😔"
@@ -1574,6 +1581,54 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 		}
 	}
 	s.logger.Info("Successfully accept lover")
+	// Generate notification title and description by notification NotificationTypeResponseMatch type
+	notificationTitle, notificationDescription := s.generateNotificationTitleAndDescription(database.NotificationTypeResponseMatch)
+	// Insert into notification database: user need to confirm his email
+	notification := database.Notification{
+		UserID:      matchLove.UserID1,
+		NotiType:    database.NotificationTypeResponseMatch,
+		Title:       notificationTitle,
+		Description: notificationDescription,
+	}
+	err = s.repo.InsertNotification(ctx, &notification)
+	if err != nil {
+		s.logger.Error("Cannot insert notification", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return cusErr
+	}
+	shareUserID := ""
+	userIDData := ""
+	if matchLove.UserID1 == user.ID {
+		shareUserID = matchLove.UserID2
+		userIDData = matchLove.UserID1
+	} else {
+		shareUserID = matchLove.UserID1
+		userIDData = matchLove.UserID2
+	}
+	// if accepted, insert share data
+	if request.Accept == database.MatchLoverStateAccept {
+		share := database.Share{
+			UserID:      userIDData,
+			ShareUserID: shareUserID,
+		}
+		err = s.repo.InsertShare(ctx, &share)
+		if err != nil {
+			s.logger.Error("Cannot insert share", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr
+		}
+		// Show log share success
+		s.logger.Info("Successfully share")
+	} else if request.Accept == database.MatchLoverStateReject {
+		// delete share user data
+		err = s.repo.DeleteShare(ctx, userIDData)
+		if err != nil {
+			s.logger.Error("Cannot delete share", "error", err)
+			cusErr := utils.NewErrorResponse(utils.InternalServerError)
+			return cusErr
+		}
+	}
+
 	// Send notification to lover
 	var viContent = "💌 💕Có một người đã phải lòng bạn❤😘"
 	var enContent = "💌 💕Someone has a crush on you❤😘"
@@ -1608,21 +1663,6 @@ func (s *userService) ConfirmMatchLover(ctx context.Context, request *AcceptMatc
 	s.logger.Info("Sending notification to user")
 	s.notificationService.SendNotification(ctx, &notificationData)
 
-	// Generate notification title and description by notification NotificationTypeResponseMatch type
-	notificationTitle, notificationDescription := s.generateNotificationTitleAndDescription(database.NotificationTypeResponseMatch)
-	// Insert into notification database: user need to confirm his email
-	notification := database.Notification{
-		UserID:      matchLove.UserID1,
-		NotiType:    database.NotificationTypeResponseMatch,
-		Title:       notificationTitle,
-		Description: notificationDescription,
-	}
-	err = s.repo.InsertNotification(ctx, &notification)
-	if err != nil {
-		s.logger.Error("Cannot insert notification", "error", err)
-		cusErr := utils.NewErrorResponse(utils.InternalServerError)
-		return cusErr
-	}
 	return nil
 }
 
@@ -2725,4 +2765,157 @@ func (s *userService) SendHolidayNotification(ctx context.Context, UserID string
 	s.logger.Info("Sending notification to user")
 	s.notificationService.SendNotification(ctx, &notificationData)
 	return nil
+}
+
+// GetShareLetters get share letters
+func (s *userService) GetShareLetters(ctx context.Context, request *GetLettersRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get shared by user id
+	shared, err := s.repo.GetShare(ctx, userID)
+	if err != nil {
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No share")
+			return nil, nil
+		}
+		s.logger.Error("Cannot get share", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	idRequest := ""
+
+	if userID == shared.UserID {
+		idRequest = shared.ShareUserID
+	} else {
+		idRequest = shared.UserID
+	}
+	// Get letters by shared user id
+	letters, err := s.repo.GetLetters(ctx, idRequest, request.Page, request.Limit)
+	if err != nil {
+		s.logger.Error("Cannot get letters", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Get letters success
+	s.logger.Info("Get letters success")
+
+	// get AES key from database
+	aeskeyInDatabase, err := s.repo.GetAESKey(ctx, idRequest)
+	if err != nil {
+		s.logger.Error("Cannot get aes key", "error", err)
+		// return empty list
+		var responses []GetLettersResponse
+		return responses, nil
+	}
+	var responses []GetLettersResponse
+	for i := 0; i < len(letters); i++ {
+		// decrypt title
+		title, err := utils.DecryptAES(letters[i].Title, aeskeyInDatabase)
+		if err != nil {
+			s.logger.Error("Cannot decrypt title", "error", err)
+			return nil, err
+		}
+		response := GetLettersResponse{
+			ID:        letters[i].ID,
+			Title:     title,
+			IsRead:    letters[i].IsRead,
+			IsDelete:  letters[i].IsDelete,
+			TimeOpen:  letters[i].TimeOpen,
+			CreatedAt: letters[i].CreatedAt,
+			UpdatedAt: letters[i].UpdatedAt,
+		}
+		responses = append(responses, response)
+	}
+	return responses, nil
+}
+
+// GetShareLetter get share letter
+func (s *userService) GetShareLetter(ctx context.Context, request *GetLetterRequest) (interface{}, error) {
+	userID, ok := ctx.Value(middleware.UserIDKey{}).(string)
+	if !ok {
+		s.logger.Error("Error getting userID from context")
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Common check user status
+	_, err := s.commonCheckUserStatusByUserId(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Get shared by user id
+	shared, err := s.repo.GetShare(ctx, userID)
+	if err != nil {
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No share")
+			return nil, nil
+		}
+		s.logger.Error("Cannot get share", "error", err)
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	idRequest := ""
+	if userID == shared.UserID {
+		idRequest = shared.ShareUserID
+	} else {
+		idRequest = shared.UserID
+	}
+	// Get letter by letter id
+	letter, err := s.repo.GetLetter(ctx, idRequest, request.LetterID)
+	if err != nil {
+		s.logger.Error("Cannot get letter", "error", err)
+		// check no rows in result set
+		if err == sql.ErrNoRows {
+			s.logger.Info("No letter")
+			return nil, nil
+		}
+		cusErr := utils.NewErrorResponse(utils.InternalServerError)
+		return nil, cusErr
+	}
+	// Get letter success
+	s.logger.Info("Get letter success")
+
+	// get AES key from database
+	aeskeyInDatabase, err := s.repo.GetAESKey(ctx, idRequest)
+	if err != nil {
+		s.logger.Error("Cannot get aes key", "error", err)
+		// return empty list
+		var responses []GetLettersResponse
+		return responses, nil
+	}
+	// decrypt title
+	title, err := utils.DecryptAES(letter.Title, aeskeyInDatabase)
+	if err != nil {
+		s.logger.Error("Cannot decrypt title", "error", err)
+		return nil, err
+	}
+	// decrypt body
+	body, err := utils.DecryptAES(letter.Body, aeskeyInDatabase)
+	if err != nil {
+		s.logger.Error("Cannot decrypt body", "error", err)
+		return nil, err
+	}
+	response := GetLettersResponse{
+		ID:        letter.ID,
+		Title:     title,
+		Body:      body,
+		IsRead:    letter.IsRead,
+		IsDelete:  letter.IsDelete,
+		TimeOpen:  letter.TimeOpen,
+		CreatedAt: letter.CreatedAt,
+		UpdatedAt: letter.UpdatedAt,
+	}
+	// log success
+	s.logger.Info("Get share letter success")
+	return response, nil
 }

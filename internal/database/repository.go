@@ -104,4 +104,10 @@ type UserRepository interface {
 	GetNotifications(ctx context.Context, userID string, offset int, limit int) ([]Notification, error)
 	// GetNotification Get notification by notificationID
 	GetNotification(ctx context.Context, notificationID string) (*Notification, error)
+	// InsertShare Insert share
+	InsertShare(ctx context.Context, share *Share) error
+	// DeleteShare Delete share by userID
+	DeleteShare(ctx context.Context, userID string) error
+	// GetShare Get shares by userID
+	GetShare(ctx context.Context, userID string) (Share, error)
 }

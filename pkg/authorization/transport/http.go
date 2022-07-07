@@ -325,6 +325,22 @@ func NewHTTPHandler(ep endpoints.Set) http.Handler {
 		options...,
 	))
 
+	// get share letters
+	m.Handle("/get-share-letters", httptransport.NewServer(
+		ep.GetShareLettersEndpoint,
+		decodeHTTPGetShareLettersRequest,
+		encodeResponse,
+		options...,
+	))
+
+	// get share letter
+	m.Handle("/get-share-letter", httptransport.NewServer(
+		ep.GetShareLetterEndpoint,
+		decodeHTTPGetShareLetterRequest,
+		encodeResponse,
+		options...,
+	))
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", m))
 	return mux
@@ -1160,6 +1176,46 @@ func decodeHTTPGetNotificationRequest(_ context.Context, r *http.Request) (inter
 func decodeHTTPDeleteNotificationRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
 		var req authorization.NotificationRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetShareLettersRequest decode request
+func decodeHTTPGetShareLettersRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetLettersRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		if req.AccessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
+		//Limit must not be negative
+		if req.Limit < 0 {
+			return nil, utils.NewErrorResponse(utils.BadRequest)
+		}
+		return req, nil
+	} else {
+		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
+		return nil, cusErr
+	}
+}
+
+// decodeHTTPGetShareLetterRequest decode request
+func decodeHTTPGetShareLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if r.Method == "POST" {
+		var req authorization.GetLetterRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
