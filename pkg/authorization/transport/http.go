@@ -427,14 +427,19 @@ func decodeHTTPLoginRequest(_ context.Context, r *http.Request) (interface{}, er
 // decodeHTTPLogoutRequest decode request
 func decodeHTTPLogoutRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// get refresh token
+		refreshToken := r.Header.Get("Refresh-Token")
+		if refreshToken == "" {
+			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
+		}
+
 		var req authorization.LogoutRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
-		if req.RefreshToken == "" {
-			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
-		}
+		req.RefreshToken = refreshToken
+
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -445,14 +450,19 @@ func decodeHTTPLogoutRequest(_ context.Context, r *http.Request) (interface{}, e
 // decodeHTTPDeleteUserRequest decode request
 func decodeHTTPDeleteUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// get refresh token
+		refreshToken := r.Header.Get("Refresh-Token")
+		if refreshToken == "" {
+			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
+		}
+
 		var req authorization.DeleteUserRequest
+		req.RefreshToken = refreshToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
-		if req.RefreshToken == "" {
-			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
-		}
+
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -503,14 +513,13 @@ func decodeHTTPConfirmCancelDeleteUserRequest(_ context.Context, r *http.Request
 // decodeHTTPGetUserRequest decode request
 func decodeHTTPGetUserRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -521,14 +530,13 @@ func decodeHTTPGetUserRequest(_ context.Context, r *http.Request) (interface{}, 
 // decodeHTTPGetProfileRequest decode request
 func decodeHTTPGetProfileRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -539,13 +547,16 @@ func decodeHTTPGetProfileRequest(_ context.Context, r *http.Request) (interface{
 // decodeHTTPUpdateProfileRequest decode request
 func decodeHTTPUpdateProfileRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.UpdateProfileRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -557,16 +568,19 @@ func decodeHTTPUpdateProfileRequest(_ context.Context, r *http.Request) (interfa
 // decodeHTTPUpdateUsernameRequest decode request
 func decodeHTTPUpdateUsernameRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.UpdateUserNameRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
 		}
 		if req.Username == "" {
 			return nil, utils.NewErrorResponse(utils.UsernameRequired)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -578,13 +592,16 @@ func decodeHTTPUpdateUsernameRequest(_ context.Context, r *http.Request) (interf
 // decodeHTTPUpdatePasswordRequest decode request
 func decodeHTTPUpdatePasswordRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.UpdatePasswordRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.OldPassword == "" {
 			return nil, utils.NewErrorResponse(utils.OldPasswordRequired)
@@ -647,14 +664,13 @@ func decodeHTTPResetPasswordRequest(_ context.Context, r *http.Request) (interfa
 // decodeHTTPGenerateAccessTokenRequest decode request
 func decodeHTTPGenerateAccessTokenRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.GenerateAccessTokenRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.RefreshToken == "" {
+		// Get refresh token
+		refreshToken := r.Header.Get("Refresh-Token")
+		if refreshToken == "" {
 			return nil, utils.NewErrorResponse(utils.RefreshTokenRequired)
 		}
+		var req authorization.GenerateAccessTokenRequest
+		req.RefreshToken = refreshToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -665,14 +681,13 @@ func decodeHTTPGenerateAccessTokenRequest(_ context.Context, r *http.Request) (i
 // decodeHTTPGetVerifyMailCodeRequest decode request
 func decodeHTTPGetVerifyMailCodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -683,14 +698,13 @@ func decodeHTTPGetVerifyMailCodeRequest(_ context.Context, r *http.Request) (int
 // decodeHTTPGetMatchCodeRequest decode request
 func decodeHTTPGetMatchCodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -701,13 +715,16 @@ func decodeHTTPGetMatchCodeRequest(_ context.Context, r *http.Request) (interfac
 // decodeHTTPMatchLoverRequest decode request
 func decodeHTTPMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.MatchLoverRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.Code == "" {
 			return nil, utils.NewErrorResponse(utils.CodeRequired)
@@ -722,13 +739,16 @@ func decodeHTTPMatchLoverRequest(_ context.Context, r *http.Request) (interface{
 // decodeHTTPConfirmMatchLoverRequest decode request
 func decodeHTTPConfirmMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.AcceptMatchLoverRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -740,14 +760,13 @@ func decodeHTTPConfirmMatchLoverRequest(_ context.Context, r *http.Request) (int
 // decodeHTTPUnMatchLoverRequest decode request
 func decodeHTTPUnMatchLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -758,14 +777,13 @@ func decodeHTTPUnMatchLoverRequest(_ context.Context, r *http.Request) (interfac
 // decodeHTTPGetMatchedLoverRequest decode request
 func decodeHTTPGetMatchedLoverRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -794,13 +812,16 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 // decodeHTTPInsertPlayerDataRequest decode request
 func decodeHTTPInsertPlayerDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.InsertPlayerDataRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.PlayerID == "" {
 			return nil, utils.NewErrorResponse(utils.PlayerIdRequired)
@@ -815,13 +836,16 @@ func decodeHTTPInsertPlayerDataRequest(_ context.Context, r *http.Request) (inte
 // decodeHTTPGetUserStateDataRequest decode request
 func decodeHTTPGetUserStateDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetUserStateDataRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.KeyString == "" {
 			return nil, utils.NewErrorResponse(utils.KeyStringRequired)
@@ -836,13 +860,16 @@ func decodeHTTPGetUserStateDataRequest(_ context.Context, r *http.Request) (inte
 // decodeHTTPSetUserStateDataRequest decode request
 func decodeHTTPSetUserStateDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.SetUserStateDataRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.KeyString == "" {
 			return nil, utils.NewErrorResponse(utils.KeyStringRequired)
@@ -858,14 +885,13 @@ func decodeHTTPSetUserStateDataRequest(_ context.Context, r *http.Request) (inte
 // decodeHTTPGetFeedsRequest decode request
 func decodeHTTPGetFeedsRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -876,13 +902,16 @@ func decodeHTTPGetFeedsRequest(_ context.Context, r *http.Request) (interface{},
 // decodeHTTPUpdateBeenLoveRequest decode request
 func decodeHTTPUpdateBeenLoveRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.UpdateBeenLoveRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -894,14 +923,13 @@ func decodeHTTPUpdateBeenLoveRequest(_ context.Context, r *http.Request) (interf
 // decodeHTTPCheckPasscodeStatusRequest decode request
 func decodeHTTPCheckPasscodeStatusRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
@@ -912,13 +940,16 @@ func decodeHTTPCheckPasscodeStatusRequest(_ context.Context, r *http.Request) (i
 // decodeHTTPSetPasscodeRequest decode request
 func decodeHTTPSetPasscodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.SetPassCodeRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.PassCode == "" {
 			return nil, utils.NewErrorResponse(utils.PassCodeRequired)
@@ -933,13 +964,16 @@ func decodeHTTPSetPasscodeRequest(_ context.Context, r *http.Request) (interface
 // decodeHTTPComparePasscodeRequest decode request
 func decodeHTTPComparePasscodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.ComparePassCodeRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		if req.PassCode == "" {
 			return nil, utils.NewErrorResponse(utils.PassCodeRequired)
@@ -954,13 +988,16 @@ func decodeHTTPComparePasscodeRequest(_ context.Context, r *http.Request) (inter
 // decodeHTTPCreateLetterRequest decode request
 func decodeHTTPCreateLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.CreateLetterRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -972,13 +1009,16 @@ func decodeHTTPCreateLetterRequest(_ context.Context, r *http.Request) (interfac
 // decodeHTTPDeleteLetterRequest decode request
 func decodeHTTPDeleteLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.DeleteLetterRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -990,13 +1030,16 @@ func decodeHTTPDeleteLetterRequest(_ context.Context, r *http.Request) (interfac
 // decodeHTTPGetLettersRequest decode request
 func decodeHTTPGetLettersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetLettersRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		//Limit must not be negative
 		if req.Limit < 0 {
@@ -1012,13 +1055,16 @@ func decodeHTTPGetLettersRequest(_ context.Context, r *http.Request) (interface{
 // decodeHTTPGetLetterRequest decode request
 func decodeHTTPGetLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetLetterRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1030,13 +1076,16 @@ func decodeHTTPGetLetterRequest(_ context.Context, r *http.Request) (interface{}
 // decodeHTTPInsertPsychologyRequest decode request
 func decodeHTTPInsertPsychologyRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.InsertPsychologyRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1048,13 +1097,16 @@ func decodeHTTPInsertPsychologyRequest(_ context.Context, r *http.Request) (inte
 // decodeHTTPDeletePsychologyRequest decode request
 func decodeHTTPDeletePsychologyRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.DeletePsychologyRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1066,13 +1118,16 @@ func decodeHTTPDeletePsychologyRequest(_ context.Context, r *http.Request) (inte
 // decodeHTTPGetPsychologiesRequest decode request
 func decodeHTTPGetPsychologiesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetPsychologiesRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1084,13 +1139,16 @@ func decodeHTTPGetPsychologiesRequest(_ context.Context, r *http.Request) (inter
 // decodeHTTPCreateHolidayRequest decode request
 func decodeHTTPCreateHolidayRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.CreateHolidayRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1102,13 +1160,16 @@ func decodeHTTPCreateHolidayRequest(_ context.Context, r *http.Request) (interfa
 // decodeHTTPDeleteHolidayRequest decode request
 func decodeHTTPDeleteHolidayRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.DeleteHolidayRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1120,13 +1181,16 @@ func decodeHTTPDeleteHolidayRequest(_ context.Context, r *http.Request) (interfa
 // decodeHTTPGetHolidaysRequest decode request
 func decodeHTTPGetHolidaysRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetHolidaysRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		//Limit must not be negative
 		if req.Limit < 0 {
@@ -1142,13 +1206,16 @@ func decodeHTTPGetHolidaysRequest(_ context.Context, r *http.Request) (interface
 // decodeHTTPGetNotificationsRequest decode request
 func decodeHTTPGetNotificationsRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetNotificationsRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		//Limit must not be negative
 		if req.Limit < 0 {
@@ -1165,13 +1232,16 @@ func decodeHTTPGetNotificationsRequest(_ context.Context, r *http.Request) (inte
 // decodeHTTPGetNotificationRequest decode request
 func decodeHTTPGetNotificationRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.NotificationRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1183,13 +1253,16 @@ func decodeHTTPGetNotificationRequest(_ context.Context, r *http.Request) (inter
 // decodeHTTPDeleteNotificationRequest decode request
 func decodeHTTPDeleteNotificationRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.NotificationRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1201,13 +1274,16 @@ func decodeHTTPDeleteNotificationRequest(_ context.Context, r *http.Request) (in
 // decodeHTTPGetShareLettersRequest decode request
 func decodeHTTPGetShareLettersRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetLettersRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		//Limit must not be negative
 		if req.Limit < 0 {
@@ -1223,13 +1299,16 @@ func decodeHTTPGetShareLettersRequest(_ context.Context, r *http.Request) (inter
 // decodeHTTPGetShareLetterRequest decode request
 func decodeHTTPGetShareLetterRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetLetterRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		return req, nil
 	} else {
@@ -1241,13 +1320,16 @@ func decodeHTTPGetShareLetterRequest(_ context.Context, r *http.Request) (interf
 // decodeHTTPGetShareHolidaysRequest decode request
 func decodeHTTPGetShareHolidaysRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
+			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
+		}
 		var req authorization.GetHolidaysRequest
+		req.AccessToken = accessToken
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
-			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
 		//Limit must not be negative
 		if req.Limit < 0 {
@@ -1263,14 +1345,13 @@ func decodeHTTPGetShareHolidaysRequest(_ context.Context, r *http.Request) (inte
 // decodeHTTPGetPlayerDataRequest decode request
 func decodeHTTPGetPlayerDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	if r.Method == "POST" {
-		var req authorization.CommonAuthorizationRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			return nil, utils.NewErrorResponse(utils.BadRequest)
-		}
-		if req.AccessToken == "" {
+		// Get access token
+		accessToken := r.Header.Get("Access-Token")
+		if accessToken == "" {
 			return nil, utils.NewErrorResponse(utils.AccessTokenRequired)
 		}
+		var req authorization.CommonAuthorizationRequest
+		req.AccessToken = accessToken
 		return req, nil
 	} else {
 		cusErr := utils.NewErrorResponse(utils.MethodNotAllowed)
