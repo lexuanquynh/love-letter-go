@@ -1,8 +1,9 @@
 module LoveLetterProject
 
-go 1.18
+go 1.23.0
 
 require (
+	github.com/OneSignal/onesignal-go-client v1.0.0
 	github.com/go-co-op/gocron v1.13.0
 	github.com/go-kit/kit v0.12.0
 	github.com/go-playground/validator v9.31.0+incompatible
@@ -18,13 +19,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29
 )
 
-require (
-	github.com/OneSignal/onesignal-go-client v1.0.0 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
-)
+require golang.org/x/oauth2 v0.27.0 // indirect
 
 require (
 	github.com/fatih/color v1.13.0 // indirect
@@ -34,7 +29,6 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/kr/pretty v0.1.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
@@ -55,7 +49,6 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
